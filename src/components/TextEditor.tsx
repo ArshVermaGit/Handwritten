@@ -11,28 +11,27 @@ export default function TextEditor() {
         <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="card h-full flex flex-col"
+            className="card-premium h-full flex flex-col"
         >
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-ink-900">Editor</h2>
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold uppercase tracking-tighter">Drafting</h2>
                 <button
                     onClick={() => setText('')}
-                    className="text-ink-400 hover:text-ink-900 text-xs font-semibold uppercase tracking-wider transition-colors"
+                    className="text-gray-300 hover:text-black text-[10px] font-black uppercase tracking-[0.3em] transition-colors"
                 >
-                    Clear
+                    Wipe
                 </button>
             </div>
 
             <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Start typing your story..."
-                className="input-base flex-1 resize-none font-mono text-sm bg-ink-50/30"
-                rows={12}
+                placeholder="Manifest your thoughts..."
+                className="input-minimal flex-1 resize-none font-sans text-sm bg-gray-50/30 min-h-[300px]"
             />
 
-            <div className="flex justify-between items-center mt-4 text-[10px] font-bold uppercase tracking-widest text-ink-400">
-                <span>Chars: {charCount}</span>
+            <div className="flex justify-between items-center mt-6 text-[8px] font-black uppercase tracking-[0.4em] text-gray-300">
+                <span>Characters: {charCount}</span>
                 <span>Words: {wordCount}</span>
             </div>
         </motion.div>
