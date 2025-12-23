@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
 import TextEditor from '../components/TextEditor';
 import PreviewPanel from '../components/PreviewPanel';
-import StyleSelector from '../components/StyleSelector';
 import PageCustomizer from '../components/PageCustomizer';
 import ExportManager from '../components/ExportManager';
+import FontManager from '../components/FontManager';
 import { useStore } from '../lib/store';
 import { RefreshCw } from 'lucide-react';
 
@@ -33,8 +33,11 @@ export default function EditorPage() {
                                 <h2 className="text-xl font-bold uppercase tracking-tighter">Configuration</h2>
                                 <div className="w-8 h-0.5 bg-black mt-2" />
                             </div>
-                            <StyleSelector />
+
+                            <FontManager />
+
                             <div className="h-px bg-gray-100 my-10" />
+
                             <PageCustomizer />
                         </div>
                     </aside>
@@ -50,9 +53,9 @@ export default function EditorPage() {
 
                         <div className="card-premium bg-black text-white p-10">
                             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-4">Pro Insight</span>
-                            <h3 className="text-xl font-bold mb-6 italic tracking-tight">"Authenticity is found in the spacing."</h3>
+                            <h3 className="text-xl font-bold mb-6 italic tracking-tight">"Typography is Voice."</h3>
                             <p className="text-gray-400 text-xs leading-loose font-medium opacity-80">
-                                For the most realistic results, match the Font Size to the Paper Line Height. Typically, 24px and 1.4 Line Spacing creates a perfect balance on Lined paper.
+                                Each handwriting engine has its own personality. Use 'Caveat' for quick notes, 'Dancing Script' for elegant correspondence, and 'Permanent Marker' for bold emphasis.
                             </p>
                         </div>
 
