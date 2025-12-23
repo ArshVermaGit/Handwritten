@@ -2,6 +2,16 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AppState, FontPreference, RenderingSettings } from '../types';
 
+const defaultFonts: FontPreference[] = [
+    { id: 'caveat', name: 'Caveat', family: 'Caveat', type: 'google' },
+    { id: 'dancing', name: 'Dancing Script', family: 'Dancing Script', type: 'google' },
+    { id: 'indie', name: 'Indie Flower', family: 'Indie Flower', type: 'google' },
+    { id: 'shadows', name: 'Shadows Into Light', family: 'Shadows Into Light', type: 'google' },
+    { id: 'patrick', name: 'Patrick Hand', family: 'Patrick Hand', type: 'google' },
+    { id: 'kalam', name: 'Kalam', family: 'Kalam', type: 'google' },
+    { id: 'marker', name: 'Permanent Marker', family: 'Permanent Marker', type: 'google' },
+];
+
 const defaultSettings: RenderingSettings = {
     letterSpacingVar: 1,
     baselineVar: 0.5,
@@ -38,6 +48,9 @@ export const useStore = create<AppState>()(
             quality: 'medium',
             language: 'en',
             zoom: 1,
+            rotation: 0,
+            showGrid: false,
+            compareMode: false,
             pan: { x: 0, y: 0 },
             showLineNumbers: false,
 
@@ -54,6 +67,9 @@ export const useStore = create<AppState>()(
             setQuality: (quality) => set({ quality }),
             setLanguage: (language) => set({ language }),
             setZoom: (zoom) => set({ zoom }),
+            setRotation: (rotation) => set({ rotation }),
+            setShowGrid: (showGrid) => set({ showGrid }),
+            setCompareMode: (compareMode) => set({ compareMode }),
             setPan: (pan) => set({ pan }),
             toggleLineNumbers: () => set((state) => ({ showLineNumbers: !state.showLineNumbers })),
 
@@ -77,6 +93,9 @@ export const useStore = create<AppState>()(
                 quality: 'medium',
                 language: 'en',
                 zoom: 1,
+                rotation: 0,
+                showGrid: false,
+                compareMode: false,
                 pan: { x: 0, y: 0 },
                 showLineNumbers: false,
             }),
@@ -86,3 +105,7 @@ export const useStore = create<AppState>()(
         }
     )
 );
+
+export const getAvailableFonts = (state: AppState) => {
+    return [...defaultFonts, ...state.customFonts];
+};
