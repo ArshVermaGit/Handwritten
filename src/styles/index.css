@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&family=Patrick+Hand&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+/* Google Handwriting Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&family=Indie+Flower&family=Shadows+Into+Light&family=Patrick+Hand&family=Kalam:wght@400;700&family=Permanent+Marker&display=swap');
 
 @import "tailwindcss";
 
@@ -20,6 +23,8 @@
   /* Typography */
   --font-sans: "Inter", sans-serif;
   --font-display: "Outfit", sans-serif;
+
+  /* Fallback Handwriting Fonts */
   --font-handwriting: "Caveat", cursive;
   --font-script: "Dancing Script", cursive;
   --font-print: "Patrick Hand", cursive;
