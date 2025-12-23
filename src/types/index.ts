@@ -54,6 +54,9 @@ export interface AppState {
 
     // View State
     zoom: number;
+    rotation: number;
+    showGrid: boolean;
+    compareMode: boolean;
     pan: { x: number; y: number };
     showLineNumbers: boolean;
 
@@ -67,6 +70,9 @@ export interface AppState {
     setQuality: (quality: AppState['quality']) => void;
     setLanguage: (lang: string) => void;
     setZoom: (zoom: number) => void;
+    setRotation: (rotation: number) => void;
+    setShowGrid: (show: boolean) => void;
+    setCompareMode: (mode: boolean) => void;
     setPan: (pan: AppState['pan']) => void;
     toggleLineNumbers: () => void;
     addCustomFont: (font: FontPreference) => void;
