@@ -57,11 +57,13 @@ export interface AppState {
     rotation: number;
     showGrid: boolean;
     compareMode: boolean;
+    previousText: string;
     pan: { x: number; y: number };
     showLineNumbers: boolean;
 
     // Actions
     setText: (text: string) => void;
+    setPreviousText: (text: string) => void;
     setHandwritingStyle: (style: HandwritingStyle) => void;
     setFontSize: (size: number) => void;
     setPaperType: (type: PaperType) => void;
