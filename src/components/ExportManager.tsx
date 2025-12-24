@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { exportToPDF, exportToImage } from '../utils/export';
+import { exportToPDF, exportToImages } from '../utils/export';
+import { useStore } from '../lib/store';
+import { Download, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
 
 export default function ExportManager() {
+    const state = useStore();
     const [isExporting, setIsExporting] = useState(false);
     const [msg, setMsg] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
 
@@ -11,18 +14,42 @@ export default function ExportManager() {
         setMsg(null);
 
         try {
-            const canvas = document.querySelector('canvas');
-            if (!canvas) throw new Error('Preview canvas not found');
-
             if (format === 'pdf') {
-                await exportToPDF(canvas);
+                await exportToPDF(
+                    state.pages,
+                    state.handwritingStyle,
+                    state.customFonts,
+                    state.fontSize,
+                    state.inkColor,
+                    state.settings,
+                    state.paperMaterial,
+                    state.paperPattern,
+                    { format: 'pdf', pageRange: 'all', quality: 0.85, dpi: 300 }
+                );
             } else {
-                await exportToImage(canvas, format);
+                await exportToImages(
+                    state.pages,
+                    state.handwritingStyle,
+                    state.customFonts,
+                    state.fontSize,
+                    state.inkColor,
+                    state.settings,
+                    state.paperMaterial,
+                    state.paperPattern,
+                    {
+                        format: format as 'png' | 'jpg',
+                        pageRange: 'current',
+                        quality: 1,
+                        dpi: 300
+                    },
+                    state.currentPageIndex
+                );
             }
 
             setMsg({ text: `Exported as ${format.toUpperCase()} successfully!`, type: 'success' });
             setTimeout(() => setMsg(null), 3000);
         } catch (error) {
+            console.error(error);
             setMsg({ text: 'Export failed. Please try again.', type: 'error' });
             setTimeout(() => setMsg(null), 3000);
         } finally {
@@ -31,38 +58,38 @@ export default function ExportManager() {
     };
 
     return (
-        <div className="card-premium">
-            <div className="mb-8">
-                <h2 className="text-xl font-bold uppercase tracking-tighter text-black">Output</h2>
-                <div className="w-8 h-0.5 bg-black mt-2" />
+        <div className="space-y-8">
+            <div className="flex items-center gap-3">
+                <Download size={16} className="text-gray-400" />
+                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-black">Output Production</h3>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
                 <button
                     onClick={() => handleExport('pdf')}
                     disabled={isExporting}
-                    className="btn-minimal-primary w-full flex items-center justify-center gap-3 py-5 uppercase tracking-[0.2em] text-[10px] font-black"
+                    className="w-full bg-black text-white p-5 text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-4 hover:bg-gray-900 transition-all disabled:opacity-50"
                 >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Export as PDF
+                    {isExporting ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
+                    Export Complete Manuscript (.pdf)
                 </button>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                     <button
                         onClick={() => handleExport('png')}
                         disabled={isExporting}
-                        className="btn-minimal-secondary flex items-center justify-center gap-2 py-4 uppercase tracking-[0.2em] text-[8px] font-black"
+                        className="bg-white border border-gray-100 p-4 text-[8px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-gray-50 transition-all disabled:opacity-50"
                     >
-                        PNG Image
+                        <ImageIcon size={14} />
+                        Current Page (.png)
                     </button>
                     <button
                         onClick={() => handleExport('jpg')}
                         disabled={isExporting}
-                        className="btn-minimal-secondary flex items-center justify-center gap-2 py-4 uppercase tracking-[0.2em] text-[8px] font-black"
+                        className="bg-white border border-gray-100 p-4 text-[8px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-gray-50 transition-all disabled:opacity-50"
                     >
-                        JPG Image
+                        <ImageIcon size={14} />
+                        Current Page (.jpg)
                     </button>
                 </div>
             </div>
@@ -70,18 +97,24 @@ export default function ExportManager() {
             <AnimatePresence>
                 {msg && (
                     <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className={`mt-6 p-4 rounded-none text-[8px] font-black text-center border uppercase tracking-[0.3em] ${msg.type === 'error'
-                            ? 'bg-red-50 border-red-200 text-red-600'
-                            : 'bg-black border-black text-white'
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className={`p-4 text-[8px] font-black text-center uppercase tracking-[0.3em] ${msg.type === 'error'
+                            ? 'bg-red-50 text-red-600 border border-red-100'
+                            : 'bg-black text-white'
                             }`}
                     >
                         {msg.text}
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            <div className="p-4 bg-gray-50 border border-gray-100">
+                <p className="text-[8px] text-gray-400 font-medium leading-relaxed uppercase tracking-wider">
+                    Note: PDF export compiles all {state.pages.length} sheets in the manuscript. Image exports capture only the currently active sheet.
+                </p>
+            </div>
         </div>
     );
 }
