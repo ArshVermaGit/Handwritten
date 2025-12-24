@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { useStore, getAvailableFonts } from '../lib/store';
 import { useNavigate } from 'react-router-dom';
-import type { HandwritingStyle } from '../types';
 
 export default function StylesPage() {
     const { handwritingStyle, setHandwritingStyle } = useStore();
