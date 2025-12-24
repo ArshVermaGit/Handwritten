@@ -6,9 +6,9 @@ import {
     Layers,
     Droplet,
     Wind,
-    ShieldCheck,
-    Zap
+    ShieldCheck
 } from 'lucide-react';
+import AnimatedSwitch from './ui/AnimatedSwitch';
 
 export default function HandwritingCustomizer() {
     const { settings, updateSettings, fontSize, setFontSize } = useStore();
@@ -28,21 +28,11 @@ export default function HandwritingCustomizer() {
                 step={step}
                 value={value}
                 onChange={(e) => onChange(parseFloat(e.target.value))}
-                className="w-full accent-black h-1 bg-gray-100 rounded-none appearance-none cursor-pointer"
+                className="w-full accent-black h-[2px] bg-black/5 rounded-full appearance-none cursor-pointer"
             />
         </div>
     );
 
-    const Toggle = ({ label, value, onChange }: any) => (
-        <button
-            onClick={() => onChange(!value)}
-            className={`flex items-center justify-between w-full p-3 border transition-all ${value ? 'bg-black text-white border-black' : 'bg-white text-gray-400 border-gray-100'
-                }`}
-        >
-            <span className="text-[8px] font-black uppercase tracking-widest leading-none">{label}</span>
-            <div className={`w-2 h-2 rounded-full ${value ? 'bg-white' : 'bg-gray-100'}`} />
-        </button>
-    );
 
     return (
         <div className="space-y-10">
@@ -119,37 +109,37 @@ export default function HandwritingCustomizer() {
             <div className="space-y-3">
                 <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-black mb-6">Simulation Filters</h4>
                 <div className="grid grid-cols-2 gap-2">
-                    <Toggle
+                    <AnimatedSwitch
                         label="Ink Bleeding"
-                        value={settings.inkBleeding}
-                        onChange={(v: boolean) => updateSettings({ inkBleeding: v })}
+                        checked={settings.inkBleeding}
+                        onChange={(v) => updateSettings({ inkBleeding: v })}
                     />
-                    <Toggle
+                    <AnimatedSwitch
                         label="Paper Texture"
-                        value={settings.paperTexture}
-                        onChange={(v: boolean) => updateSettings({ paperTexture: v })}
+                        checked={settings.paperTexture}
+                        onChange={(v) => updateSettings({ paperTexture: v })}
                     />
-                    <Toggle
+                    <AnimatedSwitch
                         label="Pen Skips"
-                        value={settings.penSkip}
-                        onChange={(v: boolean) => updateSettings({ penSkip: v })}
+                        checked={settings.penSkip}
+                        onChange={(v) => updateSettings({ penSkip: v })}
                     />
-                    <Toggle
+                    <AnimatedSwitch
                         label="Margin Errors"
-                        value={settings.marginViolations}
-                        onChange={(v: boolean) => updateSettings({ marginViolations: v })}
+                        checked={settings.marginViolations}
+                        onChange={(v) => updateSettings({ marginViolations: v })}
                     />
                 </div>
             </div>
 
             <div className="pt-4">
-                <div className="bg-gray-50 border border-gray-100 p-4">
-                    <div className="flex items-center gap-3 text-black mb-2">
-                        <ShieldCheck size={14} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Human Mode Active</span>
+                <div className="glass p-5 rounded-2xl">
+                    <div className="flex items-center gap-3 text-black mb-2.5">
+                        <ShieldCheck size={16} className="text-black" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Human Mode Active</span>
                     </div>
-                    <p className="text-[9px] text-gray-400 font-medium leading-relaxed">
-                        Settings are being modulated by a Perlin noise engine to prevent repeating patterns.
+                    <p className="text-[10px] text-gray-400 font-medium leading-relaxed">
+                        Settings are being modulated by a Perlin noise engine to prevent repeating patterns and ensure authentic output.
                     </p>
                 </div>
             </div>
