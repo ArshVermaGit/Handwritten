@@ -203,8 +203,8 @@ export default function LandingPage() {
                             style={{ y: yParallaxMedium }}
                             className="relative"
                         >
-                            <div className="card-premium h-[500px] overflow-hidden rotate-2 shadow-2xl">
-                                <CanvasRenderer />
+                            <div className="card-premium h-[500px] overflow-hidden rotate-2 shadow-2xl bg-white flex items-center justify-center p-4">
+                                <CanvasRenderer overridePreset="white-page-1" overrideShowLines={true} />
                             </div>
                             <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-black -z-10" />
                         </motion.div>
