@@ -1,7 +1,6 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
-    Keyboard,
     PenTool,
     Layers,
     Download,
@@ -11,11 +10,30 @@ import {
 } from 'lucide-react';
 import { useStore } from '../lib/store';
 import CanvasRenderer from '../components/CanvasRenderer';
+import RippleButton from '../components/ui/RippleButton';
 
 export default function LandingPage() {
+    const navigate = useNavigate();
     const { text, setText } = useStore();
     const { scrollYProgress } = useScroll();
-    const yParallax = useTransform(scrollYProgress, [0, 1], [0, -100]);
+    const yParallaxFast = useTransform(scrollYProgress, [0, 1], [0, -300]);
+    const yParallaxMedium = useTransform(scrollYProgress, [0, 1], [0, -150]);
+    const yParallaxSlow = useTransform(scrollYProgress, [0, 1], [0, -50]);
+
+    const headlineVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.05
+            }
+        }
+    };
+
+    const letterVariants = {
+        hidden: { opacity: 0, y: 10 },
+        visible: { opacity: 1, y: 0 }
+    };
 
     const features = [
         {
@@ -61,43 +79,97 @@ export default function LandingPage() {
                         <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">The Future of Digital Ink</span>
                     </div>
 
-                    <h1 className="text-6xl md:text-8xl font-display mb-8 tracking-tighter leading-tight font-extrabold">
-                        Transform Text into <br />
-                        <span className="relative inline-block">
+                    <motion.h1
+                        variants={headlineVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="text-6xl md:text-8xl font-display mb-8 tracking-tighter leading-tight font-extrabold"
+                    >
+                        {"Transform Text into".split("").map((char, i) => (
+                            <motion.span key={i} variants={letterVariants}>{char}</motion.span>
+                        ))}
+                        <br />
+                        <motion.span
+                            initial={{ fontFamily: 'var(--font-display)' }}
+                            animate={{
+                                fontFamily: ['var(--font-display)', 'var(--font-handwriting)'],
+                                color: ['#000000', '#333333']
+                            }}
+                            transition={{ duration: 2, delay: 1.5, ease: "easeInOut" }}
+                            className="relative inline-block"
+                        >
                             Perfect Handwriting
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: '100%' }}
-                                transition={{ duration: 1.5, delay: 0.5 }}
+                                transition={{ duration: 1.5, delay: 2.5 }}
                                 className="absolute -bottom-2 left-0 h-1 bg-black/10"
                             />
-                        </span>
-                    </h1>
+                        </motion.span>
+                    </motion.h1>
 
                     <p className="text-xl md:text-2xl text-gray-500 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
                         The minimalist tool to generate beautiful, professional handwritten pages from digital text instantly.
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link to="/editor" className="btn-minimal-primary text-sm tracking-widest uppercase flex items-center gap-3">
+                        <RippleButton
+                            className="text-sm tracking-widest uppercase flex items-center gap-3 cta-pulse bg-black text-white hover:bg-gray-800"
+                            onClick={() => navigate('/editor')}
+                        >
                             Start Writing <ArrowRight size={16} />
-                        </Link>
-                        <Link to="/gallery" className="btn-minimal-secondary text-sm tracking-widest uppercase">
+                        </RippleButton>
+                        <RippleButton
+                            variant="secondary"
+                            className="text-sm tracking-widest uppercase"
+                            onClick={() => navigate('/gallery')}
+                        >
                             View Showcase
-                        </Link>
+                        </RippleButton>
                     </div>
                 </motion.div>
 
-                {/* Floating Handwriting Animation */}
+                {/* Animated Scroll Indicator */}
                 <motion.div
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: 0.1 }}
-                    transition={{ duration: 2 }}
-                    className="absolute inset-0 pointer-events-none overflow-hidden select-none -z-10"
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 3, duration: 1 }}
+                    className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
                 >
-                    <div className="font-handwriting text-[20vw] absolute -top-10 -left-10 opacity-20 transform -rotate-12">write</div>
-                    <div className="font-script text-[15vw] absolute bottom-20 right-10 opacity-10 transform rotate-12">create</div>
+                    <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Scroll</span>
+                    <div className="w-5 h-8 border-2 border-gray-200 rounded-full relative">
+                        <div className="absolute top-1 left-1/2 -translate-x-1/2 w-1 h-1.5 bg-gray-400 rounded-full scroll-indicator-dot" />
+                    </div>
                 </motion.div>
+
+                {/* Floating Handwriting Animation (Multilayered Parallax) */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden select-none -z-10">
+                    <motion.div
+                        style={{ y: yParallaxSlow }}
+                        className="absolute inset-0 opacity-[0.03] animate-gradient-shift bg-linear-to-br from-gray-100 via-white to-gray-200"
+                    />
+
+                    <motion.div
+                        style={{ y: yParallaxMedium }}
+                        className="font-handwriting text-[20vw] absolute -top-10 -left-10 opacity-5 transform -rotate-12 drift-slow"
+                    >
+                        authenticity
+                    </motion.div>
+
+                    <motion.div
+                        style={{ y: yParallaxFast }}
+                        className="font-script text-[15vw] absolute top-1/2 -right-20 opacity-5 transform rotate-12 drift-medium"
+                    >
+                        human
+                    </motion.div>
+
+                    <motion.div
+                        style={{ y: yParallaxSlow }}
+                        className="font-print text-[10vw] absolute bottom-20 left-10 opacity-5 transform -rotate-6 drift-slow"
+                    >
+                        craft
+                    </motion.div>
+                </div>
             </section>
 
             {/* Live Demo Section */}
@@ -128,7 +200,7 @@ export default function LandingPage() {
                         </motion.div>
 
                         <motion.div
-                            style={{ y: yParallax }}
+                            style={{ y: yParallaxMedium }}
                             className="relative"
                         >
                             <div className="card-premium h-[500px] overflow-hidden rotate-2 shadow-2xl">
@@ -205,9 +277,12 @@ export default function LandingPage() {
                     className="max-w-3xl mx-auto"
                 >
                     <h2 className="text-5xl md:text-7xl mb-12 tracking-tighter">Ready to create?</h2>
-                    <Link to="/editor" className="btn-minimal-primary px-12 py-5 text-lg tracking-widest uppercase">
+                    <RippleButton
+                        className="px-12 py-5 text-lg tracking-widest uppercase bg-black text-white hover:bg-gray-800"
+                        onClick={() => navigate('/editor')}
+                    >
                         Initialize Workspace
-                    </Link>
+                    </RippleButton>
                 </motion.div>
             </section>
         </div>
