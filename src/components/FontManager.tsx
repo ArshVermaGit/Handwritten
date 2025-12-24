@@ -1,13 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, X, Check, Loader2, Trash2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Upload, Check, Loader2, Trash2 } from 'lucide-react';
 import { useStore, getAvailableFonts } from '../lib/store';
 import type { FontPreference } from '../types';
 
 export default function FontManager() {
     const { handwritingStyle, customFonts, setHandwritingStyle, addCustomFont, removeCustomFont } = useStore();
     const [isUploading, setIsUploading] = useState(false);
-    const [loadingFont, setLoadingFont] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const allFonts = getAvailableFonts(useStore.getState());
@@ -88,9 +87,9 @@ export default function FontManager() {
                     <motion.div
                         key={font.id}
                         whileHover={{ x: 4 }}
-                        className={`group relative p-4 border transition-all cursor-pointer flex flex-col gap-2 ${handwritingStyle === font.id
-                                ? 'border-black bg-black text-white'
-                                : 'border-gray-100 bg-gray-50/50 hover:border-gray-300'
+                        className={`group relative p-5 rounded-2xl border transition-all cursor-pointer flex flex-col gap-3 ${handwritingStyle === font.id
+                            ? 'border-black bg-black text-white shadow-xl shadow-black/10'
+                            : 'border-transparent bg-black/5 hover:bg-black/10'
                             }`}
                         onClick={() => setHandwritingStyle(font.id)}
                     >
@@ -115,7 +114,7 @@ export default function FontManager() {
                             </div>
                         </div>
 
-                        <h3 className="text-sm font-bold uppercase tracking-tight">{font.name}</h3>
+                        <h3 className="text-base font-bold tracking-tight">{font.name}</h3>
 
                         <div
                             className={`text-xl truncate ${handwritingStyle === font.id ? 'text-white' : 'text-gray-400 group-hover:text-black'}`}
