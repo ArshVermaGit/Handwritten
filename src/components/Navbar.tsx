@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ChevronRight } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 const navItems = [
     { name: 'Home', path: '/' },
     { name: 'Editor', path: '/editor' },
     { name: 'Gallery', path: '/gallery' },
     { name: 'Styles', path: '/styles' },
+    { name: 'About', path: '/about' },
 ];
 
 export default function Navbar() {
@@ -26,8 +27,8 @@ export default function Navbar() {
     return (
         <nav
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 font-display ${isScrolled
-                    ? 'py-4 bg-white/80 backdrop-blur-lg border-b border-gray-100 shadow-sm'
-                    : 'py-8 bg-transparent'
+                ? 'py-4 bg-white/80 backdrop-blur-lg border-b border-gray-100 shadow-sm'
+                : 'py-8 bg-transparent'
                 }`}
         >
             <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
