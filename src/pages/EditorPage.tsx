@@ -1,129 +1,80 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import TextEditor from '../components/TextEditor';
 import PreviewPanel from '../components/PreviewPanel';
-import PageCustomizer from '../components/PageCustomizer';
-import HandwritingCustomizer from '../components/HandwritingCustomizer';
-import FontManager from '../components/FontManager';
+import EditorSidebar from '../components/EditorSidebar';
 import PresetsGallery from '../components/PresetsGallery';
 import { useStore } from '../lib/store';
-import { Settings2, Sparkles, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { X } from 'lucide-react';
 
 export default function EditorPage() {
-    const { reset } = useStore();
-    const [showPresets, setShowPresets] = useState(false);
-    const [showConfig, setShowConfig] = useState(true);
-    const [activeTab, setActiveTab] = useState<'config' | 'fidelity'>('config');
+    const { isSettingsOpen, setSettingsOpen } = useStore();
 
     return (
-        <div className="h-screen bg-white flex flex-col overflow-hidden">
-            <main className="flex-1 flex overflow-hidden">
+        <div className="h-screen bg-white flex flex-col overflow-hidden relative">
 
-                {/* Collapsible Configuration Sidebar */}
-                <AnimatePresence mode="wait">
-                    {showConfig && (
-                        <motion.aside
-                            initial={{ width: 0, opacity: 0 }}
-                            animate={{ width: 320, opacity: 1 }}
-                            exit={{ width: 0, opacity: 0 }}
-                            className="border-r border-gray-100 flex flex-col bg-white z-20"
-                        >
-                            <div className="p-6 flex flex-col h-full">
-                                <div className="flex justify-between items-center mb-8">
-                                    <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-black">Engine Config</h2>
-                                    <button onClick={() => setShowConfig(false)} className="p-2 hover:bg-gray-50"><ChevronLeft size={14} /></button>
-                                </div>
+            {/* Main Editor Layout: Three Panels */}
+            <div className="flex-1 flex overflow-hidden relative">
 
-                                <div className="flex border-b border-gray-50 mb-8">
-                                    <button
-                                        onClick={() => setActiveTab('config')}
-                                        className={`flex-1 py-3 text-[8px] font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'config' ? 'border-black text-black' : 'border-transparent text-gray-400'}`}
-                                    >
-                                        Assets
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveTab('fidelity')}
-                                        className={`flex-1 py-3 text-[8px] font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === 'fidelity' ? 'border-black text-black' : 'border-transparent text-gray-400'}`}
-                                    >
-                                        Fidelity
-                                    </button>
-                                </div>
+                {/* LEFT SIDEBAR (280px) - Controls */}
+                <motion.div
+                    initial={{ x: -280, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    className="w-[280px] shrink-0"
+                >
+                    <EditorSidebar />
+                </motion.div>
 
-                                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-                                    {activeTab === 'config' ? (
-                                        <div className="space-y-10">
-                                            <FontManager />
-                                            <PageCustomizer />
-                                        </div>
-                                    ) : (
-                                        <HandwritingCustomizer />
-                                    )}
-                                </div>
+                {/* CENTER INPUT AREA (Flex grow) */}
+                <motion.main
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+                    className="flex-1 flex flex-col overflow-hidden bg-white"
+                >
+                    <TextEditor />
+                </motion.main>
 
-                                <div className="mt-8 pt-6 border-t border-gray-50">
-                                    <button
-                                        onClick={() => setShowPresets(true)}
-                                        className="w-full py-4 bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-gray-900 transition-all"
-                                    >
-                                        <Sparkles size={14} /> Style Library
-                                    </button>
-                                </div>
-                            </div>
-                        </motion.aside>
-                    )}
-                </AnimatePresence>
+                {/* RIGHT PREVIEW PANEL (420px) */}
+                <motion.aside
+                    initial={{ x: 420, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ duration: 0.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                    className="w-[420px] shrink-0 bg-[#F5F5F5] border-l border-gray-200"
+                >
+                    <PreviewPanel />
+                </motion.aside>
+            </div>
 
-                {!showConfig && (
-                    <button
-                        onClick={() => setShowConfig(true)}
-                        className="fixed left-4 bottom-4 z-30 w-10 h-10 bg-black text-white flex items-center justify-center shadow-xl hover:scale-110 transition-all"
-                    >
-                        <Settings2 size={16} />
-                    </button>
-                )}
-
-                {/* Main Split Screen Area */}
-                <div className="flex-1 flex overflow-hidden">
-                    {/* Left: Text Editor (40%) */}
-                    <div className="w-[40%] min-w-[400px] border-r border-gray-100 h-full overflow-hidden flex flex-col">
-                        <TextEditor />
-                    </div>
-
-                    {/* Right: Live Preview (60%) */}
-                    <div className="w-[60%] h-full overflow-hidden flex flex-col bg-gray-50/30">
-                        <PreviewPanel />
-                    </div>
-                </div>
-            </main>
-
-            {/* Presets Modal */}
+            {/* Presets Modal (Style Library) */}
             <AnimatePresence>
-                {showPresets && (
+                {isSettingsOpen && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm"
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md"
                     >
                         <motion.div
-                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                            className="bg-white w-full max-w-5xl h-[85vh] shadow-2xl p-12 relative flex flex-col"
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="bg-white w-full max-w-6xl h-[85vh] rounded-2xl overflow-hidden flex flex-col relative shadow-2xl border border-gray-100"
                         >
-                            <button
-                                onClick={() => setShowPresets(false)}
-                                className="absolute top-8 right-8 p-3 hover:bg-gray-100 transition-colors"
-                            >
-                                <X size={20} />
-                            </button>
-
-                            <div className="mb-12">
-                                <h2 className="text-4xl font-bold uppercase tracking-tighter mb-2 text-black">Synthesis Library.</h2>
-                                <p className="text-gray-400 text-sm font-medium uppercase tracking-widest">Select your core handwriting engine model.</p>
+                            <div className="p-8 flex justify-between items-start border-b border-gray-100">
+                                <div>
+                                    <h2 className="text-3xl font-black tracking-tight mb-1 text-black">Style Library</h2>
+                                    <p className="text-gray-500 text-sm">Instantly transform your handwriting with curated presets.</p>
+                                </div>
+                                <button
+                                    onClick={() => setSettingsOpen(false)}
+                                    className="p-3 bg-gray-100 hover:bg-black hover:text-white rounded-full transition-all"
+                                >
+                                    <X size={20} />
+                                </button>
                             </div>
 
-                            <div className="flex-1 overflow-hidden">
+                            <div className="flex-1 overflow-hidden p-8">
                                 <PresetsGallery />
                             </div>
                         </motion.div>
