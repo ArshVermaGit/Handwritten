@@ -3,6 +3,10 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Breadcrumbs from './Breadcrumbs';
 import Footer from './Footer';
+import MobileNav from './MobileNav';
+import WelcomeModal from './onboarding/WelcomeModal';
+import TourOverlay from './onboarding/TourOverlay';
+import { useState } from 'react';
 
 const pageVariants = {
     initial: { opacity: 0, y: 10 },
@@ -12,11 +16,12 @@ const pageVariants = {
 
 export default function RootLayout() {
     const location = useLocation();
+    const [isTourOpen, setIsTourOpen] = useState(false);
 
     return (
         <div className="min-h-screen flex flex-col bg-white overflow-hidden">
             <Navbar />
-            <div className="pt-24 flex-1">
+            <div className="pt-24 pb-20 md:pb-0 flex-1">
                 <Breadcrumbs />
                 <motion.main
                     key={location.pathname}
@@ -31,6 +36,9 @@ export default function RootLayout() {
                 </motion.main>
             </div>
             <Footer />
+            <MobileNav />
+            <WelcomeModal onStartTour={() => setIsTourOpen(true)} />
+            <TourOverlay isOpen={isTourOpen} onClose={() => setIsTourOpen(false)} />
         </div>
     );
 }
