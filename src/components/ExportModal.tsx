@@ -1,89 +1,58 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import {
-    Download,
-    FileText,
-    Image as ImageIcon,
-    Printer,
-    Link,
-    X,
-    ChevronRight,
-    Settings,
-    Type,
-    Check,
-    Loader2
-} from 'lucide-react';
-import { useStore } from '../lib/store';
-import {
-    exportToPDF,
-    exportToImages,
-    exportToSVG,
-    printDocument
-} from '../utils/export';
-import { copyShareUrl } from '../utils/ShareUtility';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, FileText, Download, Check, Info, FolderArchive } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 
-export default function ExportModal({ onClose }: { onClose: () => void }) {
-    const state = useStore();
-    const [activeTab, setActiveTab] = useState<'pdf' | 'image' | 'other'>('pdf');
+interface ExportModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    totalPages: number;
+    dimensions: { width: number; height: number };
+    canvasRef: React.RefObject<HTMLCanvasElement | null>;
+}
+
+export default function ExportModal({ isOpen, onClose, totalPages, dimensions, canvasRef }: ExportModalProps) {
+    const [exportFormat, setExportFormat] = useState<'pdf' | 'png'>('pdf');
+    const [pageSelection, setPageSelection] = useState<'all' | 'custom'>('all');
+    const [customRange, setCustomRange] = useState('');
     const [isExporting, setIsExporting] = useState(false);
-    const [isSharing, setIsSharing] = useState(false);
-    const [shareSuccess, setShareSuccess] = useState(false);
-
-    // PDF Options
-    const [pdfOptions, setPdfOptions] = useState({
-        pageRange: 'all',
-        quality: 0.85,
-    });
-
-    // Image Options
-    const [imageOptions, setImageOptions] = useState({
-        format: 'png' as 'png' | 'jpg',
-        dpi: 300,
-        transparent: false,
-        pageRange: 'current' as 'current' | 'all',
-    });
+    const [progress, setProgress] = useState(0);
 
     const handleExport = async () => {
         setIsExporting(true);
+        setProgress(0);
+
         try {
-            if (activeTab === 'pdf') {
-                await exportToPDF(
-                    state.pages,
-                    state.handwritingStyle,
-                    state.customFonts,
-                    state.fontSize,
-                    state.inkColor,
-                    state.settings,
-                    state.paperMaterial,
-                    state.paperPattern,
-                    {
-                        format: 'pdf',
-                        pageRange: pdfOptions.pageRange,
-                        quality: pdfOptions.quality,
-                        dpi: 300
-                    }
-                );
-            } else if (activeTab === 'image') {
-                await exportToImages(
-                    state.pages,
-                    state.handwritingStyle,
-                    state.customFonts,
-                    state.fontSize,
-                    state.inkColor,
-                    state.settings,
-                    state.paperMaterial,
-                    state.paperPattern,
-                    {
-                        format: imageOptions.format,
-                        pageRange: imageOptions.pageRange,
-                        dpi: imageOptions.dpi,
-                        transparent: imageOptions.transparent
-                    },
-                    state.currentPageIndex
-                );
+            const canvas = canvasRef.current;
+            if (!canvas) throw new Error("Canvas not found");
+
+            if (exportFormat === 'pdf') {
+                const pdf = new jsPDF({
+                    orientation: dimensions.width > dimensions.height ? 'landscape' : 'portrait',
+                    unit: 'pt',
+                    format: [dimensions.width, dimensions.height]
+                });
+
+                const pagesToExport = pageSelection === 'all' ? Array.from({ length: totalPages }, (_, i) => i + 1) : [1];
+
+                for (let i = 0; i < pagesToExport.length; i++) {
+                    setProgress(Math.round(((i + 1) / pagesToExport.length) * 100));
+                    if (i > 0) pdf.addPage([dimensions.width, dimensions.height], dimensions.width > dimensions.height ? 'l' : 'p');
+
+                    const imgData = canvas.toDataURL('image/png', 1.0);
+                    pdf.addImage(imgData, 'PNG', 0, 0, dimensions.width, dimensions.height);
+                    await new Promise(r => setTimeout(r, 100));
+                }
+
+                pdf.save(`inkpad-document-${new Date().getTime()}.pdf`);
+            } else {
+                const link = document.createElement('a');
+                link.download = `inkpad-page-1.png`;
+                link.href = canvas.toDataURL('image/png', 1.0);
+                link.click();
             }
-        } catch (err) {
-            console.error('Export failed:', err);
+        } catch (error) {
+            console.error("Export failed", error);
         } finally {
             setIsExporting(false);
             onClose();
@@ -91,216 +60,142 @@ export default function ExportModal({ onClose }: { onClose: () => void }) {
     };
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm"
-        >
-            <motion.div
-                initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                className="bg-white w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col rounded-2xl"
-            >
-                {/* Header */}
-                <div className="p-8 border-b border-gray-100 flex items-center justify-between">
-                    <div>
-                        <h2 className="text-2xl font-black uppercase tracking-tighter text-black">Mastering Export.</h2>
-                        <p className="text-gray-400 text-xs font-medium uppercase tracking-widest mt-1">Configure your final manuscript output.</p>
-                    </div>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-50 rounded-lg transition-colors">
-                        <X size={20} />
-                    </button>
-                </div>
+        <AnimatePresence>
+            {isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={onClose}
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                    />
 
-                {/* Tabs */}
-                <div className="flex bg-gray-50/50">
-                    {(['pdf', 'image', 'other'] as const).map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all flex items-center justify-center gap-2 ${activeTab === tab ? 'border-black text-black bg-white' : 'border-transparent text-gray-400 hover:text-black'}`}
-                        >
-                            {tab === 'pdf' && <FileText size={14} />}
-                            {tab === 'image' && <ImageIcon size={14} />}
-                            {tab === 'other' && <Settings size={14} />}
-                            {tab === 'other' ? 'Print & Share' : tab}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Content */}
-                <div className="p-8 flex-1 overflow-y-auto max-h-[60vh] custom-scrollbar">
-                    {activeTab === 'pdf' && (
-                        <div className="space-y-8">
-                            <OptionGroup label="Page Selection">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <button
-                                        onClick={() => setPdfOptions({ ...pdfOptions, pageRange: 'all' })}
-                                        className={`p-4 border rounded-xl text-left transition-all ${pdfOptions.pageRange === 'all' ? 'border-black bg-black text-white' : 'border-gray-100 hover:border-black text-gray-400'}`}
-                                    >
-                                        <div className="text-[10px] font-black uppercase tracking-widest">Entire Document</div>
-                                        <div className="text-[9px] mt-1 opacity-60">All {state.pages.length} pages</div>
-                                    </button>
-                                    <div className="p-4 border border-gray-100 rounded-xl">
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Custom Range</div>
-                                        <input
-                                            type="text"
-                                            placeholder="e.g. 1-3, 5"
-                                            value={pdfOptions.pageRange === 'all' ? '' : pdfOptions.pageRange}
-                                            onChange={e => setPdfOptions({ ...pdfOptions, pageRange: e.target.value })}
-                                            className="w-full mt-2 text-sm font-bold focus:outline-none placeholder:text-gray-200"
-                                        />
-                                    </div>
-                                </div>
-                            </OptionGroup>
-
-                            <OptionGroup label="Compression & Quality">
-                                <div className="flex items-center gap-6">
-                                    <input
-                                        type="range" min="0.1" max="1" step="0.1"
-                                        value={pdfOptions.quality}
-                                        onChange={e => setPdfOptions({ ...pdfOptions, quality: parseFloat(e.target.value) })}
-                                        className="flex-1 h-1 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-black"
-                                    />
-                                    <div className="text-sm font-black w-12">{Math.round(pdfOptions.quality * 100)}%</div>
-                                </div>
-                            </OptionGroup>
-                        </div>
-                    )}
-
-                    {activeTab === 'image' && (
-                        <div className="space-y-8">
-                            <OptionGroup label="Format & Transparency">
-                                <div className="flex gap-4">
-                                    {(['png', 'jpg'] as const).map(f => (
-                                        <button
-                                            key={f}
-                                            onClick={() => setImageOptions({ ...imageOptions, format: f })}
-                                            className={`flex-1 py-3 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${imageOptions.format === f ? 'bg-black text-white border-black' : 'border-gray-100 text-gray-400 hover:border-black'}`}
-                                        >
-                                            {f}
-                                        </button>
-                                    ))}
-                                    <button
-                                        onClick={() => setImageOptions({ ...imageOptions, transparent: !imageOptions.transparent })}
-                                        className={`flex-1 py-3 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${imageOptions.transparent ? 'bg-black text-white border-black' : 'border-gray-100 text-gray-400 hover:border-black'}`}
-                                    >
-                                        Transparent
-                                    </button>
-                                </div>
-                            </OptionGroup>
-
-                            <OptionGroup label="Resolution (DPI)">
-                                <div className="grid grid-cols-4 gap-3">
-                                    {[72, 150, 300, 600].map(dpi => (
-                                        <button
-                                            key={dpi}
-                                            onClick={() => setImageOptions({ ...imageOptions, dpi })}
-                                            className={`py-3 border rounded-xl text-[10px] font-black transition-all ${imageOptions.dpi === dpi ? 'bg-black text-white border-black' : 'border-gray-100 text-gray-400 hover:border-black'}`}
-                                        >
-                                            {dpi}
-                                        </button>
-                                    ))}
-                                </div>
-                            </OptionGroup>
-
-                            <OptionGroup label="Page Selection">
-                                <div className="flex gap-4">
-                                    <button
-                                        onClick={() => setImageOptions({ ...imageOptions, pageRange: 'current' })}
-                                        className={`flex-1 py-4 border rounded-xl text-left px-6 transition-all ${imageOptions.pageRange === 'current' ? 'border-black bg-black text-white' : 'border-gray-100 text-gray-400 hover:border-black'}`}
-                                    >
-                                        <div className="text-[10px] font-black uppercase tracking-widest">Active Page</div>
-                                        <div className="text-[9px] mt-1 opacity-60">Sheet {state.currentPageIndex + 1}</div>
-                                    </button>
-                                    <button
-                                        onClick={() => setImageOptions({ ...imageOptions, pageRange: 'all' })}
-                                        className={`flex-1 py-4 border rounded-xl text-left px-6 transition-all ${imageOptions.pageRange === 'all' ? 'border-black bg-black text-white' : 'border-gray-100 text-gray-400 hover:border-black'}`}
-                                    >
-                                        <div className="text-[10px] font-black uppercase tracking-widest">Batch All Pages</div>
-                                        <div className="text-[9px] mt-1 opacity-60">Sequential {state.pages.length} images</div>
-                                    </button>
-                                </div>
-                            </OptionGroup>
-                        </div>
-                    )}
-
-                    {activeTab === 'other' && (
-                        <div className="grid grid-cols-1 gap-4">
-                            <ActionButton
-                                icon={<Printer size={18} />}
-                                label="In-Browser Print"
-                                description="Optimized for physical sheets"
-                                onClick={printDocument}
-                            />
-                            <ActionButton
-                                icon={<Type size={18} />}
-                                label="Scalable Vector (SVG)"
-                                description="Pure scalable paths for design tools"
-                                onClick={() => exportToSVG(state.text, state.handwritingStyle, state.fontSize, state.inkColor, state.settings)}
-                            />
-                            <ActionButton
-                                icon={shareSuccess ? <Check size={18} className="text-green-500" /> : isSharing ? <Loader2 size={18} className="animate-spin" /> : <Link size={18} />}
-                                label={shareSuccess ? "Link Copied!" : "Shareable Mirror"}
-                                description={shareSuccess ? "Anyone with this link can view your state" : "Generate a persistent link with state"}
-                                onClick={async () => {
-                                    setIsSharing(true);
-                                    const success = await copyShareUrl(state);
-                                    if (success) {
-                                        setShareSuccess(true);
-                                        setTimeout(() => setShareSuccess(false), 2000);
-                                    }
-                                    setIsSharing(false);
-                                }}
-                            />
-                        </div>
-                    )}
-                </div>
-
-                {/* Footer */}
-                <div className="p-8 border-t border-gray-100 flex items-center justify-between bg-gray-50/30">
-                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
-                        <Check size={14} className="text-black" /> Ready for processing
-                    </div>
-                    <button
-                        onClick={handleExport}
-                        disabled={isExporting}
-                        className="py-4 px-10 bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 hover:bg-gray-900 transition-all disabled:opacity-50 rounded-xl"
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                        className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden"
                     >
-                        {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-                        Process Export
-                    </button>
+                        {/* Header */}
+                        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">Export Document</h3>
+                                <p className="text-xs text-gray-500 font-medium">Professional high-fidelity output</p>
+                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-6 space-y-8">
+                            {/* Format Selection */}
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Choose Format</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => setExportFormat('pdf')}
+                                        className={`flex flex-col items-center justify-center gap-3 p-5 rounded-2xl border-2 transition-all ${exportFormat === 'pdf'
+                                                ? 'border-black bg-black text-white shadow-lg'
+                                                : 'border-gray-100 bg-white text-gray-600 hover:border-gray-200'
+                                            }`}
+                                    >
+                                        <FileText size={24} />
+                                        <div className="text-center">
+                                            <span className="block text-xs font-bold uppercase tracking-tight">PDF Document</span>
+                                            <span className="text-[9px] opacity-60">High Resolution</span>
+                                        </div>
+                                    </button>
+                                    <button
+                                        onClick={() => setExportFormat('png')}
+                                        className={`flex flex-col items-center justify-center gap-3 p-5 rounded-2xl border-2 transition-all ${exportFormat === 'png'
+                                                ? 'border-black bg-black text-white shadow-lg'
+                                                : 'border-gray-100 bg-white text-gray-600 hover:border-gray-200'
+                                            }`}
+                                    >
+                                        <FolderArchive size={24} />
+                                        <div className="text-center">
+                                            <span className="block text-xs font-bold uppercase tracking-tight">PNG Images</span>
+                                            <span className="text-[9px] opacity-60">ZIP Archive</span>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Page Range Selection */}
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Page Range</label>
+                                <div className="space-y-2">
+                                    <button
+                                        onClick={() => setPageSelection('all')}
+                                        className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${pageSelection === 'all' ? 'border-black bg-gray-50' : 'border-gray-100'
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${pageSelection === 'all' ? 'border-black bg-black' : 'border-gray-200'
+                                                }`}>
+                                                {pageSelection === 'all' && <Check size={10} className="text-white" />}
+                                            </div>
+                                            <span className="text-xs font-bold">All Pages ({totalPages})</span>
+                                        </div>
+                                    </button>
+                                    <button
+                                        onClick={() => setPageSelection('custom')}
+                                        className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${pageSelection === 'custom' ? 'border-black bg-gray-50' : 'border-gray-100'
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-3 flex-1">
+                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${pageSelection === 'custom' ? 'border-black bg-black' : 'border-gray-200'
+                                                }`}>
+                                                {pageSelection === 'custom' && <Check size={10} className="text-white" />}
+                                            </div>
+                                            <span className="text-xs font-bold whitespace-nowrap">Custom Range:</span>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. 1-3, 5"
+                                                className="bg-transparent border-none p-0 text-xs focus:ring-0 w-full"
+                                                disabled={pageSelection !== 'custom'}
+                                                value={customRange}
+                                                onChange={(e) => setCustomRange(e.target.value)}
+                                            />
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Info Box */}
+                            <div className="flex gap-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                                <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
+                                <p className="text-[10px] leading-relaxed text-blue-700/80 font-medium">
+                                    Exporting as <b>{exportFormat.toUpperCase()}</b> will generate a document with a resolution of 300DPI for optimal printing results. Single PDF will combine all selected pages.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-6 bg-gray-50 border-t border-gray-100">
+                            <button
+                                onClick={handleExport}
+                                disabled={isExporting}
+                                className="w-full h-14 bg-black text-white rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl hover:bg-gray-800 transition-all active:scale-[0.99] disabled:opacity-50"
+                            >
+                                {isExporting ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <span>Exporting {progress}%</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Download size={20} />
+                                        <span>Initialize Export</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </motion.div>
                 </div>
-            </motion.div>
-        </motion.div>
-    );
-}
-
-function OptionGroup({ label, children }: { label: string, children: React.ReactNode }) {
-    return (
-        <div className="space-y-4">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-black/40">{label}</h4>
-            {children}
-        </div>
-    );
-}
-
-function ActionButton({ icon, label, description, onClick }: any) {
-    return (
-        <button
-            onClick={onClick}
-            className="p-6 border border-gray-100 rounded-2xl flex items-center gap-6 text-left hover:border-black hover:shadow-xl transition-all group"
-        >
-            <div className="p-4 bg-gray-50 rounded-xl text-gray-400 group-hover:bg-black group-hover:text-white transition-all">
-                {icon}
-            </div>
-            <div className="flex-1">
-                <div className="text-xs font-black uppercase tracking-widest text-black">{label}</div>
-                <div className="text-[10px] text-gray-400 mt-1 font-medium">{description}</div>
-            </div>
-            <ChevronRight size={16} className="text-gray-200 group-hover:text-black transition-all" />
-        </button>
+            )}
+        </AnimatePresence>
     );
 }
