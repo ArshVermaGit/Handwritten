@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useStore } from '../lib/store';
-import { ZoomIn, ZoomOut, Download, Printer, FileText, Maximize2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { jsPDF } from 'jspdf';
+import { ZoomIn, Download, Printer, FileText, Maximize2, ChevronLeft, ChevronRight, Settings2, Wand2 } from 'lucide-react';
 import { getFontFamily, drawPaperBackground } from '../utils/handwriting';
 import { noise } from '../utils/noise';
 import { applyRealisticEffects, detectLanguage } from '../utils/rendering_pipeline';
+import { getPresetMetadata } from '../constants/presets';
+import { calculatePagination } from '../utils/pagination';
+import ExportModal from './ExportModal';
 
 export default function PreviewPanel() {
     const {
@@ -22,21 +24,20 @@ export default function PreviewPanel() {
         settings,
         zoom,
         setZoom,
-        setPan,
         showPaperLines,
         showMarginLine,
         outputEffect,
-        outputResolution,
         pagePreset,
-        customBackground
+        customBackground,
+        isHumanizeEnabled
     } = useStore();
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [totalPages, setTotalPages] = useState(1);
     const [currentDisplayPage, setCurrentDisplayPage] = useState(1);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
-    // Get paper dimensions based on size and orientation
-    const getDimensions = () => {
+    const getDimensions = useCallback(() => {
         let width = 595;  // A4 at 72 DPI
         let height = 842;
 
@@ -54,129 +55,142 @@ export default function PreviewPanel() {
             return { width: height, height: width };
         }
         return { width, height };
-    };
+    }, [paperSize, paperOrientation]);
 
     const dimensions = getDimensions();
 
-    // Calculate how much text fits on a page and split accordingly
-    const calculatePages = (text: string, width: number, height: number): string[] => {
+    const calculatePages = useCallback((text: string, width: number, height: number): string[] => {
         const pageTexts: string[] = [];
-        const actualFontSize = fontSize * 0.8;
-        const lineHeightPx = settings.lineHeight * actualFontSize;
-        const margins = {
-            top: settings.margins.top * 0.5,
-            right: settings.margins.right * 0.5,
-            bottom: settings.margins.bottom * 0.5,
-            left: settings.margins.left * 0.5
-        };
+        const preset = getPresetMetadata(pagePreset);
 
-        const maxY = height - margins.bottom;
-        const contentWidth = width - margins.left - margins.right;
+        // Dynamic sizing based on preset or global settings
+        const actualLineWidth = preset ? (width - (preset.marginLineX || settings.margins.left) - 40) : (width - settings.margins.left - settings.margins.right);
+        const actualLineHeight = preset ? preset.lineSpacing : (fontSize * settings.lineHeight * 0.8);
+        const actualFontSize = preset ? (preset.defaultFontSize || fontSize) : (fontSize * 0.8);
 
         const paragraphs = text.split('\n');
         let currentPageText = '';
+
+        const getPageMargins = (idx: number) => {
+            const pageData = pages[idx];
+            const baseMargins = pageData?.margins || settings.margins;
+            if (preset) {
+                return {
+                    top: preset.firstLineY - actualFontSize,
+                    right: 40,
+                    bottom: 40,
+                    left: (preset.marginLineX || baseMargins.left)
+                };
+            }
+            return {
+                top: baseMargins.top * 0.5,
+                right: baseMargins.right * 0.5,
+                bottom: baseMargins.bottom * 0.5,
+                left: baseMargins.left * 0.5
+            };
+        };
+
+        let currentPageIndex = 0;
+        let margins = getPageMargins(currentPageIndex);
         let currentY = margins.top + actualFontSize;
+        let maxY = height - margins.bottom;
 
         paragraphs.forEach((paragraph, pIdx) => {
             if (!paragraph.trim()) {
-                if (currentY + lineHeightPx > maxY) {
+                if (currentY + actualLineHeight > maxY) {
                     pageTexts.push(currentPageText);
                     currentPageText = '\n';
-                    currentY = margins.top + actualFontSize + lineHeightPx;
+                    currentPageIndex++;
+                    margins = getPageMargins(currentPageIndex);
+                    currentY = margins.top + actualFontSize;
                 } else {
                     currentPageText += '\n';
-                    currentY += lineHeightPx;
+                    currentY += actualLineHeight;
                 }
                 return;
             }
 
             const words = paragraph.split(' ');
             let lineText = '';
-            let lineWidth = 0;
-            const avgCharWidth = actualFontSize * 0.5; // Approximate
+            let currentLineWidth = 0;
+            const avgCharWidth = actualFontSize * 0.45;
 
             words.forEach((word) => {
                 const wordWidth = word.length * avgCharWidth;
-                const spaceWidth = actualFontSize * 0.3 * settings.wordSpacing;
+                const spaceWidth = actualFontSize * 0.25 * settings.wordSpacing;
 
-                if (lineWidth + wordWidth > contentWidth && lineText) {
-                    // Check if we need a new page
-                    if (currentY + lineHeightPx > maxY) {
+                if (currentLineWidth + wordWidth > actualLineWidth && lineText) {
+                    if (currentY + actualLineHeight > maxY) {
                         pageTexts.push(currentPageText.trimEnd());
                         currentPageText = lineText.trimEnd() + '\n';
-                        currentY = margins.top + actualFontSize + lineHeightPx;
+                        currentPageIndex++;
+                        margins = getPageMargins(currentPageIndex);
+                        currentY = margins.top + actualFontSize;
                     } else {
                         currentPageText += lineText.trimEnd() + '\n';
-                        currentY += lineHeightPx;
+                        currentY += actualLineHeight;
                     }
                     lineText = word + ' ';
-                    lineWidth = wordWidth + spaceWidth;
+                    currentLineWidth = wordWidth + spaceWidth;
                 } else {
                     lineText += word + ' ';
-                    lineWidth += wordWidth + spaceWidth;
+                    currentLineWidth += wordWidth + spaceWidth;
                 }
             });
 
-            // Add remaining line text
             if (lineText.trim()) {
-                if (currentY + lineHeightPx > maxY) {
+                if (currentY + actualLineHeight > maxY) {
                     pageTexts.push(currentPageText.trimEnd());
                     currentPageText = lineText.trimEnd();
+                    currentPageIndex++;
+                    margins = getPageMargins(currentPageIndex);
                     currentY = margins.top + actualFontSize;
                 } else {
                     currentPageText += lineText.trimEnd();
                 }
             }
 
-            // Add paragraph break if not last
             if (pIdx < paragraphs.length - 1) {
                 currentPageText += '\n';
-                currentY += lineHeightPx;
+                currentY += actualLineHeight;
             }
         });
 
-        // Add final page
         if (currentPageText.trim() || pageTexts.length === 0) {
             pageTexts.push(currentPageText);
         }
 
         return pageTexts;
-    };
+    }, [fontSize, settings.lineHeight, settings.margins, settings.wordSpacing, pages, pagePreset]);
 
-    // Render handwriting on canvas
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (!ctx) return;
 
         const dpr = window.devicePixelRatio || 1;
         const { width, height } = dimensions;
 
-        // Calculate pages from text
         const pageTexts = calculatePages(text, width, height);
         setTotalPages(pageTexts.length);
 
-        // Auto-add pages if needed
         if (pageTexts.length > pages.length) {
             for (let i = pages.length; i < pageTexts.length; i++) {
                 addPage();
             }
         }
 
-        // Get current page content
         const pageIndex = Math.min(currentDisplayPage - 1, pageTexts.length - 1);
         const currentPageText = pageTexts[pageIndex] || '';
 
-        // Set canvas size with DPR scaling
         canvas.width = width * dpr;
         canvas.height = height * dpr;
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
         ctx.scale(dpr, dpr);
 
-        // Nested rendering function to ensure background is drawn before text
         const renderFrame = async () => {
             // 1. Draw Background
             if (pagePreset === 'custom' && customBackground) {
@@ -209,9 +223,23 @@ export default function PreviewPanel() {
                 drawPaperBackground(ctx, width, height, paperMaterial, 'none', settings, true);
             }
 
+            const preset = getPresetMetadata(pagePreset);
+            const pageData = pages[pageIndex];
+            const baseMargins = pageData?.margins || settings.margins;
+
+            const actualFontSize = preset ? (preset.defaultFontSize || fontSize) : (fontSize * 0.8);
+            const actualLineHeight = preset ? preset.lineSpacing : (fontSize * settings.lineHeight * 0.8);
+
+            const margins = {
+                top: preset ? (preset.firstLineY - actualFontSize) : (baseMargins.top * 0.5),
+                right: 40,
+                bottom: 40,
+                left: preset ? (preset.marginLineX || baseMargins.left) : (baseMargins.left * 0.5)
+            };
+
             if (showMarginLine) {
-                const marginX = settings.margins.left * 0.5 - 4;
-                ctx.strokeStyle = '#fca5a5';
+                const marginX = margins.left - 4;
+                ctx.strokeStyle = preset ? 'rgba(239, 68, 68, 0.4)' : '#fca5a5';
                 ctx.lineWidth = 1;
                 ctx.beginPath();
                 ctx.moveTo(marginX, 0);
@@ -226,81 +254,92 @@ export default function PreviewPanel() {
 
             ctx.fillStyle = inkColor;
             ctx.textAlign = isRtl ? 'right' : 'left';
-            ctx.textBaseline = 'bottom';
+            ctx.textBaseline = 'alphabetic'; // Better for handwriting snapping
 
-            const actualFontSize = fontSize * 0.8;
-            const lineHeightPx = settings.lineHeight * actualFontSize;
-            const margins = {
-                top: settings.margins.top * 0.5,
-                right: settings.margins.right * 0.5,
-                bottom: settings.margins.bottom * 0.5,
-                left: settings.margins.left * 0.5
-            };
+            const paragraphsSplit = currentPageText.split('\n');
+            let currentLineY = preset ? preset.firstLineY : (margins.top + actualFontSize);
 
-            let contentLeft = margins.left;
-            let contentRight = margins.right;
-
-            // Cornell/Todo patterns are legacy but keeping for logic if needed
-            if (paperPattern === 'cornell') {
-                contentLeft = width * 0.3 + 10;
-            }
-            if (paperPattern === 'todo') {
-                contentLeft = margins.left + 25;
-            }
-
-            const paragraphs = currentPageText.split('\n');
-            let currentY = margins.top + actualFontSize;
-
-            paragraphs.forEach((paragraph, pIdx) => {
+            paragraphsSplit.forEach((paragraph, pIdx) => {
                 if (!paragraph.trim()) {
-                    currentY += lineHeightPx;
+                    currentLineY += actualLineHeight;
                     return;
                 }
 
                 const words = paragraph.split(' ');
-                let currentX = isRtl ? width - contentRight : contentLeft;
+                let currentX = isRtl ? width - margins.right : margins.left;
 
                 words.forEach((word, wIdx) => {
                     ctx.font = `${actualFontSize}px ${fontFamily}`;
                     const wordWidth = ctx.measureText(word).width;
 
-                    // Line wrapping
                     if (isRtl) {
-                        if (currentX - wordWidth < contentLeft) {
-                            currentX = width - contentRight;
-                            currentY += lineHeightPx;
+                        if (currentX - wordWidth < margins.left) {
+                            currentX = width - margins.right;
+                            currentLineY += actualLineHeight;
                         }
                     } else {
-                        if (currentX + wordWidth > width - contentRight) {
-                            currentX = contentLeft;
-                            currentY += lineHeightPx;
+                        if (currentX + wordWidth > width - margins.right) {
+                            currentX = margins.left;
+                            currentLineY += actualLineHeight;
                         }
                     }
 
-                    // Stop if beyond page
-                    if (currentY > height - margins.bottom) return;
+                    if (currentLineY > height - margins.bottom) return;
 
-                    // Render each character with natural variation
                     const chars = word.split('');
                     chars.forEach((char, cIdx) => {
                         const seed = pIdx * 1000 + wIdx * 100 + cIdx;
                         const noiseVal = noise.noise(seed * 0.1);
 
-                        const baselineShift = noiseVal * settings.baselineVar;
+                        // Snapping / Baseline Variance
+                        const intensityShift = preset ? 0.3 : 1;
+                        const baselineShift = noiseVal * settings.baselineVar * intensityShift;
                         const rotation = noiseVal * (settings.rotationVar * Math.PI / 180);
                         const letterSpacing = settings.letterSpacing + (noise.noise(seed * 0.5) * settings.letterSpacingVar);
                         const pressure = 1 - (Math.abs(noise.noise(seed * 0.2)) * settings.pressureVar);
 
+                        const jitterX = (Math.random() - 0.5) * 0.4;
+                        const jitterY = (Math.random() - 0.5) * 0.4;
+
                         ctx.save();
-                        ctx.translate(currentX, currentY + baselineShift);
+                        ctx.translate(currentX + jitterX, currentLineY + baselineShift + jitterY);
                         ctx.rotate(rotation);
 
                         if (settings.slant !== 0) {
                             ctx.transform(1, 0, Math.tan(settings.slant * Math.PI / 180), 1, 0, 0);
                         }
 
+                        if (settings.pressureSimulation) {
+                            const scale = 0.98 + (pressure * 0.04);
+                            ctx.scale(scale, scale);
+                        }
+
                         ctx.globalAlpha = pressure;
-                        ctx.fillText(char, 0, 0);
+
+                        if (settings.inkBleeding) {
+                            const bleedingIntensity = settings.inkBleedingIntensity || 0.5;
+                            // Pass 1: Core
+                            ctx.fillText(char, 0, 0);
+
+                            // Pass 2: Bleed
+                            ctx.save();
+                            ctx.globalAlpha = pressure * 0.3 * bleedingIntensity;
+                            ctx.filter = `blur(${0.5 * bleedingIntensity}px)`;
+                            ctx.fillText(char, 0, 0);
+                            ctx.restore();
+
+                            // Pass 3: Micro-diffusion
+                            if (bleedingIntensity > 0.6) {
+                                ctx.save();
+                                ctx.globalAlpha = pressure * 0.1;
+                                ctx.filter = `blur(${1.2 * bleedingIntensity}px)`;
+                                ctx.fillText(char, 0.2, 0.2);
+                                ctx.restore();
+                            }
+                        } else {
+                            ctx.fillText(char, 0, 0);
+                        }
+
                         const charWidth = ctx.measureText(char).width;
                         ctx.restore();
 
@@ -311,184 +350,154 @@ export default function PreviewPanel() {
                         }
                     });
 
-                    const spaceWidth = actualFontSize * 0.3 * settings.wordSpacing;
+                    const spaceWidth = actualFontSize * 0.25 * settings.wordSpacing;
                     if (isRtl) currentX -= spaceWidth;
                     else currentX += spaceWidth;
                 });
 
-                currentY += lineHeightPx;
+                currentLineY += actualLineHeight;
             });
 
-            // 4. Post-processing effects
+            // 4. Post-processing
             applyRealisticEffects(ctx, width, height, settings);
 
             if (outputEffect === 'shadows') {
                 ctx.save();
                 const gradient = ctx.createLinearGradient(0, 0, width, 0);
-                gradient.addColorStop(0, 'rgba(0,0,0,0.08)');
+                gradient.addColorStop(0, 'rgba(0,0,0,0.06)');
                 gradient.addColorStop(0.02, 'rgba(0,0,0,0)');
                 gradient.addColorStop(0.98, 'rgba(0,0,0,0)');
-                gradient.addColorStop(1, 'rgba(0,0,0,0.08)');
+                gradient.addColorStop(1, 'rgba(0,0,0,0.06)');
                 ctx.fillStyle = gradient;
                 ctx.fillRect(0, 0, width, height);
-
-                const bottomGradient = ctx.createLinearGradient(0, height - 30, 0, height);
-                bottomGradient.addColorStop(0, 'rgba(0,0,0,0)');
-                bottomGradient.addColorStop(1, 'rgba(0,0,0,0.12)');
-                ctx.fillStyle = bottomGradient;
-                ctx.fillRect(0, height - 30, width, 30);
-                ctx.restore();
-            } else if (outputEffect === 'scanner') {
-                ctx.save();
-                ctx.globalCompositeOperation = 'overlay';
-                ctx.fillStyle = 'rgba(0,0,0,0.03)';
-                ctx.fillRect(0, 0, width, height);
-
-                for (let i = 0; i < 500; i++) {
-                    const x = Math.random() * width;
-                    const y = Math.random() * height;
-                    ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.02})`;
-                    ctx.fillRect(x, y, 1, 1);
-                }
                 ctx.restore();
             }
         };
 
         renderFrame();
-    }, [text, handwritingStyle, fontSize, inkColor, paperMaterial, paperPattern, paperSize, paperOrientation, customFonts, settings, dimensions, currentDisplayPage, pages.length, showPaperLines, showMarginLine, outputEffect, outputResolution, pagePreset, customBackground]);
+    }, [text, handwritingStyle, fontSize, inkColor, paperMaterial, paperPattern, paperSize, paperOrientation, customFonts, settings, dimensions, currentDisplayPage, pages, showPaperLines, showMarginLine, outputEffect, pagePreset, customBackground, calculatePages, addPage]);
 
-    const handleZoom = (delta: number) => {
-        setZoom(Math.min(Math.max(zoom + delta, 0.5), 2));
-    };
-
-    const resetView = () => {
-        setZoom(1);
-        setPan({ x: 0, y: 0 });
-    };
-
-    const handleDownloadPNG = () => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const link = document.createElement('a');
-        link.download = `inkpad-page-${currentDisplayPage}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-    };
-
-    const handleDownloadPDF = () => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const imgData = canvas.toDataURL('image/png');
-        const { width, height } = dimensions;
-        const pdf = new jsPDF({
-            orientation: width > height ? 'landscape' : 'portrait',
-            unit: 'pt',
-            format: [width, height]
-        });
-        pdf.addImage(imgData, 'PNG', 0, 0, width, height);
-        pdf.save(`inkpad-page-${currentDisplayPage}.pdf`);
-    };
-
-    const handlePrint = () => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-            printWindow.document.write(`
-                <html>
-                    <head><title>InkPad Print</title></head>
-                    <body style="margin:0; display:flex; justify-content:center; align-items:center; min-height:100vh;">
-                        <img src="${canvas.toDataURL('image/png')}" style="max-width:100%; height:auto;" />
-                    </body>
-                </html>
-            `);
-            printWindow.document.close();
-            printWindow.onload = () => {
-                printWindow.print();
-            };
-        }
-    };
-
-    const goToPreviousPage = () => {
-        if (currentDisplayPage > 1) setCurrentDisplayPage(currentDisplayPage - 1);
-    };
-
-    const goToNextPage = () => {
-        if (currentDisplayPage < totalPages) setCurrentDisplayPage(currentDisplayPage + 1);
-    };
+    // Keyboard Navigation
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowLeft') {
+                if (currentDisplayPage > 1) setCurrentDisplayPage(currentDisplayPage - 1);
+            } else if (e.key === 'ArrowRight') {
+                if (currentDisplayPage < totalPages) setCurrentDisplayPage(currentDisplayPage + 1);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [currentDisplayPage, totalPages]);
 
     return (
-        <div className="h-full flex flex-col bg-[#F5F5F5]">
-            <div className="h-12 border-b border-gray-200 bg-white flex items-center justify-between px-4 shrink-0">
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-gray-900">Preview</span>
-                    <div className="flex items-center gap-1 px-2 py-0.5 bg-black rounded-full">
-                        <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                        <span className="text-[9px] font-bold text-green-400 tracking-wider">LIVE</span>
+        <div className="h-full flex flex-col bg-[#fcfcfc]">
+            <div className="h-14 border-b border-gray-100 bg-white/80 backdrop-blur-md flex items-center justify-between px-6 shrink-0 z-10">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-black flex items-center justify-center shadow-lg shadow-black/20">
+                        <FileText size={18} className="text-white" />
+                    </div>
+                    <div>
+                        <h2 className="text-xs font-bold text-gray-900 tracking-tight">Paper Preview</h2>
+                        <span className="text-[10px] text-gray-400 font-medium">Resolution: 300 DPI</span>
                     </div>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                    <button
-                        onClick={goToPreviousPage}
-                        disabled={currentDisplayPage <= 1}
-                        className="p-1 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                        <ChevronLeft size={14} />
-                    </button>
-                    <span className="font-medium">{currentDisplayPage}/{totalPages}</span>
-                    <button
-                        onClick={goToNextPage}
-                        disabled={currentDisplayPage >= totalPages}
-                        className="p-1 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                        <ChevronRight size={14} />
+
+                <div className="flex items-center gap-4">
+                    {/* Page Navigation */}
+                    <div className="flex items-center gap-1 bg-gray-50 rounded-full px-2 py-1 border border-gray-100">
+                        <button
+                            onClick={() => currentDisplayPage > 1 && setCurrentDisplayPage(currentDisplayPage - 1)}
+                            disabled={currentDisplayPage <= 1}
+                            className="p-1.5 hover:bg-white hover:shadow-sm rounded-full transition-all disabled:opacity-20 text-gray-600"
+                        >
+                            <ChevronLeft size={16} />
+                        </button>
+                        <span className="text-[11px] font-bold text-gray-900 min-w-[50px] text-center">
+                            Page {currentDisplayPage} / {totalPages}
+                        </span>
+                        <button
+                            onClick={() => currentDisplayPage < totalPages && setCurrentDisplayPage(currentDisplayPage + 1)}
+                            disabled={currentDisplayPage >= totalPages}
+                            className="p-1.5 hover:bg-white hover:shadow-sm rounded-full transition-all disabled:opacity-20 text-gray-600"
+                        >
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
+
+                    <button className="p-2.5 hover:bg-gray-50 rounded-full text-gray-400 hover:text-black transition-all border border-transparent hover:border-gray-100">
+                        <Settings2 size={18} />
                     </button>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-auto p-3 flex items-center justify-center bg-gray-100">
+            <div className="flex-1 overflow-auto p-8 flex items-center justify-center relative perspective-1000">
                 <div
-                    className="bg-white shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-sm"
+                    className="bg-white shadow-[0_40px_100px_rgba(0,0,0,0.12)] rounded-sm overflow-hidden transition-all duration-500 hover:shadow-[0_50px_120px_rgba(0,0,0,0.15)]"
                     style={{
-                        transform: `scale(${zoom * 0.45})`,
+                        transform: `scale(${zoom * 0.42}) rotateX(2deg) rotateY(-1deg)`,
                         transformOrigin: 'center center',
-                        transition: 'transform 0.2s ease'
                     }}
                 >
                     <canvas ref={canvasRef} className="block" />
                 </div>
+
+                {/* AI Badge */}
+                {isHumanizeEnabled && (
+                    <div className="absolute top-10 right-10 flex items-center gap-2 px-3 py-1.5 bg-black text-white rounded-full shadow-2xl animate-bounce">
+                        <Wand2 size={14} className="text-purple-400" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">AI Humanized</span>
+                    </div>
+                )}
             </div>
 
-            <div className="flex justify-center pb-2">
-                <div className="flex items-center gap-0.5 bg-white rounded-full px-1.5 py-1 shadow-lg border border-gray-100">
-                    <button onClick={() => handleZoom(-0.15)} className="p-1.5 hover:bg-gray-100 rounded-full text-gray-500 transition-colors">
-                        <ZoomOut size={14} />
+            {/* Float Controls */}
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-6 z-20">
+                {/* Zoom */}
+                <div className="flex items-center gap-2 bg-white/90 backdrop-blur-xl rounded-full px-3 py-1.5 shadow-2xl border border-white/20">
+                    <button onClick={() => setZoom(Math.max(zoom - 0.15, 0.5))} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-black">
+                        <ZoomIn size={16} className="rotate-180" />
                     </button>
-                    <button onClick={resetView} className="px-2 py-1 text-[10px] font-bold text-gray-600 hover:text-black transition-colors min-w-[40px]">
-                        {(zoom * 100).toFixed(0)}%
+                    <span className="text-[11px] font-bold text-gray-600 min-w-[40px] text-center">{(zoom * 100).toFixed(0)}%</span>
+                    <button onClick={() => setZoom(Math.min(zoom + 0.15, 2))} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-black">
+                        <ZoomIn size={16} />
                     </button>
-                    <button onClick={() => handleZoom(0.15)} className="p-1.5 hover:bg-gray-100 rounded-full text-gray-500 transition-colors">
-                        <ZoomIn size={14} />
+                    <div className="w-px h-4 bg-gray-200 mx-1" />
+                    <button onClick={() => setZoom(1)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-black">
+                        <Maximize2 size={16} />
                     </button>
-                    <button onClick={resetView} className="p-1.5 hover:bg-gray-100 rounded-full text-gray-400 transition-colors">
-                        <Maximize2 size={14} />
+                </div>
+
+                {/* Actions */}
+                <div className="bg-black text-white rounded-3xl p-2 shadow-2xl shadow-black/40 flex items-center gap-2 border border-white/10">
+                    <button
+                        onClick={() => setIsExportModalOpen(true)}
+                        className="flex items-center gap-3 px-8 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl text-[13px] font-black uppercase tracking-wider hover:scale-[1.02] transition-all active:scale-[0.98] shadow-lg shadow-blue-500/20"
+                    >
+                        <Download size={18} />
+                        Export High-Res
                     </button>
+                    <div className="w-px h-8 bg-white/10 mx-1" />
+                    <div className="flex gap-1 pr-1">
+                        <button className="w-14 h-14 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-2xl transition-all">
+                            <Printer size={20} />
+                        </button>
+                        <button className="w-14 h-14 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 rounded-2xl transition-all">
+                            <Wand2 size={20} />
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div className="p-3 pt-1 border-t border-gray-200 bg-white">
-                <div className="grid grid-cols-3 gap-2">
-                    <button onClick={handleDownloadPNG} className="flex items-center justify-center gap-1.5 h-10 bg-black text-white rounded-lg text-xs font-bold hover:bg-gray-800 transition-all active:scale-[0.98]">
-                        <Download size={14} /> PNG
-                    </button>
-                    <button onClick={handleDownloadPDF} className="flex items-center justify-center gap-1.5 h-10 bg-white border border-gray-200 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-50 transition-all">
-                        <FileText size={14} /> PDF
-                    </button>
-                    <button onClick={handlePrint} className="flex items-center justify-center gap-1.5 h-10 bg-white border border-gray-200 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-50 transition-all">
-                        <Printer size={14} /> Print
-                    </button>
-                </div>
-            </div>
+            {isExportModalOpen && (
+                <ExportModal
+                    isOpen={isExportModalOpen}
+                    onClose={() => setIsExportModalOpen(false)}
+                    totalPages={totalPages}
+                    dimensions={dimensions}
+                    canvasRef={canvasRef}
+                />
+            )}
         </div>
     );
 }
