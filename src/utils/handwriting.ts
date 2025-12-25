@@ -18,68 +18,6 @@ export const getFontFamily = (id: string, customFonts: any[] = []): string => {
     return fonts[id] || 'Caveat, cursive';
 };
 
-const drawAgedTexture = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.fillStyle = '#fdf6e3';
-    ctx.fillRect(0, 0, width, height);
-
-    const gradient = ctx.createRadialGradient(width / 2, height / 2, width * 0.2, width / 2, height / 2, width * 0.8);
-    gradient.addColorStop(0, '#fdf6e300');
-    gradient.addColorStop(1, '#d4c5a366');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-
-    for (let i = 0; i < 50; i++) {
-        const x = Math.random() * width;
-        const y = Math.random() * height;
-        const r = Math.random() * 20 + 5;
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(160, 130, 80, ${Math.random() * 0.05})`;
-        ctx.fill();
-    }
-};
-
-const drawRecycledTexture = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.fillStyle = '#f3f4f6';
-    ctx.fillRect(0, 0, width, height);
-
-    for (let i = 0; i < 800; i++) {
-        const x = Math.random() * width;
-        const y = Math.random() * height;
-        const len = Math.random() * 5 + 2;
-        const angle = Math.random() * Math.PI * 2;
-
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + Math.cos(angle) * len, y + Math.sin(angle) * len);
-        ctx.strokeStyle = `rgba(50, 50, 50, ${Math.random() * 0.1 + 0.05})`;
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
-    }
-
-    for (let i = 0; i < 400; i++) {
-        const x = Math.random() * width;
-        const y = Math.random() * height;
-        ctx.fillStyle = `rgba(100, 100, 100, ${Math.random() * 0.1})`;
-        ctx.fillRect(x, y, 1, 1);
-    }
-};
-
-const drawParchmentTexture = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.fillStyle = '#e8dcc5';
-    ctx.fillRect(0, 0, width, height);
-
-    for (let i = 0; i < width; i += 4) {
-        for (let j = 0; j < height; j += 4) {
-            const n = noise.noise(i * 0.01) * noise.noise(j * 0.01);
-            if (n > 0.2) {
-                ctx.fillStyle = `rgba(180, 160, 120, ${n * 0.05})`;
-                ctx.fillRect(i, j, 4, 4);
-            }
-        }
-    }
-};
-
 const drawAgingEffects = (ctx: CanvasRenderingContext2D, width: number, height: number, settings: RenderingSettings) => {
     const { aging } = settings;
     if (!aging || !aging.enabled) return;
@@ -553,27 +491,52 @@ const drawDecorations = (ctx: CanvasRenderingContext2D, width: number, height: n
 
     // Spiral Binding
     if (decorations.spiral) {
-        const spiralX = 15;
-        const coilHeight = 30;
-        const coilWidth = 20;
+        const spiralX = 20;
+        const coilHeight = 25;
+        const coilWidth = 24;
         ctx.lineCap = 'round';
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = '#374151';
 
-        for (let y = 40; y < height - 20; y += coilHeight * 1.5) {
-            // Back loop
+        for (let y = 60; y < height - 40; y += coilHeight * 1.5) {
+            // Shadow behind the coil
             ctx.beginPath();
-            ctx.strokeStyle = '#9ca3af';
-            ctx.moveTo(spiralX, y);
-            ctx.quadraticCurveTo(spiralX - 10, y + coilHeight / 2, spiralX, y + coilHeight);
+            ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+            ctx.lineWidth = 4;
+            ctx.moveTo(spiralX - 5, y + 2);
+            ctx.quadraticCurveTo(spiralX + coilWidth - 2, y + coilHeight / 2 + 2, spiralX - 5, y + coilHeight + 2);
             ctx.stroke();
 
-            // Front loop
+            // Back part of the coil (darker)
             ctx.beginPath();
-            ctx.strokeStyle = '#d1d5db';
+            ctx.strokeStyle = '#4b5563';
+            ctx.lineWidth = 2.5;
+            ctx.moveTo(spiralX, y);
+            ctx.quadraticCurveTo(spiralX - 12, y + coilHeight / 2, spiralX, y + coilHeight);
+            ctx.stroke();
+
+            // Front part of the coil (metallic gradient look)
+            ctx.beginPath();
+            ctx.strokeStyle = '#9ca3af';
+            ctx.lineWidth = 3;
             ctx.moveTo(spiralX, y);
             ctx.quadraticCurveTo(spiralX + coilWidth, y + coilHeight / 2, spiralX, y + coilHeight);
             ctx.stroke();
+
+            // Highlight on the coil
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 1;
+            ctx.moveTo(spiralX + 5, y + 5);
+            ctx.quadraticCurveTo(spiralX + coilWidth - 5, y + coilHeight / 2, spiralX + 5, y + coilHeight - 5);
+            ctx.stroke();
+
+            // Hole for the spiral
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.arc(spiralX, y + 2, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(spiralX, y + coilHeight - 2, 3, 0, Math.PI * 2);
+            ctx.fill();
         }
     }
 
@@ -641,6 +604,38 @@ const drawDecorations = (ctx: CanvasRenderingContext2D, width: number, height: n
     }
 };
 
+const drawPaperEdges = (ctx: CanvasRenderingContext2D, width: number, height: number, edgeWear: number) => {
+    if (edgeWear <= 0) return;
+
+    ctx.save();
+    // 1. Edge yellowing/fraying
+    const gradient = ctx.createLinearGradient(0, 0, width, 0);
+    const intensity = edgeWear * 0.15;
+    gradient.addColorStop(0, `rgba(139, 69, 19, ${intensity})`);
+    gradient.addColorStop(0.02, 'rgba(139, 69, 19, 0)');
+    gradient.addColorStop(0.98, 'rgba(139, 69, 19, 0)');
+    gradient.addColorStop(1, `rgba(139, 69, 19, ${intensity})`);
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    const vGradient = ctx.createLinearGradient(0, 0, 0, height);
+    vGradient.addColorStop(0, `rgba(139, 69, 19, ${intensity})`);
+    vGradient.addColorStop(0.02, 'rgba(139, 69, 19, 0)');
+    vGradient.addColorStop(0.98, 'rgba(139, 69, 19, 0)');
+    vGradient.addColorStop(1, `rgba(139, 69, 19, ${intensity})`);
+    ctx.fillStyle = vGradient;
+    ctx.fillRect(0, 0, width, height);
+
+    // 2. Subtle lift shadow
+    ctx.shadowBlur = 10 * edgeWear;
+    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+    ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(1, 1, width - 2, height - 2);
+    ctx.restore();
+};
+
 export const drawPaperBackground = (
     ctx: CanvasRenderingContext2D,
     width: number,
@@ -656,18 +651,17 @@ export const drawPaperBackground = (
                 ctx.fillStyle = '#FAF9F6';
                 ctx.fillRect(0, 0, width, height);
                 break;
-            case 'yellow':
-                ctx.fillStyle = '#FEF9C3';
+            case 'yellow-pad':
+                ctx.fillStyle = '#ffffcc'; // from snippet
                 ctx.fillRect(0, 0, width, height);
                 break;
-            case 'aged':
-                drawAgedTexture(ctx, width, height);
+            case 'vintage':
+                ctx.fillStyle = '#f4e8d0'; // from snippet
+                ctx.fillRect(0, 0, width, height);
                 break;
-            case 'recycled':
-                drawRecycledTexture(ctx, width, height);
-                break;
-            case 'parchment':
-                drawParchmentTexture(ctx, width, height);
+            case 'rough':
+                ctx.fillStyle = '#f5f3ed'; // from snippet
+                ctx.fillRect(0, 0, width, height);
                 break;
             case 'white':
             default:
@@ -675,9 +669,25 @@ export const drawPaperBackground = (
                 ctx.fillRect(0, 0, width, height);
                 break;
         }
+
+        if (paperMaterial === 'vintage' || paperMaterial === 'rough') {
+            ctx.save();
+            ctx.globalAlpha = 0.03;
+            for (let i = 0; i < 2000; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#000' : '#fff';
+                ctx.fillRect(
+                    Math.random() * width,
+                    Math.random() * height,
+                    Math.random() * 2,
+                    Math.random() * 2
+                );
+            }
+            ctx.restore();
+        }
     }
 
     drawAgingEffects(ctx, width, height, settings);
+    drawPaperEdges(ctx, width, height, settings.edgeWear || 0);
     drawPatterns(ctx, width, height, paperPattern, settings);
 };
 
@@ -763,22 +773,49 @@ export const renderHandwriting = (
 
                 if (settings.penSkip && Math.random() < 0.01) return;
 
+                const jitterX = (Math.random() - 0.5) * 0.4;
+                const jitterY = (Math.random() - 0.5) * 0.4;
+
                 ctx.save();
-                ctx.translate(currentX, currentY + baselineShift);
+                ctx.translate(currentX + jitterX, currentY + baselineShift + jitterY);
                 ctx.rotate(rotation);
 
                 if (settings.slant !== 0) {
                     ctx.transform(1, 0, Math.tan(settings.slant * Math.PI / 180), 1, 0, 0);
                 }
 
+                // Pressure simulation: scale the character slightly based on pressure
+                if (settings.pressureSimulation) {
+                    const scale = 0.98 + (pressure * 0.04);
+                    ctx.scale(scale, scale);
+                }
+
                 ctx.globalAlpha = pressure;
 
                 if (settings.inkBleeding) {
-                    ctx.shadowBlur = settings.thickness * 0.5;
-                    ctx.shadowColor = inkColor;
+                    const bleedingIntensity = settings.inkBleedingIntensity || 0.5;
+                    // Pass 1: Core letter
+                    ctx.fillText(char, 0, 0);
+
+                    // Pass 2: Bleed shadow
+                    ctx.save();
+                    ctx.globalAlpha = pressure * 0.3 * bleedingIntensity;
+                    ctx.filter = `blur(${0.5 * bleedingIntensity}px)`;
+                    ctx.fillText(char, 0, 0);
+                    ctx.restore();
+
+                    // Pass 3: Micro-diffusion
+                    if (bleedingIntensity > 0.6) {
+                        ctx.save();
+                        ctx.globalAlpha = pressure * 0.1;
+                        ctx.filter = `blur(${1.2 * bleedingIntensity}px)`;
+                        ctx.fillText(char, 0.2, 0.2);
+                        ctx.restore();
+                    }
+                } else {
+                    ctx.fillText(char, 0, 0);
                 }
 
-                ctx.fillText(char, 0, 0);
                 const charWidth = ctx.measureText(char).width;
                 ctx.restore();
 
