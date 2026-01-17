@@ -28,7 +28,7 @@ export default function GalleryPage() {
                             transition={{ delay: i * 0.1 }}
                             className="group cursor-default"
                         >
-                            <div className="card-premium aspect-[3/4] flex flex-col items-center justify-center p-12">
+                            <div className="card-premium aspect-3/4 flex flex-col items-center justify-center p-12">
                                 <div className="mb-8 text-gray-300">
                                     {template.icon}
                                 </div>
