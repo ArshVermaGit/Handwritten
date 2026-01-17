@@ -8,7 +8,7 @@ export interface FontPreference {
     url?: string;
 }
 
-export type PaperMaterial = 'white' | 'cream' | 'rough' | 'vintage' | 'yellow-pad';
+export type PaperMaterial = 'white' | 'ruled' | 'graph' | 'dotted' | 'vintage' | 'custom';
 export type PaperSize = 'a4' | 'letter' | 'a5' | 'a6' | 'legal' | 'tabloid';
 export type PaperOrientation = 'portrait' | 'landscape';
 
@@ -28,7 +28,7 @@ export interface AppState {
     paperSize: PaperSize;
     paperOrientation: PaperOrientation;
     customFonts: FontPreference[];
-
+    customPaperImage: string | null;
     // Onboarding State
     hasSeenOnboarding: boolean;
     hasSeenTour: boolean;
@@ -55,6 +55,7 @@ export interface AppState {
     addCustomFont: (font: FontPreference) => void;
     removeCustomFont: (id: string) => void;
     resetTypography: () => void;
+    setCustomPaperImage: (image: string | null) => void;
 
     // Onboarding Actions
     completeOnboarding: () => void;
