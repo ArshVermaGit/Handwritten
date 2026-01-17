@@ -17,7 +17,8 @@ import {
     AlignRight,
     ChevronDown,
     Search,
-    Check
+    Check,
+    RotateCcw
 } from 'lucide-react';
 import { useStore } from '../lib/store';
 
@@ -48,12 +49,22 @@ export default function EditorPage() {
         uploadedFileName,
         setUploadedFileName,
         handwritingStyle,
-        setHandwritingStyle
+        setHandwritingStyle,
+        fontSize,
+        setFontSize,
+        letterSpacing,
+        setLetterSpacing,
+        lineHeight,
+        setLineHeight,
+        wordSpacing,
+        setWordSpacing,
+        resetTypography
     } = useStore();
     
     const [isLoading, setIsLoading] = useState(true);
     const [secondsAgo, setSecondsAgo] = useState(0);
     const [isFontPanelOpen, setIsFontPanelOpen] = useState(true);
+    const [isTypographyPanelOpen, setIsTypographyPanelOpen] = useState(false);
     const [fontSearch, setFontSearch] = useState('');
     const richTextRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -364,6 +375,111 @@ export default function EditorPage() {
                             )}
                         </AnimatePresence>
                     </div>
+
+                    {/* ========== TYPOGRAPHY SETTINGS PANEL ========== */}
+                    <div className="mt-6 border-t border-gray-100 pt-6">
+                        <button
+                            onClick={() => setIsTypographyPanelOpen(!isTypographyPanelOpen)}
+                            className="w-full flex items-center justify-between group"
+                        >
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 group-hover:text-black transition-colors">
+                                Typography Settings
+                            </h3>
+                            <motion.div
+                                animate={{ rotate: isTypographyPanelOpen ? 180 : 0 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <ChevronDown size={16} className="text-gray-300 group-hover:text-black transition-colors" />
+                            </motion.div>
+                        </button>
+
+                        <AnimatePresence>
+                            {isTypographyPanelOpen && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                                    className="overflow-hidden"
+                                >
+                                    <div className="pt-4 space-y-6">
+                                        {/* Font Size */}
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Font Size</label>
+                                                <span className="text-xs font-bold text-black bg-gray-100 px-2 py-0.5 rounded-md">{fontSize}px</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="10"
+                                                max="30"
+                                                value={fontSize}
+                                                onChange={(e) => setFontSize(Number(e.target.value))}
+                                                className="w-full h-2 bg-gray-100 rounded-full appearance-none cursor-pointer accent-blue-500"
+                                            />
+                                        </div>
+
+                                        {/* Letter Spacing */}
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Letter Spacing</label>
+                                                <span className="text-xs font-bold text-black bg-gray-100 px-2 py-0.5 rounded-md">{letterSpacing}px</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="-2"
+                                                max="10"
+                                                value={letterSpacing}
+                                                onChange={(e) => setLetterSpacing(Number(e.target.value))}
+                                                className="w-full h-2 bg-gray-100 rounded-full appearance-none cursor-pointer accent-blue-500"
+                                            />
+                                        </div>
+
+                                        {/* Line Height */}
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Line Height</label>
+                                                <span className="text-xs font-bold text-black bg-gray-100 px-2 py-0.5 rounded-md">{lineHeight.toFixed(1)}</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="1.0"
+                                                max="3.0"
+                                                step="0.1"
+                                                value={lineHeight}
+                                                onChange={(e) => setLineHeight(Number(e.target.value))}
+                                                className="w-full h-2 bg-gray-100 rounded-full appearance-none cursor-pointer accent-blue-500"
+                                            />
+                                        </div>
+
+                                        {/* Word Spacing */}
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Word Spacing</label>
+                                                <span className="text-xs font-bold text-black bg-gray-100 px-2 py-0.5 rounded-md">{wordSpacing}px</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="20"
+                                                value={wordSpacing}
+                                                onChange={(e) => setWordSpacing(Number(e.target.value))}
+                                                className="w-full h-2 bg-gray-100 rounded-full appearance-none cursor-pointer accent-blue-500"
+                                            />
+                                        </div>
+
+                                        {/* Reset Button */}
+                                        <button
+                                            onClick={resetTypography}
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-red-500 border border-gray-100 hover:border-red-200 hover:bg-red-50 rounded-xl transition-all"
+                                        >
+                                            <RotateCcw size={12} /> Reset Typography
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </div>
             </motion.div>
 
@@ -415,8 +531,14 @@ export default function EditorPage() {
                                 <div className="absolute inset-0 border border-black/5 pointer-events-none" />
                                 
                                 <div 
-                                    className="flex-1 whitespace-pre-wrap text-2xl text-gray-800 leading-[1.8]"
-                                    style={{ fontFamily: currentFontFamily }}
+                                    className="flex-1 whitespace-pre-wrap text-gray-800"
+                                    style={{ 
+                                        fontFamily: currentFontFamily,
+                                        fontSize: `${fontSize}px`,
+                                        letterSpacing: `${letterSpacing}px`,
+                                        lineHeight: lineHeight,
+                                        wordSpacing: `${wordSpacing}px`
+                                    }}
                                     dangerouslySetInnerHTML={{ __html: text || '<span class="opacity-10 italic">Your handwritten preview will appear here...</span>' }}
                                 />
 
