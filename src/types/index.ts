@@ -29,9 +29,15 @@ export interface AppState {
     paperOrientation: PaperOrientation;
     customFonts: FontPreference[];
     customPaperImage: string | null;
-    // Onboarding State
     hasSeenOnboarding: boolean;
     hasSeenTour: boolean;
+
+    // Visual Effects
+    paperShadow: boolean;
+    inkBlur: number;
+    resolutionQuality: number;
+    paperTilt: boolean;
+    paperTexture: boolean;
 
     // UI State
     isSidebarCollapsed: boolean;
@@ -56,6 +62,13 @@ export interface AppState {
     removeCustomFont: (id: string) => void;
     resetTypography: () => void;
     setCustomPaperImage: (image: string | null) => void;
+
+    // Visual Effects Actions
+    setPaperShadow: (enabled: boolean) => void;
+    setInkBlur: (value: number) => void;
+    setResolutionQuality: (value: number) => void;
+    setPaperTilt: (enabled: boolean) => void;
+    setPaperTexture: (enabled: boolean) => void;
 
     // Onboarding Actions
     completeOnboarding: () => void;
