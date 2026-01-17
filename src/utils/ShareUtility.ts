@@ -19,11 +19,11 @@ export function serializeState(state: AppState): string {
 /**
  * Deserializes a state string back into an object.
  */
-export function deserializeState(hash: string): any {
+export function deserializeState(hash: string): Partial<AppState> | null {
     try {
         const decompressed = LZString.decompressFromEncodedURIComponent(hash);
         if (!decompressed) return null;
-        return JSON.parse(decompressed);
+        return JSON.parse(decompressed) as Partial<AppState>;
     } catch (err) {
         console.error('Failed to deserialize state:', err);
         return null;
