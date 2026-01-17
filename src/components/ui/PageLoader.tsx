@@ -7,7 +7,7 @@ interface PageLoaderProps {
 
 export default function PageLoader({ message = 'Initializing InkPad...' }: PageLoaderProps) {
     return (
-        <div className="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center">
+        <div className="fixed inset-0 bg-white z-9999 flex flex-col items-center justify-center">
             <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
