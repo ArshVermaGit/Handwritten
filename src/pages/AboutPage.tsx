@@ -15,7 +15,7 @@ export default function AboutPage() {
                         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                         className="w-full md:w-1/3"
                     >
-                        <div className="relative aspect-[3/4] bg-gray-100 rounded-2xl overflow-hidden shadow-2xl group">
+                        <div className="relative aspect-3/4 bg-gray-100 rounded-2xl overflow-hidden shadow-2xl group">
                             <img
                                 src={photo}
                                 alt="Arsh Verma"
