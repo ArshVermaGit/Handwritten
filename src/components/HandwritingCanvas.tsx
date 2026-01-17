@@ -11,16 +11,17 @@ const PAPER_CONFIG = {
     width: 210, // mm
     height: 297, // mm
     margins: {
-        top: 60,
-        bottom: 60,
-        left: 80,
-        right: 80
+        top: 120,    // px at 300 DPI
+        bottom: 100, // px at 300 DPI
+        left: 100,   // px at 300 DPI
+        right: 100   // px at 300 DPI
     },
-    ppi: 96 // standard screen ppi
+    ppi: 300,
+    lineSpacing: 40 // px
 };
 
-// Convert mm to pixels at 96 PPI
-const mmToPx = (mm: number) => (mm * 96) / 25.4;
+// Convert mm to pixels at 300 PPI (approx 2480x3508 for A4)
+const mmToPx = (mm: number) => Math.round((mm * PAPER_CONFIG.ppi) / 25.4);
 
 interface Token {
     type: 'tag' | 'text';
@@ -76,37 +77,35 @@ export const HandwritingCanvas = forwardRef<HTMLCanvasElement, HandwritingCanvas
         handwritingStyle, 
         fontSize, 
         letterSpacing, 
-        lineHeight, 
         wordSpacing,
         inkColor,
         paperMaterial,
         customPaperImage,
         paperShadow,
-        inkBlur,
-        resolutionQuality,
-        paperTilt,
         paperTexture
     } = useStore();
 
     const [totalPages, setTotalPages] = useState(1);
 
-    // Calculate canvas dimensions
-    const width = mmToPx(PAPER_CONFIG.width);
-    const height = mmToPx(PAPER_CONFIG.height);
-    const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) * (resolutionQuality / 2) : 1;
+    // Calculate canvas dimensions using 300 DPI as base
+    const baseWidth = mmToPx(PAPER_CONFIG.width);
+    const baseHeight = mmToPx(PAPER_CONFIG.height);
+    
+    // For display, we use a smaller size or fit to container
+    const displayWidth = (PAPER_CONFIG.width * 96) / 25.4;
+    const displayHeight = (PAPER_CONFIG.height * 96) / 25.4;
+
+    const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) * 2 : 2;
 
     // Font family mapping
     const fontFamilies: Record<string, string> = {
         'caveat': 'Caveat',
-        'gloria-hallelujah': 'Gloria Hallelujah',
-        'indie-flower': 'Indie Flower',
-        'shadows-into-light': 'Shadows Into Light',
-        'patrick-hand': 'Patrick Hand',
-        'permanent-marker': 'Permanent Marker',
-        'kalam': 'Kalam',
-        'homemade-apple': 'Homemade Apple',
-        'reenie-beanie': 'Reenie Beanie',
-        'nothing-you-could-do': 'Nothing You Could Do'
+        'gloria': 'Gloria Hallelujah',
+        'indie': 'Indie Flower',
+        'shadows': 'Shadows Into Light',
+        'patrick': 'Patrick Hand',
+        'marker': 'Permanent Marker',
+        'kalam': 'Kalam'
     };
 
     const currentFontFamily = fontFamilies[handwritingStyle] || 'Caveat';
@@ -116,203 +115,265 @@ export const HandwritingCanvas = forwardRef<HTMLCanvasElement, HandwritingCanvas
             const canvas = internalCanvasRef.current;
             if (!canvas) return;
 
-            const ctx = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d', { alpha: false });
             if (!ctx) return;
 
-            // Set high resolution
-            canvas.width = width * dpr;
-            canvas.height = height * dpr;
-            canvas.style.width = `${width}px`;
-            canvas.style.height = `${height}px`;
+            // Set high resolution pixel dimensions
+            canvas.width = baseWidth * dpr;
+            canvas.height = baseHeight * dpr;
+            
+            // Set CSS display size
+            canvas.style.width = `${displayWidth}px`;
+            canvas.style.height = `${displayHeight}px`;
+            
             ctx.scale(dpr, dpr);
 
-            // Apply Paper Tilt
-            if (paperTilt) {
-                // Use a deterministic seeds for tilt based on page number
-                const seed = Math.sin(currentPage) * 10000;
-                const tilt = (seed - Math.floor(seed) - 0.5) * 4; // ±2 degrees
-                ctx.translate(width / 2, height / 2);
-                ctx.rotate((tilt * Math.PI) / 180);
-                ctx.translate(-width / 2, -height / 2);
-            }
-
             // 1. Draw Paper Background
-            ctx.fillStyle = paperMaterial === 'vintage' ? '#f5f0e1' : '#ffffff';
-            ctx.fillRect(0, 0, width, height);
+            const isVintage = paperMaterial === 'vintage';
+            const isCream = (paperMaterial as string) === 'cream';
+            
+            ctx.fillStyle = isVintage ? '#f5f0e1' : isCream ? '#fffaf0' : '#ffffff';
+            ctx.fillRect(0, 0, baseWidth, baseHeight);
 
+            // Custom Background
             if (paperMaterial === 'custom' && customPaperImage) {
                 const img = new Image();
                 img.src = customPaperImage;
                 await new Promise((resolve) => {
                     img.onload = () => {
-                        ctx.drawImage(img, 0, 0, width, height);
+                        ctx.drawImage(img, 0, 0, baseWidth, baseHeight);
                         resolve(null);
                     };
                 });
-            } else if (paperMaterial === 'ruled') {
-                ctx.strokeStyle = '#e0e0e0';
-                ctx.lineWidth = 1;
-                for (let y = mmToPx(PAPER_CONFIG.margins.top); y < height - mmToPx(PAPER_CONFIG.margins.bottom); y += 27) {
+            } 
+            
+            // Ruled Lines System
+            if (paperMaterial === 'ruled' || paperMaterial === 'white' || isVintage || isCream) {
+                if (paperMaterial === 'ruled') {
+                    ctx.strokeStyle = '#d0d0d0';
+                    ctx.lineWidth = 1;
+                    
+                    for (let y = PAPER_CONFIG.margins.top; y < baseHeight - PAPER_CONFIG.margins.bottom; y += PAPER_CONFIG.lineSpacing) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, y);
+                        ctx.lineTo(baseWidth, y);
+                        ctx.stroke();
+                    }
+                    
+                    ctx.strokeStyle = '#ffb3ba';
                     ctx.beginPath();
-                    ctx.moveTo(0, y);
-                    ctx.lineTo(width, y);
+                    ctx.moveTo(PAPER_CONFIG.margins.left - 5, 0);
+                    ctx.lineTo(PAPER_CONFIG.margins.left - 5, baseHeight);
                     ctx.stroke();
                 }
             } else if (paperMaterial === 'graph') {
                 ctx.strokeStyle = '#e0e0e0';
                 ctx.lineWidth = 1;
-                const step = 20;
-                for (let x = 0; x < width; x += step) {
-                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+                const step = 40;
+                for (let x = 0; x < baseWidth; x += step) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, baseHeight); ctx.stroke();
                 }
-                for (let y = 0; y < height; y += step) {
-                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+                for (let y = 0; y < baseHeight; y += step) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(baseWidth, y); ctx.stroke();
                 }
             } else if (paperMaterial === 'dotted') {
                 ctx.fillStyle = '#c0c0c0';
-                const step = 15;
-                for (let x = step; x < width; x += step) {
-                    for (let y = step; y < height; y += step) {
+                const step = 30;
+                for (let x = step; x < baseWidth; x += step) {
+                    for (let y = step; y < baseHeight; y += step) {
                         ctx.beginPath();
-                        ctx.arc(x, y, 1, 0, Math.PI * 2);
+                        ctx.arc(x, y, 1.5, 0, Math.PI * 2);
                         ctx.fill();
                     }
                 }
             }
 
             if (!text.trim()) {
-                // Draw Empty State Placeholder
-                const cx = width / 2;
-                const cy = height / 2;
-                
+                const cx = baseWidth / 2;
+                const cy = baseHeight / 2;
                 ctx.save();
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                
-                // Draw a subtle "InkPad" watermark or icon
                 ctx.fillStyle = '#f0f0f0';
                 ctx.font = `bold 60px ${currentFontFamily}`;
                 ctx.fillText('InkPad', cx, cy - 40);
-                
-                // Draw instructional text
                 ctx.fillStyle = '#a0a0a0';
                 ctx.font = `italic 16px sans-serif`;
-                ctx.fillText('Start typing in the editor to see your manuscript...', cx, cy + 20);
-                ctx.fillText('Or use the "Sample" button to explore features.', cx, cy + 45);
-                
+                ctx.fillText('Start typing in the editor...', cx, cy + 20);
                 ctx.restore();
-                
                 if (onRenderComplete) onRenderComplete(1);
                 return;
             }
 
             // 2. Render Tokens
             const tokens = tokenizeHTML(text);
-            
-            const leftMargin = mmToPx(PAPER_CONFIG.margins.left);
-            const rightMargin = width - mmToPx(PAPER_CONFIG.margins.right);
-            const topMargin = mmToPx(PAPER_CONFIG.margins.top);
-            const bottomMargin = height - mmToPx(PAPER_CONFIG.margins.bottom);
+            const leftMargin = PAPER_CONFIG.margins.left;
+            const rightMargin = baseWidth - PAPER_CONFIG.margins.right;
+            const topMargin = PAPER_CONFIG.margins.top;
+            const bottomMargin = baseHeight - PAPER_CONFIG.margins.bottom;
+            const lineSpacing = PAPER_CONFIG.lineSpacing;
 
             const renderPass = async (isMeasuring: boolean) => {
+                let currentLineY = topMargin;
                 let currentX = leftMargin;
-                let currentY = topMargin;
                 let pageNum = 1;
 
                 let bold = false;
                 let italic = false;
-                let currentFSize = fontSize;
-                let listType: 'ul' | 'ol' | null = null;
-                let listCounter = 0;
+                let baseFSize = fontSize * (PAPER_CONFIG.ppi / 96);
+                
+                ctx.textBaseline = 'alphabetic';
+                ctx.fillStyle = inkColor;
 
-                const setCtxFont = () => {
-                    ctx.font = `${italic ? 'italic ' : ''}${bold ? 'bold ' : ''}${currentFSize}px "${currentFontFamily}"`;
+                const setCtxFont = (sizeVariation = 0) => {
+                    const finalSize = baseFSize + sizeVariation;
+                    ctx.font = `${italic ? 'italic ' : ''}${bold ? 'bold ' : ''}${finalSize}px "${currentFontFamily}"`;
                 };
+
+                const usableWidth = rightMargin - leftMargin;
 
                 for (const token of tokens) {
                     if (token.type === 'tag') {
                         const tag = token.tagName;
                         if (tag === 'b' || tag === 'strong') bold = !token.isClosing;
                         else if (tag === 'i' || tag === 'em') italic = !token.isClosing;
-                        else if (tag === 'h1') currentFSize = token.isClosing ? fontSize : 28;
-                        else if (tag === 'h2') currentFSize = token.isClosing ? fontSize : 24;
-                        else if (tag === 'h3') currentFSize = token.isClosing ? fontSize : 20;
-                        else if (tag === 'ul') { listType = token.isClosing ? null : 'ul'; if (!token.isClosing) listCounter = 0; }
-                        else if (tag === 'ol') { listType = token.isClosing ? null : 'ol'; if (!token.isClosing) listCounter = 0; }
-                        else if (tag === 'li') {
-                            if (!token.isClosing) {
-                                currentY += currentFSize * lineHeight;
-                                currentX = leftMargin + 20;
-                                listCounter++;
-                                if (!isMeasuring && pageNum === currentPage) {
-                                    ctx.font = `${currentFSize}px sans-serif`;
-                                    ctx.fillText(listType === 'ol' ? `${listCounter}. ` : '• ', leftMargin, currentY);
-                                }
-                            }
-                        }
+                        else if (tag === 'h1') baseFSize = (token.isClosing ? fontSize : 28) * (PAPER_CONFIG.ppi / 96);
+                        else if (tag === 'h2') baseFSize = (token.isClosing ? fontSize : 24) * (PAPER_CONFIG.ppi / 96);
+                        else if (tag === 'h3') baseFSize = (token.isClosing ? fontSize : 20) * (PAPER_CONFIG.ppi / 96);
                         else if (tag === 'br' || tag === 'div' || tag === 'p') {
                             if (!token.isClosing || tag === 'br') {
-                                currentY += currentFSize * lineHeight;
+                                currentLineY += lineSpacing;
                                 currentX = leftMargin;
-                                if (listType) currentX += 20;
+                                if (currentLineY > bottomMargin) {
+                                    pageNum++;
+                                    currentLineY = topMargin;
+                                }
                             }
-                        }
-                        else if (tag === 'img' && token.attributes?.src) {
+                        } else if (tag === 'img' && token.attributes?.src) {
                             const img = new Image();
                             img.src = token.attributes.src;
                             await new Promise(r => img.onload = r);
-                            const iW = Math.min(img.width, rightMargin - leftMargin);
+                            const iW = Math.min(img.width, usableWidth);
                             const iH = (img.height * iW) / img.width;
                             
-                            if (currentY + iH > bottomMargin) {
+                            if (currentLineY + iH > bottomMargin) {
                                 pageNum++;
-                                currentY = topMargin;
+                                currentLineY = topMargin;
                                 currentX = leftMargin;
                             }
                             
                             if (!isMeasuring && pageNum === currentPage) {
-                                ctx.drawImage(img, currentX, currentY, iW, iH);
+                                ctx.drawImage(img, currentX, currentLineY, iW, iH);
                             }
-                            currentY += iH + 10;
+                            currentLineY += iH + lineSpacing;
                             currentX = leftMargin;
                         }
-                        setCtxFont();
                     } else if (token.type === 'text' && token.content) {
                         setCtxFont();
-                        const word = token.content;
-                        if (/\s+/.test(word)) {
-                            currentX += ctx.measureText(word).width + wordSpacing;
-                        } else {
-                            const metrics = ctx.measureText(word);
-                            if (currentX + metrics.width > rightMargin) {
-                                currentY += currentFSize * lineHeight;
-                                currentX = leftMargin;
-                                if (listType) currentX += 20;
+                        const words = token.content.split(/(\s+)/);
+                        
+                        for (let w = 0; w < words.length; w++) {
+                            const word = words[w];
+                            if (!word) continue;
+                            const isSpace = /\s+/.test(word);
+                            
+                            if (isSpace) {
+                                const spaceVariation = (Math.random() - 0.5) * 4; // ±2px
+                                currentX += ctx.measureText(word).width + wordSpacing + spaceVariation;
+                                continue;
                             }
 
-                            if (currentY > bottomMargin) {
-                                pageNum++;
-                                currentX = leftMargin;
-                                currentY = topMargin;
-                                if (listType) currentX += 20;
+                            // Measure word width
+                            const wordWidth = ctx.measureText(word).width + (word.length * letterSpacing);
+                            
+                            // 1. Wrapping Logic
+                            if (currentX + wordWidth > rightMargin) {
+                                // If word is so long it can't fit on ANY line, hyphenate it
+                                if (wordWidth > usableWidth) {
+                                    const chars = word.split('');
+                                    for (const char of chars) {
+                                        const charWidth = ctx.measureText(char).width + letterSpacing;
+                                        if (currentX + charWidth + 20 > rightMargin) { 
+                                            if (!isMeasuring && pageNum === currentPage) {
+                                                ctx.save();
+                                                ctx.fillStyle = inkColor;
+                                                ctx.fillText('-', currentX, currentLineY);
+                                                ctx.restore();
+                                            }
+                                            currentLineY += lineSpacing;
+                                            currentX = leftMargin;
+                                            if (currentLineY > bottomMargin) {
+                                                pageNum++;
+                                                currentLineY = topMargin;
+                                            }
+                                        }
+                                        
+                                        if (!isMeasuring && pageNum === currentPage) {
+                                            const jitterX = (Math.random() - 0.5) * 2;
+                                            const jitterY = (Math.random() - 0.5) * 4;
+                                            const jitterRotation = (Math.random() - 0.5) * 0.035;
+                                            const sizeVariation = (Math.random() - 0.5) * (baseFSize * 0.1);
+                                            const letterVariation = (Math.random() - 0.5) * 4 - 2;
+
+                                            ctx.save();
+                                            ctx.shadowBlur = 0.5;
+                                            ctx.shadowColor = `${inkColor}4D`;
+                                            const finalSize = baseFSize + sizeVariation;
+                                            ctx.font = `${italic ? 'italic ' : ''}${bold ? 'bold ' : ''}${finalSize}px "${currentFontFamily}"`;
+                                            ctx.translate(currentX + jitterX, currentLineY + jitterY);
+                                            ctx.rotate(jitterRotation);
+                                            ctx.globalAlpha = 0.4;
+                                            ctx.fillText(char, 0.2, 0.2);
+                                            ctx.globalAlpha = 1.0;
+                                            ctx.fillText(char, 0, 0);
+                                            ctx.restore();
+                                            currentX += ctx.measureText(char).width + letterSpacing + letterVariation;
+                                        } else {
+                                            currentX += charWidth;
+                                        }
+                                    }
+                                    continue; 
+                                } else {
+                                    currentLineY += lineSpacing;
+                                    currentX = leftMargin;
+                                    if (currentLineY > bottomMargin) {
+                                        pageNum++;
+                                        currentLineY = topMargin;
+                                    }
+                                }
                             }
 
+                            // 2. Draw Word
                             if (!isMeasuring && pageNum === currentPage) {
                                 for (let i = 0; i < word.length; i++) {
                                     const char = word[i];
-                                    const jitterX = (Math.random() - 0.5) * 0.5;
-                                    const jitterY = (Math.random() - 0.5) * 2;
-                                    const jitterRotation = (Math.random() - 0.5) * 0.05;
+                                    const jitterX = (Math.random() - 0.5) * 2;
+                                    const jitterY = (Math.random() - 0.5) * 4;
+                                    const jitterRotation = (Math.random() - 0.5) * 0.035;
+                                    const sizeVariation = (Math.random() - 0.5) * (baseFSize * 0.1);
+                                    const letterVariation = (Math.random() - 0.5) * 4 - 2;
 
                                     ctx.save();
-                                    ctx.translate(currentX + jitterX, currentY + jitterY);
+                                    ctx.shadowBlur = 0.5;
+                                    ctx.shadowColor = `${inkColor}4D`;
+                                    
+                                    const finalSize = baseFSize + sizeVariation;
+                                    ctx.font = `${italic ? 'italic ' : ''}${bold ? 'bold ' : ''}${finalSize}px "${currentFontFamily}"`;
+                                    
+                                    ctx.translate(currentX + jitterX, currentLineY + jitterY);
                                     ctx.rotate(jitterRotation);
+
+                                    ctx.globalAlpha = 0.4;
+                                    ctx.fillText(char, 0.2, 0.2);
+                                    ctx.globalAlpha = 1.0;
                                     ctx.fillText(char, 0, 0);
+
                                     ctx.restore();
-                                    currentX += ctx.measureText(char).width + letterSpacing;
+                                    
+                                    currentX += ctx.measureText(char).width + letterSpacing + letterVariation;
                                 }
                             } else {
-                                currentX += metrics.width + letterSpacing;
+                                currentX += wordWidth;
                             }
                         }
                     }
@@ -330,24 +391,39 @@ export const HandwritingCanvas = forwardRef<HTMLCanvasElement, HandwritingCanvas
 
             // 3. Draw Texture Overlay
             if (paperTexture) {
-                ctx.save();
-                ctx.filter = 'none';
-                ctx.globalAlpha = 0.03;
-                const grainSize = 2;
-                for (let x = 0; x < width; x += grainSize) {
-                    for (let y = 0; y < height; y += grainSize) {
-                        if (Math.random() > 0.5) {
-                            ctx.fillStyle = '#000000';
-                            ctx.fillRect(x, y, grainSize, grainSize);
-                        }
-                    }
+                const grainCanvas = document.createElement('canvas');
+                grainCanvas.width = 128;
+                grainCanvas.height = 128;
+                const grainCtx = grainCanvas.getContext('2d')!;
+                const grainData = grainCtx.createImageData(128, 128);
+                
+                for (let i = 0; i < grainData.data.length; i += 4) {
+                    const val = 150 + Math.random() * 105;
+                    grainData.data[i] = val;     
+                    grainData.data[i + 1] = val; 
+                    grainData.data[i + 2] = val; 
+                    grainData.data[i + 3] = 35;  
                 }
+                grainCtx.putImageData(grainData, 0, 0);
+                
+                ctx.save();
+                ctx.globalCompositeOperation = 'multiply';
+                const pattern = ctx.createPattern(grainCanvas, 'repeat')!;
+                ctx.fillStyle = pattern;
+                ctx.fillRect(0, 0, baseWidth, baseHeight);
                 ctx.restore();
             }
+
+            // 4. Subtle Page Edge Shadow
+            ctx.save();
+            ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(1, 1, baseWidth - 2, baseHeight - 2);
+            ctx.restore();
         };
 
         render();
-    }, [text, handwritingStyle, fontSize, letterSpacing, lineHeight, wordSpacing, inkColor, paperMaterial, customPaperImage, currentPage, width, height, dpr, currentFontFamily, totalPages, onRenderComplete, paperTilt, inkBlur, paperTexture]);
+    }, [text, handwritingStyle, fontSize, letterSpacing, wordSpacing, inkColor, paperMaterial, customPaperImage, currentPage, baseWidth, baseHeight, dpr, currentFontFamily, totalPages, onRenderComplete, paperTexture, displayWidth, displayHeight]);
 
     return (
         <div className="relative transition-all duration-500 ease-in-out">
