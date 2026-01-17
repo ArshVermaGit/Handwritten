@@ -34,7 +34,7 @@ export default function WelcomeModal({ onStartTour }: { onStartTour: () => void 
 
                     <div className="relative h-48 bg-black flex items-center justify-center overflow-hidden">
                         <div className="absolute inset-0 bg-grid-white/[0.2]" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
+                        <div className="absolute inset-0 bg-linear-to-t from-black to-transparent" />
                         <motion.div
                             initial={{ y: 20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
