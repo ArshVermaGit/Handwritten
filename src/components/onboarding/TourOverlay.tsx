@@ -67,15 +67,20 @@ export default function TourOverlay({ isOpen, onClose }: { isOpen: boolean; onCl
 
         if (element) {
             const rect = element.getBoundingClientRect();
-            setTargetRect(rect);
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Use requestAnimationFrame to avoid "set-state-in-effect" warning
+            requestAnimationFrame(() => {
+                setTargetRect(rect);
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
         } else {
             // If element not found, skip or end (fallback)
-            if (currentStep < steps.length - 1) {
-                setCurrentStep(curr => curr + 1);
-            } else {
-                handleComplete();
-            }
+            requestAnimationFrame(() => {
+                if (currentStep < steps.length - 1) {
+                    setCurrentStep(curr => curr + 1);
+                } else {
+                    handleComplete();
+                }
+            });
         }
     }, [currentStep, isOpen, handleComplete]);
 
