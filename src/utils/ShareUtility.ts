@@ -3,18 +3,13 @@ import type { AppState } from '../types';
 
 /**
  * Serializes the current app state into a compressed shareable string.
- * We focus on text, pages, and key rendering settings.
  */
 export function serializeState(state: AppState): string {
     const dataToShare = {
-        text: state.text,
-        pages: state.pages,
         handwritingStyle: state.handwritingStyle,
         fontSize: state.fontSize,
         inkColor: state.inkColor,
         paperMaterial: state.paperMaterial,
-        paperPattern: state.paperPattern,
-        settings: state.settings,
     };
 
     const json = JSON.stringify(dataToShare);
