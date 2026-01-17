@@ -10,7 +10,7 @@ const DEFAULT_TYPOGRAPHY = {
     wordSpacing: 4,
 };
 
-const initialState: Omit<AppState, 'reset' | 'setText' | 'setLastSaved' | 'setZoom' | 'setEditorMode' | 'setUploadedFileName' | 'setHandwritingStyle' | 'setFontSize' | 'setLetterSpacing' | 'setLineHeight' | 'setWordSpacing' | 'setPaperMaterial' | 'setPaperSize' | 'setPaperOrientation' | 'setInkColor' | 'addCustomFont' | 'removeCustomFont' | 'resetTypography' | 'completeOnboarding' | 'completeTour' | 'setSidebarCollapsed' | 'setSettingsOpen'> = {
+const initialState: Omit<AppState, 'reset' | 'setText' | 'setLastSaved' | 'setZoom' | 'setEditorMode' | 'setUploadedFileName' | 'setHandwritingStyle' | 'setFontSize' | 'setLetterSpacing' | 'setLineHeight' | 'setWordSpacing' | 'setPaperMaterial' | 'setPaperSize' | 'setPaperOrientation' | 'setInkColor' | 'addCustomFont' | 'removeCustomFont' | 'resetTypography' | 'setCustomPaperImage' | 'completeOnboarding' | 'completeTour' | 'setSidebarCollapsed' | 'setSettingsOpen'> = {
     text: '',
     lastSaved: null,
     zoom: 1,
@@ -26,6 +26,7 @@ const initialState: Omit<AppState, 'reset' | 'setText' | 'setLastSaved' | 'setZo
     paperSize: 'a4',
     paperOrientation: 'portrait',
     customFonts: [],
+    customPaperImage: null,
     hasSeenOnboarding: false,
     hasSeenTour: false,
     isSidebarCollapsed: false,
@@ -56,6 +57,7 @@ export const useStore = create<AppState>()(
             addCustomFont: (font) => set((state) => ({ customFonts: [...state.customFonts, font] })),
             removeCustomFont: (id) => set((state) => ({ customFonts: state.customFonts.filter(f => f.id !== id) })),
             resetTypography: () => set({ ...DEFAULT_TYPOGRAPHY }),
+            setCustomPaperImage: (customPaperImage) => set({ customPaperImage }),
             completeOnboarding: () => set({ hasSeenOnboarding: true }),
             completeTour: () => set({ hasSeenTour: true }),
             setSidebarCollapsed: (isSidebarCollapsed) => set({ isSidebarCollapsed }),
