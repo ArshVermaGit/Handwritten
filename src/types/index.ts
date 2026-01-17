@@ -20,6 +20,9 @@ export interface AppState {
     uploadedFileName: string | null;
     handwritingStyle: HandwritingStyle;
     fontSize: number;
+    letterSpacing: number;
+    lineHeight: number;
+    wordSpacing: number;
     inkColor: string;
     paperMaterial: PaperMaterial;
     paperSize: PaperSize;
@@ -42,12 +45,16 @@ export interface AppState {
     setUploadedFileName: (name: string | null) => void;
     setHandwritingStyle: (style: HandwritingStyle) => void;
     setFontSize: (size: number) => void;
+    setLetterSpacing: (spacing: number) => void;
+    setLineHeight: (height: number) => void;
+    setWordSpacing: (spacing: number) => void;
     setPaperMaterial: (material: PaperMaterial) => void;
     setPaperSize: (size: PaperSize) => void;
     setPaperOrientation: (orientation: PaperOrientation) => void;
     setInkColor: (color: string) => void;
     addCustomFont: (font: FontPreference) => void;
     removeCustomFont: (id: string) => void;
+    resetTypography: () => void;
 
     // Onboarding Actions
     completeOnboarding: () => void;
