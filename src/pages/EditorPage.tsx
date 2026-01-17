@@ -8,6 +8,9 @@ import {
     Loader2,
     Upload,
     FileText,
+    Download,
+    Share2,
+    FileDown,
     Bold,
     Italic,
     Underline,
@@ -15,12 +18,28 @@ import {
     AlignLeft,
     AlignCenter,
     AlignRight,
-    ChevronDown,
-    Search,
     Check,
-    RotateCcw
+    RotateCcw,
+    Sparkles,
+    Heading1,
+    Heading2,
+    Heading3,
+    ListOrdered,
+    Image,
+    Plus,
+    Minus,
+    MoveDiagonal,
+    Layers,
+    ChevronLeft,
+    ChevronRight,
+    ChevronDown,
+    Search
 } from 'lucide-react';
 import { useStore } from '../lib/store';
+import { HandwritingCanvas } from '../components/HandwritingCanvas';
+import { useToast } from '../components/ui/Toast';
+import { jsPDF } from 'jspdf';
+import JSZip from 'jszip';
 
 // Font Definitions
 const HANDWRITING_FONTS = [
@@ -91,18 +110,26 @@ export default function EditorPage() {
     const [isFontPanelOpen, setIsFontPanelOpen] = useState(true);
     const [isTypographyPanelOpen, setIsTypographyPanelOpen] = useState(false);
     const [isPaperInkPanelOpen, setIsPaperInkPanelOpen] = useState(false);
+    const [isVisualEffectsPanelOpen, setIsVisualEffectsPanelOpen] = useState(false);
     const [fontSearch, setFontSearch] = useState('');
     const richTextRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const paperImageRef = useRef<HTMLInputElement>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
 
-    // Get current font family for preview
-    const currentFontFamily = useMemo(() => {
-        const font = HANDWRITING_FONTS.find(f => f.id === handwritingStyle);
-        return font?.family || HANDWRITING_FONTS[0].family;
-    }, [handwritingStyle]);
+    // Rendering State
+    const [debouncedText, setDebouncedText] = useState(text);
+    const [isRendering, setIsRendering] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    
+    // Export State
+    const [isExporting, setIsExporting] = useState(false);
+    const [exportProgress, setExportProgress] = useState(0);
+    const { addToast } = useToast();
+    const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    // Filter fonts by search
+    // List of filtered fonts
     const filteredFonts = useMemo(() => {
         if (!fontSearch.trim()) return HANDWRITING_FONTS;
         return HANDWRITING_FONTS.filter(f => 
@@ -127,6 +154,15 @@ export default function EditorPage() {
         return () => clearInterval(interval);
     }, [lastSaved]);
 
+    // 300ms Debounce for text rendering
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedText(text);
+            setIsRendering(false);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [text]);
+
     // 10-second Auto-save Interval
     useEffect(() => {
         const autoSaveInterval = setInterval(() => {
@@ -137,12 +173,14 @@ export default function EditorPage() {
 
     // Handle Plain Text Changes
     const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setIsRendering(true);
         setText(e.target.value);
     };
 
     // Handle Rich Text Changes
     const handleRichTextChange = () => {
         if (richTextRef.current) {
+            setIsRendering(true);
             setText(richTextRef.current.innerHTML);
         }
     };
@@ -173,9 +211,21 @@ export default function EditorPage() {
         }
     };
 
-    const execCommand = (command: string, value?: string) => {
+    const execCommand = (command: string, value: string | undefined = undefined) => {
         document.execCommand(command, false, value);
         handleRichTextChange();
+    };
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const dataUrl = event.target?.result as string;
+                execCommand('insertImage', dataUrl);
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     const clearContent = () => {
@@ -188,6 +238,90 @@ export default function EditorPage() {
         }
     };
 
+    const handleShare = () => {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+            addToast('Link copied to clipboard!', 'success');
+        }).catch(() => {
+            addToast('Failed to copy link', 'error');
+        });
+    };
+
+    const handleDownload = async (format: 'png' | 'pdf' | 'zip' | 'pdf-all') => {
+        if (!canvasRef.current) {
+            addToast('Canvas Not Ready', 'error');
+            return;
+        }
+
+        setIsExporting(true);
+        setExportProgress(0);
+
+        try {
+            const timestamp = new Date().getTime();
+            const fileNameBase = `InkPad-handwriting-${timestamp}`;
+
+            if (format === 'png') {
+                const dataUrl = canvasRef.current.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `${fileNameBase}.png`;
+                link.href = dataUrl;
+                link.click();
+                addToast('PNG Downloaded Successfully!', 'success');
+            } else if (format === 'pdf') {
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgData = canvasRef.current.toDataURL('image/png');
+                pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+                pdf.save(`${fileNameBase}.pdf`);
+                addToast('PDF Downloaded Successfully!', 'success');
+            } else if (format === 'pdf-all' || format === 'zip') {
+                const total = totalPages;
+                const zip = format === 'zip' ? new JSZip() : null;
+                const pdf = format === 'pdf-all' ? new jsPDF('p', 'mm', 'a4') : null;
+
+                for (let i = 1; i <= total; i++) {
+                    setExportProgress(Math.round((i / total) * 100));
+                    setCurrentPage(i);
+                    // Wait for render to complete (300ms debounce + render time)
+                    await new Promise(resolve => setTimeout(resolve, 500)); 
+                    
+                    const imgData = canvasRef.current.toDataURL('image/png');
+                    
+                    if (zip) {
+                        const base64Data = imgData.split(',')[1];
+                        zip.file(`Page-${i}.png`, base64Data, { base64: true });
+                    }
+                    
+                    if (pdf) {
+                        if (i > 1) pdf.addPage();
+                        pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+                    }
+                }
+
+                if (zip) {
+                    const content = await zip.generateAsync({ type: 'blob' });
+                    const link = document.createElement('a');
+                    link.download = `${fileNameBase}.zip`;
+                    link.href = URL.createObjectURL(content);
+                    link.click();
+                }
+
+                if (pdf) {
+                    pdf.save(`${fileNameBase}.pdf`);
+                }
+                
+                addToast(`${format.toUpperCase()} Downloaded Successfully!`, 'success');
+                // Return to first page
+                setCurrentPage(1);
+            }
+        } catch (error) {
+            console.error('Export error:', error);
+            addToast('Export failed. Please try again.', 'error');
+        } finally {
+            setIsExporting(false);
+            setExportProgress(0);
+        }
+    };
+
     const wordCount = useMemo(() => {
         const plainText = text.replace(/<[^>]*>/g, ' ');
         return plainText.trim() ? plainText.trim().split(/\s+/).length : 0;
@@ -196,7 +330,7 @@ export default function EditorPage() {
     const charCount = text.replace(/<[^>]*>/g, '').length;
 
     const zoomLevels = [
-        { label: 'Fit', value: 1 },
+        { label: 'Fit', value: 0.65 }, // Roughly fit for most displays
         { label: '75%', value: 0.75 },
         { label: '100%', value: 1 },
         { label: '125%', value: 1.25 },
@@ -258,15 +392,50 @@ export default function EditorPage() {
                     {/* Editor Area */}
                     <div className="relative flex-1 flex flex-col group min-h-[250px]">
                         {editorMode === 'rich' && (
-                            <div className="flex items-center gap-1 mb-2 p-1 bg-gray-50 rounded-xl border border-gray-100 overflow-x-auto scrollbar-hide">
-                                <button onClick={() => execCommand('bold')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all"><Bold size={16} /></button>
-                                <button onClick={() => execCommand('italic')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all"><Italic size={16} /></button>
-                                <button onClick={() => execCommand('underline')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all"><Underline size={16} /></button>
+                            <div className="flex flex-wrap items-center gap-1 mb-2 p-1 bg-gray-50 rounded-xl border border-gray-100 overflow-x-auto scrollbar-hide">
+                                {/* Text Style Group */}
+                                <div className="flex items-center gap-0.5">
+                                    <button onClick={() => execCommand('bold')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all" title="Bold (Ctrl+B)"><Bold size={16} /></button>
+                                    <button onClick={() => execCommand('italic')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all" title="Italic (Ctrl+I)"><Italic size={16} /></button>
+                                    <button onClick={() => execCommand('underline')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all" title="Underline (Ctrl+U)"><Underline size={16} /></button>
+                                </div>
                                 <div className="w-px h-4 bg-gray-200 mx-1" />
-                                <button onClick={() => execCommand('insertUnorderedList')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all"><List size={16} /></button>
-                                <button onClick={() => execCommand('justifyLeft')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all"><AlignLeft size={16} /></button>
-                                <button onClick={() => execCommand('justifyCenter')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all"><AlignCenter size={16} /></button>
-                                <button onClick={() => execCommand('justifyRight')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all"><AlignRight size={16} /></button>
+                                
+                                {/* Headings Group */}
+                                <div className="flex items-center gap-0.5">
+                                    <button onClick={() => execCommand('formatBlock', 'h1')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all" title="Heading 1"><Heading1 size={16} /></button>
+                                    <button onClick={() => execCommand('formatBlock', 'h2')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all" title="Heading 2"><Heading2 size={16} /></button>
+                                    <button onClick={() => execCommand('formatBlock', 'h3')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all" title="Heading 3"><Heading3 size={16} /></button>
+                                </div>
+                                <div className="w-px h-4 bg-gray-200 mx-1" />
+                                
+                                {/* Lists Group */}
+                                <div className="flex items-center gap-0.5">
+                                    <button onClick={() => execCommand('insertUnorderedList')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all" title="Bullet List"><List size={16} /></button>
+                                    <button onClick={() => execCommand('insertOrderedList')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all" title="Numbered List"><ListOrdered size={16} /></button>
+                                </div>
+                                <div className="w-px h-4 bg-gray-200 mx-1" />
+
+                                {/* Font Size Group */}
+                                <div className="flex items-center gap-0.5">
+                                    <button onClick={() => execCommand('fontSize', '4')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all" title="Increase Size"><Plus size={16} /></button>
+                                    <button onClick={() => execCommand('fontSize', '2')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all" title="Decrease Size"><Minus size={16} /></button>
+                                </div>
+                                <div className="w-px h-4 bg-gray-200 mx-1" />
+                                
+                                {/* Alignment Group */}
+                                <div className="flex items-center gap-0.5">
+                                    <button onClick={() => execCommand('justifyLeft')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all" title="Align Left"><AlignLeft size={16} /></button>
+                                    <button onClick={() => execCommand('justifyCenter')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all" title="Align Center"><AlignCenter size={16} /></button>
+                                    <button onClick={() => execCommand('justifyRight')} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all" title="Align Right"><AlignRight size={16} /></button>
+                                </div>
+                                <div className="w-px h-4 bg-gray-200 mx-1" />
+                                
+                                {/* Media Group */}
+                                <div className="flex items-center gap-0.5">
+                                    <input type="file" ref={imageInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
+                                    <button onClick={() => imageInputRef.current?.click()} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all" title="Insert Image"><Image size={16} /></button>
+                                </div>
                             </div>
                         )}
 
@@ -283,6 +452,13 @@ export default function EditorPage() {
                                     ref={richTextRef}
                                     contentEditable
                                     onInput={handleRichTextChange}
+                                    onKeyDown={(e) => {
+                                        if (e.ctrlKey || e.metaKey) {
+                                            if (e.key === 'b') { e.preventDefault(); execCommand('bold'); }
+                                            if (e.key === 'i') { e.preventDefault(); execCommand('italic'); }
+                                            if (e.key === 'u') { e.preventDefault(); execCommand('underline'); }
+                                        }
+                                    }}
                                     className="w-full h-full p-6 text-lg leading-relaxed bg-gray-50/50 rounded-2xl border-2 border-transparent focus:border-black/5 focus:bg-white transition-all duration-300 outline-none overflow-y-auto font-medium"
                                     style={{ minHeight: '100%' }}
                                 />
@@ -638,6 +814,154 @@ export default function EditorPage() {
                             )}
                         </AnimatePresence>
                     </div>
+
+                    {/* ========== VISUAL EFFECTS PANEL ========== */}
+                    <div className="mt-6 border-t border-gray-100 pt-6">
+                        <button
+                            onClick={() => setIsVisualEffectsPanelOpen(!isVisualEffectsPanelOpen)}
+                            className="w-full flex items-center justify-between group"
+                        >
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 group-hover:text-black transition-colors">
+                                Visual Effects
+                            </h3>
+                            <motion.div
+                                animate={{ rotate: isVisualEffectsPanelOpen ? 180 : 0 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <ChevronDown size={16} className="text-gray-300 group-hover:text-black transition-colors" />
+                            </motion.div>
+                        </button>
+
+                        <AnimatePresence>
+                            {isVisualEffectsPanelOpen && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                                    className="overflow-hidden"
+                                >
+                                    <div className="pt-4 space-y-6 pb-4">
+                                        {/* Paper Shadow & Tilt toggles */}
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                onClick={() => useStore.getState().setPaperShadow(!useStore.getState().paperShadow)}
+                                                className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${useStore.getState().paperShadow ? 'bg-blue-50 border-blue-500' : 'bg-gray-50 border-transparent hover:border-gray-200'}`}
+                                            >
+                                                <Layers size={16} className={useStore.getState().paperShadow ? 'text-blue-500' : 'text-gray-400'} />
+                                                <span className="text-[10px] font-bold uppercase tracking-tight">Shadow</span>
+                                            </button>
+                                            <button
+                                                onClick={() => useStore.getState().setPaperTilt(!useStore.getState().paperTilt)}
+                                                className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${useStore.getState().paperTilt ? 'bg-blue-50 border-blue-500' : 'bg-gray-50 border-transparent hover:border-gray-200'}`}
+                                            >
+                                                <MoveDiagonal size={16} className={useStore.getState().paperTilt ? 'text-blue-500' : 'text-gray-400'} />
+                                                <span className="text-[10px] font-bold uppercase tracking-tight">Tilt</span>
+                                            </button>
+                                            <button
+                                                onClick={() => useStore.getState().setPaperTexture(!useStore.getState().paperTexture)}
+                                                className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${useStore.getState().paperTexture ? 'bg-blue-50 border-blue-500' : 'bg-gray-50 border-transparent hover:border-gray-200'}`}
+                                            >
+                                                <Sparkles size={16} className={useStore.getState().paperTexture ? 'text-blue-500' : 'text-gray-400'} />
+                                                <span className="text-[10px] font-bold uppercase tracking-tight">Texture</span>
+                                            </button>
+                                        </div>
+
+                                        {/* Ink Blur */}
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Ink Blur (Bleed)</label>
+                                                <span className="text-xs font-bold text-black bg-gray-100 px-2 py-0.5 rounded-md">{useStore.getState().inkBlur}</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="5"
+                                                step="0.5"
+                                                value={useStore.getState().inkBlur}
+                                                onChange={(e) => useStore.getState().setInkBlur(Number(e.target.value))}
+                                                className="w-full h-2 bg-gray-100 rounded-full appearance-none cursor-pointer accent-blue-500"
+                                            />
+                                        </div>
+
+                                        {/* Resolution Quality */}
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Resolution Quality</label>
+                                            <div className="flex p-1 bg-gray-100 rounded-lg">
+                                                {[1, 2, 3].map((q) => (
+                                                    <button
+                                                        key={q}
+                                                        onClick={() => useStore.getState().setResolutionQuality(q)}
+                                                        className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-tight rounded-md transition-all ${useStore.getState().resolutionQuality === q ? 'bg-white shadow-sm text-black' : 'text-gray-400 hover:text-black'}`}
+                                                    >
+                                                        {q === 1 ? 'Normal' : q === 2 ? 'High (2x)' : 'Ultra (3x)'}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* ========== GENERATE & DOWNLOAD SECTION ========== */}
+                    <div className="mt-auto pt-8 space-y-4">
+                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Sparkles size={16} className="text-blue-500" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Export Manuscript</span>
+                            </div>
+                            
+                            <button
+                                onClick={() => handleDownload(totalPages > 1 ? 'pdf-all' : 'pdf')}
+                                disabled={isExporting}
+                                className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed group"
+                            >
+                                {isExporting ? (
+                                    <>
+                                        <Loader2 size={18} className="animate-spin" />
+                                        <span>Capturing {exportProgress}%</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FileDown size={18} className="group-hover:scale-110 transition-transform" />
+                                        <span>Convert to Handwriting</span>
+                                    </>
+                                )}
+                            </button>
+
+                            {!isExporting && (
+                                <p className="text-[10px] text-center text-gray-400 font-medium">
+                                    Estimated time: {Math.max(2, Math.round(totalPages * 1.5))} seconds
+                                </p>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    onClick={() => handleDownload('png')}
+                                    disabled={isExporting}
+                                    className="py-2.5 bg-white border border-gray-200 text-gray-600 rounded-lg text-[10px] font-bold uppercase tracking-tight hover:border-gray-300 hover:text-black transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Download size={12} /> PNG
+                                </button>
+                                <button
+                                    onClick={() => handleDownload('zip')}
+                                    disabled={isExporting || totalPages <= 1}
+                                    className="py-2.5 bg-white border border-gray-200 text-gray-600 rounded-lg text-[10px] font-bold uppercase tracking-tight hover:border-gray-300 hover:text-black transition-all flex items-center justify-center gap-2 disabled:opacity-30 disabled:hover:border-gray-200"
+                                >
+                                    <Download size={12} /> Multiple (ZIP)
+                                </button>
+                            </div>
+
+                            <button
+                                onClick={handleShare}
+                                className="w-full py-2.5 text-gray-400 hover:text-blue-500 text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Share2 size={12} /> Share Project
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </motion.div>
 
@@ -663,7 +987,7 @@ export default function EditorPage() {
                 {/* CANVAS AREA */}
                 <div className="flex-1 overflow-auto flex items-center justify-center p-12 scrollbar-hide">
                     <AnimatePresence mode="wait">
-                        {isLoading ? (
+                        {isLoading || isRendering ? (
                             <motion.div 
                                 key="loading"
                                 initial={{ opacity: 0 }}
@@ -672,48 +996,56 @@ export default function EditorPage() {
                                 className="flex flex-col items-center gap-4"
                             >
                                 <Loader2 className="w-10 h-10 text-black/10 animate-spin" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-300">Rendering Handwriting</span>
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-300">
+                                    {isRendering ? 'Refining Handwriting...' : 'Rendering Workspace'}
+                                </span>
                             </motion.div>
                         ) : (
-                            <motion.div
-                                key="canvas"
-                                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                                animate={{ 
-                                    scale: zoom, 
-                                    opacity: 1, 
-                                    y: 0 
-                                }}
-                                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                                className="relative shadow-2xl w-[210mm] min-h-[297mm] h-fit flex flex-col p-[20mm] origin-center"
-                                style={{
-                                    backgroundColor: PAPER_TYPES.find(p => p.id === paperMaterial)?.bg || '#ffffff',
-                                    backgroundImage: paperMaterial === 'custom' && customPaperImage 
-                                        ? `url(${customPaperImage})` 
-                                        : PAPER_TYPES.find(p => p.id === paperMaterial)?.pattern !== 'none' 
-                                            ? PAPER_TYPES.find(p => p.id === paperMaterial)?.pattern 
-                                            : undefined,
-                                    backgroundSize: paperMaterial === 'graph' ? '20px 20px' : paperMaterial === 'dotted' ? '15px 15px' : paperMaterial === 'custom' ? 'cover' : undefined,
-                                }}
-                            >
-                                <div className="absolute inset-0 border border-black/5 pointer-events-none" />
-                                
-                                <div 
-                                    className="flex-1 whitespace-pre-wrap"
-                                    style={{ 
-                                        fontFamily: currentFontFamily,
-                                        fontSize: `${fontSize}px`,
-                                        letterSpacing: `${letterSpacing}px`,
-                                        lineHeight: lineHeight,
-                                        wordSpacing: `${wordSpacing}px`,
-                                        color: inkColor
+                            <div className="flex flex-col items-center gap-8">
+                                <motion.div
+                                    key="canvas"
+                                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                    animate={{ 
+                                        scale: zoom, 
+                                        opacity: 1, 
+                                        y: 0 
                                     }}
-                                    dangerouslySetInnerHTML={{ __html: text || '<span style="opacity: 0.1; font-style: italic;">Your handwritten preview will appear here...</span>' }}
-                                />
+                                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                                    className="origin-center"
+                                >
+                                    <HandwritingCanvas 
+                                        ref={canvasRef}
+                                        text={debouncedText}
+                                        currentPage={currentPage}
+                                        onRenderComplete={(total) => {
+                                            if (total !== totalPages) setTotalPages(total);
+                                        }}
+                                    />
+                                </motion.div>
 
-                                <div className="absolute inset-0 pointer-events-none opacity-[0.03] overflow-hidden">
-                                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
-                                </div>
-                            </motion.div>
+                                {/* Pagination Controls */}
+                                {totalPages > 1 && (
+                                    <div className="flex items-center gap-4 p-2 bg-white/80 backdrop-blur-md rounded-full shadow-lg border border-white/50">
+                                        <button
+                                            disabled={currentPage === 1}
+                                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                            className={`p-2 rounded-full transition-all ${currentPage === 1 ? 'text-gray-200 cursor-not-allowed' : 'text-black hover:bg-gray-100'}`}
+                                        >
+                                            <ChevronLeft size={20} />
+                                        </button>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                            Page <span className="text-black">{currentPage}</span> of <span className="text-black">{totalPages}</span>
+                                        </span>
+                                        <button
+                                            disabled={currentPage === totalPages}
+                                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                            className={`p-2 rounded-full transition-all ${currentPage === totalPages ? 'text-gray-200 cursor-not-allowed' : 'text-black hover:bg-gray-100'}`}
+                                        >
+                                            <ChevronRight size={20} />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         )}
                     </AnimatePresence>
                 </div>
