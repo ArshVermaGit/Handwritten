@@ -42,6 +42,13 @@ import {
 } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { HandwritingCanvas } from '../components/HandwritingCanvas';
+import type { HandwritingCanvasHandle } from '../components/HandwritingCanvas';
+
+// ... (existing imports)
+
+// Inside EditorPage component:
+
+
 import { useToast } from '../hooks/useToast';
 import { jsPDF } from 'jspdf';
 import JSZip from 'jszip';
@@ -134,9 +141,45 @@ export default function EditorPage() {
     
     // Export State
     const [isExporting, setIsExporting] = useState(false);
-    const [exportProgress, setExportProgress] = useState(0);
     const { addToast } = useToast();
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const canvasRef = useRef<HandwritingCanvasHandle>(null);
+
+    const handleExportPDF = async () => {
+        if (!canvasRef.current || isExporting) return;
+        setIsExporting(true);
+        addToast('Generating PDF...');
+        
+        try {
+            const pdf = await canvasRef.current.exportPDF();
+            pdf.save(`${uploadedFileName || 'inkpad-document'}.pdf`);
+            addToast('PDF Downloaded!');
+        } catch (error) {
+            console.error(error);
+            addToast('Export failed');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    const handleExportZIP = async () => {
+        if (!canvasRef.current || isExporting) return;
+        setIsExporting(true);
+        addToast('Creating ZIP archive...');
+        
+        try {
+            const blob = await canvasRef.current.exportZIP();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${uploadedFileName || 'inkpad-document'}.zip`;
+            link.click();
+            addToast('ZIP Downloaded!');
+        } catch (error) {
+            console.error(error);
+            addToast('Export failed');
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     const presets = {
         homework: {
@@ -434,81 +477,6 @@ export default function EditorPage() {
         });
     };
 
-    const handleDownload = useCallback(async (format: 'png' | 'pdf' | 'zip' | 'pdf-all') => {
-        if (!canvasRef.current) {
-            addToast('Canvas Not Ready', 'error');
-            return;
-        }
-
-        setIsExporting(true);
-        setExportProgress(0);
-
-        try {
-            const timestamp = new Date().getTime();
-            const fileNameBase = `InkPad-handwriting-${timestamp}`;
-
-            if (format === 'png') {
-                const dataUrl = canvasRef.current.toDataURL('image/png');
-                const link = document.createElement('a');
-                link.download = `${fileNameBase}.png`;
-                link.href = dataUrl;
-                link.click();
-                addToast('PNG Downloaded Successfully!', 'success');
-            } else if (format === 'pdf') {
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const imgData = canvasRef.current.toDataURL('image/png');
-                pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
-                pdf.save(`${fileNameBase}.pdf`);
-                addToast('PDF Downloaded Successfully!', 'success');
-            } else if (format === 'pdf-all' || format === 'zip') {
-                const total = totalPages;
-                const zip = format === 'zip' ? new JSZip() : null;
-                const pdf = format === 'pdf-all' ? new jsPDF('p', 'mm', 'a4') : null;
-
-                for (let i = 1; i <= total; i++) {
-                    setExportProgress(Math.round((i / total) * 100));
-                    setCurrentPage(i);
-                    // Wait for render to complete (300ms debounce + render time)
-                    await new Promise(resolve => setTimeout(resolve, 500)); 
-                    
-                    const imgData = canvasRef.current.toDataURL('image/png');
-                    
-                    if (zip) {
-                        const base64Data = imgData.split(',')[1];
-                        zip.file(`Page-${i}.png`, base64Data, { base64: true });
-                    }
-                    
-                    if (pdf) {
-                        if (i > 1) pdf.addPage();
-                        pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
-                    }
-                }
-
-                if (zip) {
-                    const content = await zip.generateAsync({ type: 'blob' });
-                    const link = document.createElement('a');
-                    link.download = `${fileNameBase}.zip`;
-                    link.href = URL.createObjectURL(content);
-                    link.click();
-                }
-
-                if (pdf) {
-                    pdf.save(`${fileNameBase}.pdf`);
-                }
-                
-                addToast(`${format.toUpperCase()} Downloaded Successfully!`, 'success');
-                // Return to first page
-                setCurrentPage(1);
-            }
-        } catch (error) {
-            console.error('Export error:', error);
-            addToast('Export failed. Please try again.', 'error');
-        } finally {
-            setIsExporting(false);
-            setExportProgress(0);
-        }
-    }, [totalPages, setCurrentPage, addToast, setIsExporting, setExportProgress]);
-
     const wordCount = useMemo(() => {
         const plainText = text.replace(/<[^>]*>/g, ' ');
         return plainText.trim() ? plainText.trim().split(/\s+/).length : 0;
@@ -527,11 +495,7 @@ export default function EditorPage() {
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === 'g') {
                     e.preventDefault();
-                    handleDownload(totalPages > 1 ? 'pdf-all' : 'pdf');
-                }
-                if (e.key === 'd') {
-                    e.preventDefault();
-                    handleDownload('png');
+                    handleExportPDF();
                 }
                 if (e.key === 'k') {
                     e.preventDefault();
@@ -541,7 +505,7 @@ export default function EditorPage() {
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [totalPages, clearContent, handleDownload]);
+    }, [clearContent]);
 
     const zoomLevels = [
         { label: 'Fit', value: 0.65 }, // Roughly fit for most displays
@@ -731,62 +695,80 @@ export default function EditorPage() {
                     
                     {/* ========== QUICK PRESETS & HELP ========== */}
                     <div className="mt-8 flex items-center gap-2 px-6">
-                        <div className="relative flex-1">
+                        <div className="flex-1 flex justify-center max-w-2xl gap-2">
+                             {/* EXPORT BUTTONS */}
                             <button
-                                onClick={() => setIsPresetsOpen(!isPresetsOpen)}
-                                className="w-full flex items-center justify-between px-4 py-3 bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                onClick={handleExportPDF}
+                                className="flex items-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-blue-200"
                             >
-                                <div className="flex items-center gap-2">
-                                    <LayoutTemplate size={16} />
-                                    Quick Presets
-                                </div>
-                                <ChevronDown size={14} className={`transition-transform duration-300 ${isPresetsOpen ? 'rotate-180' : ''}`} />
+                                <Download size={16} />
+                                Export PDF
                             </button>
-                            
-                            <AnimatePresence>
-                                {isPresetsOpen && (
-                                    <>
-                                        <motion.div 
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            onClick={() => setIsPresetsOpen(false)}
-                                            className="fixed inset-0 z-40"
-                                        />
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            className="absolute top-full left-0 right-0 mt-2 p-2 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden"
-                                        >
-                                            {Object.entries(presets).map(([key, value]) => (
-                                                <button
-                                                    key={key}
-                                                    onClick={() => {
-                                                        applyPreset(value);
-                                                        setIsPresetsOpen(false);
-                                                        addToast(`${key.charAt(0).toUpperCase() + key.slice(1)} preset applied!`, 'success');
-                                                    }}
-                                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 rounded-xl text-left transition-colors group"
-                                                >
-                                                    <div className="p-2 bg-gray-50 group-hover:bg-white rounded-lg transition-colors">
-                                                        <Zap size={14} className="text-blue-500" fill="currentColor" />
-                                                    </div>
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">{key}</span>
-                                                </button>
-                                            ))}
-                                            <div className="p-3 border-t border-gray-50">
-                                                <button 
-                                                    onClick={() => { reset(); setIsPresetsOpen(false); }}
-                                                    className="w-full py-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
-                                                >
-                                                    Reset All
-                                                </button>
-                                            </div>
-                                        </motion.div>
-                                    </>
-                                )}
-                            </AnimatePresence>
+                             <button
+                                onClick={handleExportZIP}
+                                className="flex items-center gap-2 px-4 py-3 bg-gray-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg"
+                            >
+                                <Layers size={16} />
+                                Export ZIP
+                            </button>
+
+                            <div className="relative">
+                                <button
+                                    onClick={() => setIsPresetsOpen(!isPresetsOpen)}
+                                    className="w-full flex items-center justify-between px-4 py-3 bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <LayoutTemplate size={16} />
+                                        Quick Presets
+                                    </div>
+                                    <ChevronDown size={14} className={`transition-transform duration-300 ${isPresetsOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                                
+                                <AnimatePresence>
+                                    {isPresetsOpen && (
+                                        <>
+                                            <motion.div 
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                onClick={() => setIsPresetsOpen(false)}
+                                                className="fixed inset-0 z-40"
+                                            />
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                className="absolute top-full left-0 right-0 mt-2 p-2 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden"
+                                            >
+                                                {Object.entries(presets).map(([key, value]) => (
+                                                    <button
+                                                        key={key}
+                                                        onClick={() => {
+                                                            applyPreset(value);
+                                                            setIsPresetsOpen(false);
+                                                            addToast(`${key.charAt(0).toUpperCase() + key.slice(1)} preset applied!`);
+                                                        }}
+                                                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 rounded-xl text-left transition-colors group"
+                                                    >
+                                                        <div className="p-2 bg-gray-50 group-hover:bg-white rounded-lg transition-colors">
+                                                            <Zap size={14} className="text-blue-500" fill="currentColor" />
+                                                        </div>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">{key}</span>
+                                                    </button>
+                                                ))}
+                                                <div className="p-3 border-t border-gray-50">
+                                                    <button 
+                                                        onClick={() => { reset(); setIsPresetsOpen(false); }}
+                                                        className="w-full py-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
+                                                    >
+                                                        Reset All
+                                                    </button>
+                                                </div>
+                                            </motion.div>
+                                        </>
+                                    )}
+                                </AnimatePresence>
+                            </div>
                         </div>
                         
                         <button
