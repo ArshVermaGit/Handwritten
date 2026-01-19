@@ -43,6 +43,7 @@ import {
 import { useStore } from '../lib/store';
 import { HandwritingCanvas } from '../components/HandwritingCanvas';
 import type { HandwritingCanvasHandle } from '../components/HandwritingCanvas';
+import { useDebounce } from '../hooks/useDebounce';
 
 // ... (existing imports)
 
@@ -139,8 +140,11 @@ export default function EditorPage() {
     const imageInputRef = useRef<HTMLInputElement>(null);
 
     // Rendering State
-    const [debouncedText, setDebouncedText] = useState(text);
-    const [isRendering, setIsRendering] = useState(false);
+    const debouncedText = useDebounce(text, 300);
+    const debouncedFontFamily = useDebounce(handwritingStyle, 300);
+    const debouncedPaperMaterial = useDebounce(paperMaterial, 300);
+    
+    const { isRendering, setIsRendering, renderingProgress } = useStore();
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     
@@ -344,14 +348,14 @@ export default function EditorPage() {
         return () => clearInterval(interval);
     }, [lastSaved]);
 
-    // 300ms Debounce for text rendering
+    // Handle rendering state based on debounced values
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedText(text);
-            setIsRendering(false);
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [text]);
+        if (text !== debouncedText || handwritingStyle !== debouncedFontFamily || paperMaterial !== debouncedPaperMaterial) {
+            setIsRendering(true);
+        } else {
+            // Once they match, the canvas will start rendering and eventually call onRenderComplete
+        }
+    }, [text, debouncedText, handwritingStyle, debouncedFontFamily, paperMaterial, debouncedPaperMaterial, setIsRendering]);
 
     // 10-second Auto-save Interval
     useEffect(() => {
@@ -363,14 +367,12 @@ export default function EditorPage() {
 
     // Handle Plain Text Changes
     const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setIsRendering(true);
         setText(e.target.value);
     };
 
     // Handle Rich Text Changes
     const handleRichTextChange = () => {
         if (richTextRef.current) {
-            setIsRendering(true);
             setText(richTextRef.current.innerHTML);
         }
     };
@@ -1315,9 +1317,20 @@ export default function EditorPage() {
                                 className="flex flex-col items-center gap-4"
                             >
                                 <Loader2 className="w-10 h-10 text-black/10 animate-spin" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-300">
-                                    {isRendering ? 'Refining Handwriting...' : 'Rendering Workspace'}
-                                </span>
+                                <div className="flex flex-col items-center gap-2">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-300">
+                                        {isRendering ? `Refining Handwriting... ${Math.round(renderingProgress * 100)}%` : 'Rendering Workspace'}
+                                    </span>
+                                    {isRendering && renderingProgress > 0 && (
+                                        <div className="w-48 h-1 bg-gray-100 rounded-full overflow-hidden">
+                                            <motion.div 
+                                                className="h-full bg-blue-500"
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${renderingProgress * 100}%` }}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </motion.div>
                         ) : (
                             <div className="flex flex-col items-center gap-8">
