@@ -135,16 +135,29 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
             const isCream = (paperMaterial as string) === 'cream';
             
             // Global imperfections
-            const globalSlant = (Math.random() - 0.5) * 0.09; 
+            // Slant: ±5 degrees global (approx 0.087 rad)
+            const globalSlant = (Math.random() - 0.5) * 0.174; 
             const driftAmplitude = 2 + Math.random(); 
             const driftWavelength = 500 + Math.random() * 300;
             
-            // Ink Color Base 
+            // Ink Color Base with variations
             const getInkVariation = (baseColor: string) => {
-               if (Math.random() > 0.9) {
-                   return adjustBrightness(baseColor, 0.85); 
-               }
-               return adjustBrightness(baseColor, 0.95 + Math.random() * 0.1); 
+                const color = baseColor.toLowerCase();
+                const isBlue = color.includes('000080') || color.includes('0000cd') || color.includes('4169e1');
+                const isBlack = color.includes('000000') || color.includes('1a1a1a') || color.includes('2b2b2b');
+
+                if (Math.random() > 0.9) {
+                    if (isBlue) {
+                        const blueVariants = ['#000080', '#0000CD', '#4169E1'];
+                        return blueVariants[Math.floor(Math.random() * blueVariants.length)];
+                    }
+                    if (isBlack) {
+                        const blackVariants = ['#000000', '#1a1a1a', '#2b2b2b'];
+                        return blackVariants[Math.floor(Math.random() * blackVariants.length)];
+                    }
+                    return adjustBrightness(baseColor, 0.85); 
+                }
+                return adjustBrightness(baseColor, 0.95 + Math.random() * 0.1); 
             };
             
             // Tokenize
@@ -154,11 +167,23 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
             ctx.fillStyle = isVintage ? '#f5f0e1' : isCream ? '#fffaf0' : '#ffffff';
             ctx.fillRect(0, 0, baseWidth, baseHeight);
 
-            // Vintage aging
-            if (isVintage) {
+            // Vintage/Aging aging
+            if (isVintage || isCream) {
                 ctx.save();
-                ctx.fillStyle = 'rgba(255, 230, 150, 0.05)';
+                // Yellowish tint
+                ctx.fillStyle = isVintage ? 'rgba(255, 230, 150, 0.08)' : 'rgba(255, 245, 200, 0.04)';
                 ctx.fillRect(0, 0, baseWidth, baseHeight);
+                
+                // Extra texture/noise for aged paper
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
+                for (let i = 0; i < 50; i++) {
+                    const x = Math.random() * baseWidth;
+                    const y = Math.random() * baseHeight;
+                    const r = Math.random() * 2;
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
                 ctx.restore();
             }
 
@@ -316,7 +341,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
 
             // DRAW CHAR FUNCTION (Scoped here to use local vars)
             const drawCharWithEffects = (char: string, x: number, lineY: number, bFSize: number, isBold: boolean, isItalic: boolean) => {
-                // 1. Baseline Drift (Subtle wave)
+                // 1. Baseline Drift (Sinusoidal wave: A=2-3px, λ=500-800px)
                 const driftY = driftAmplitude * Math.sin(x / driftWavelength);
                 
                 // 2. CHARACTER-LEVEL RANDOMIZATION
@@ -324,9 +349,9 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
                 const yVar = (Math.random() - 0.5) * 4; // ±2px
                 const xVar = (Math.random() - 0.5) * 2; // ±1px
                 
-                // Rotation: ±2 degrees (approx ±0.035 radians)
-                const charRotVar = (Math.random() - 0.5) * 0.07; 
-                const rotation = globalSlant + charRotVar;
+                // Rotation: Global slant + local variation (±1 degree)
+                const localSlantVar = (Math.random() - 0.5) * 0.035; // ±1 degree
+                const rotation = globalSlant + localSlantVar;
 
                 // B. SIZE VARIATIONS
                 const sizeVar = 1 + (Math.random() - 0.5) * 0.1; // ±5%
@@ -334,58 +359,55 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
 
                 // C. INK EFFECTS & PRESSURE
                 const charInk = getInkVariation(inkColor);
+                const pressureOpacity = 0.85 + Math.random() * 0.15; // 0.85 - 1.0
+                const bleeding = 0.3 + Math.random() * 0.5; // shadowBlur 0.3-0.8
+                
                 // Apply font-specific baseline offset
                 const adjustedY = getBaselineY(lineY, bFSize) + driftY;
 
                 ctx.save();
                 
-                // Set Font once for measurements if needed
+                // Set Font
                 ctx.font = `${isItalic ? 'italic ' : ''}${isBold ? 'bold ' : ''}${finalSize}px "${currentFontFamily}"`;
+                ctx.globalAlpha = pressureOpacity;
                 
                 // Apply Transformations
                 ctx.translate(x + xVar, adjustedY + yVar);
                 ctx.rotate(rotation);
 
-                // --- TWO-LAYER RENDERING ---
+                // --- LAYERED RENDERING ---
                 
-                // Layer 1: Ink Base (Subtle offset, lower opacity)
-                ctx.save();
-                ctx.globalAlpha = 0.3;
-                ctx.fillStyle = charInk;
-                ctx.fillText(char, 0.5, 0.5);
-                ctx.restore();
-
-                // Layer 2: Main Character (Ink top layer with bleeding)
-                ctx.shadowBlur = 0.5;
+                // Layer 1: Ink Bleeding (Soft edge)
+                ctx.shadowBlur = bleeding;
                 ctx.shadowColor = charInk;
-                ctx.fillStyle = charInk;
                 
-                // Gradient for subtle pressure/texture
-                const gradient = ctx.createLinearGradient(0, -finalSize/2, 0, finalSize/3);
+                // Layer 2: Main Character with Texture Gradient
+                const gradient = ctx.createLinearGradient(0, -finalSize, 0, 0);
                 gradient.addColorStop(0, charInk);
-                gradient.addColorStop(1, adjustBrightness(charInk, 0.85));
+                gradient.addColorStop(1, adjustBrightness(charInk, 0.9));
+                
                 ctx.fillStyle = gradient;
-
                 ctx.fillText(char, 0, 0);
 
                 ctx.restore();
 
-                // 3. Artifacts: Ink Dots / Splatter (Restored and refined)
-                if (Math.random() < 0.03) {
+                // 3. Artifacts: Ink Dots / Splatter (5% chance)
+                if (Math.random() < 0.05) {
                    ctx.save();
                    ctx.fillStyle = charInk;
-                   ctx.globalAlpha = 0.3;
-                   const dx = x + Math.random() * 20 - 10;
-                   const dy = adjustedY + (Math.random() * 10 - 5); 
+                   ctx.globalAlpha = 0.4;
+                   // Position randomly near baseline
+                   const dx = x + Math.random() * 10 - 5;
+                   const dy = adjustedY + (Math.random() * 6 - 3); 
                    ctx.beginPath();
-                   ctx.arc(dx, dy, 0.3 + Math.random() * 0.5, 0, Math.PI * 2);
+                   ctx.arc(dx, dy, 0.5 + Math.random() * 0.5, 0, Math.PI * 2);
                    ctx.fill();
                    ctx.restore();
                 }
 
-                // Return actual width + Random Spacing variation (±1-3px)
+                // Return actual width + Random Spacing variation
                 const w = ctx.measureText(char).width;
-                const spacingVar = (Math.random() - 0.5) * 4; // Approx ±2px
+                const spacingVar = (Math.random() - 0.5) * 3; // ±1.5px
                 
                 return w + letterSpacing + spacingVar;
             };
@@ -459,55 +481,57 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
                         const wordMetrics = ctx.measureText(word);
                         const wordWidth = wordMetrics.width + (word.length * letterSpacing);
                         
-                        // Wrapping Logic
+                        // Intelligent Word Wrapping
                         if (currentX + wordWidth > baseWidth - marginR) {
+                            // Can we break the word? (Syllable-based or character-based if too long)
                             if (wordWidth > usableWidth) {
-                                // Hyphenation for super long words
+                                // Hyphenation for words longer than the entire line
                                 const chars = word.split('');
                                 for (const char of chars) {
                                     const charWidth = ctx.measureText(char).width + letterSpacing;
                                     
-                                    // Check if we need to wrap the character
                                     if (currentX + charWidth > baseWidth - marginR) {
+                                        // Draw Hyphen
                                         if (pageNum === targetPage) {
                                             ctx.save();
                                             ctx.fillStyle = inkColor;
-                                            ctx.font = `${italic ? 'italic ' : ''}${bold ? 'bold ' : ''}${baseFSize}px "${currentFontFamily}"`;
                                             ctx.fillText('-', currentX, currentBaselineY);
                                             ctx.restore();
                                         }
 
-                                    if (marginT + (lineH * (currentLineIndex + 1)) > baseHeight - marginB) { 
-                                        pageNum++; 
-                                        currentLineIndex = 1;
+                                        // Move to next line
+                                        if (marginT + (lineH * (currentLineIndex + 1)) > baseHeight - marginB) { 
+                                            pageNum++; 
+                                            currentLineIndex = 1;
+                                        } else {
+                                            currentLineIndex++;
+                                        }
                                         currentBaselineY = marginT + (lineH * currentLineIndex);
-                                    } else {
-                                        currentLineIndex++;
-                                        currentBaselineY = marginT + (lineH * currentLineIndex);
+                                        currentX = textStartX;
                                     }
-                                    currentX = textStartX;
-                                }
-                                if (pageNum === targetPage) {
-                                    const w = drawCharWithEffects(char, currentX, currentBaselineY, baseFSize, bold, italic);
-                                    currentX += w;
-                                } else {
-                                    currentX += charWidth;
-                                }
-                            }
-                            continue; 
-                        } else {
-                            if (marginT + (lineH * (currentLineIndex + 1)) > baseHeight - marginB) {
-                                pageNum++;
-                                currentLineIndex = 1;
-                            } else {
-                                currentLineIndex++;
-                            }
-                            currentBaselineY = marginT + (lineH * currentLineIndex);
-                            currentX = textStartX;
-                        }
-                    }
 
-                    // Draw Word
+                                    if (pageNum === targetPage) {
+                                        const w = drawCharWithEffects(char, currentX, currentBaselineY, baseFSize, bold, italic);
+                                        currentX += w;
+                                    } else {
+                                        currentX += charWidth;
+                                    }
+                                }
+                                continue; 
+                            } else {
+                                // Word fits on a line but not the current one - move to next line
+                                if (marginT + (lineH * (currentLineIndex + 1)) > baseHeight - marginB) {
+                                    pageNum++;
+                                    currentLineIndex = 1;
+                                } else {
+                                    currentLineIndex++;
+                                }
+                                currentBaselineY = marginT + (lineH * currentLineIndex);
+                                currentX = textStartX;
+                            }
+                        }
+
+                        // Draw Word Normally
                         if (pageNum === targetPage) {
                             for (let i = 0; i < word.length; i++) {
                                 const w = drawCharWithEffects(word[i], currentX, currentBaselineY, baseFSize, bold, italic);
