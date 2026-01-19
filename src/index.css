@@ -66,3 +66,51 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+@media print {
+    body {
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Hide UI elements */
+    button, 
+    nav, 
+    aside, 
+    .no-print,
+    [role="tooltip"],
+    .fixed,
+    .absolute:not(.paper-content) {
+        display: none !important;
+    }
+
+    /* Layout adjustments */
+    .flex, .grid {
+        display: block !important;
+    }
+
+    .flex-1 {
+        padding: 0 !important;
+        overflow: visible !important;
+    }
+
+    /* Target the paper container */
+    .origin-center {
+        transform: scale(1) !important;
+        margin: 0 auto !important;
+        box-shadow: none !important;
+        rotate: 0deg !important;
+    }
+
+    canvas {
+        width: 100% !important;
+        height: auto !important;
+        mix-blend-mode: normal !important;
+    }
+
+    @page {
+        margin: 0;
+        size: auto;
+    }
+}
