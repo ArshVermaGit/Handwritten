@@ -109,8 +109,9 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
         wordSpacing,
         inkColor,
         paperMaterial,
-        customPaperImage,
-        paperShadow
+        paperShadow,
+        paperTexture,
+        customPaperImage
     } = useStore();
 
     const [totalPages, setTotalPages] = useState(1);
@@ -163,28 +164,85 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
             // Tokenize
             const tokens = tokenizeHTML(text);
 
-            // Base fill
-            ctx.fillStyle = isVintage ? '#f5f0e1' : isCream ? '#fffaf0' : '#ffffff';
+            // Base colors/textures
+            const paperColors: Record<string, string> = {
+                'white': '#FEFEFE',
+                'ruled': '#FDFDFD',
+                'college': '#FDFDFD',
+                'wide': '#FDFDFD',
+                'graph': '#FDFDFD',
+                'dotted': '#FDFDFD',
+                'vintage': '#F5E6D3',
+                'aged': '#E8DCC4',
+                'cream': '#FFF8E7',
+                'love-letter': '#FFF0F5',
+                'birthday': '#FFFBF0',
+                'christmas': '#F0FFF4',
+                'professional': '#FFFFFF'
+            };
+
+            const basePaperColor = paperColors[paperMaterial] || '#FFFFFF';
+            ctx.fillStyle = basePaperColor;
             ctx.fillRect(0, 0, baseWidth, baseHeight);
 
-            // Vintage/Aging aging
-            if (isVintage || isCream) {
-                ctx.save();
-                // Yellowish tint
-                ctx.fillStyle = isVintage ? 'rgba(255, 230, 150, 0.08)' : 'rgba(255, 245, 200, 0.04)';
-                ctx.fillRect(0, 0, baseWidth, baseHeight);
-                
-                // Extra texture/noise for aged paper
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
-                for (let i = 0; i < 50; i++) {
+            // 2.A PAPER FIBERS & TEXTURE HELPERS
+            const addPaperFibers = (targetCtx: CanvasRenderingContext2D) => {
+                targetCtx.save();
+                targetCtx.strokeStyle = 'rgba(0, 0, 0, 0.015)';
+                targetCtx.lineWidth = 0.5;
+                for (let i = 0; i < 2000; i++) {
                     const x = Math.random() * baseWidth;
                     const y = Math.random() * baseHeight;
-                    const r = Math.random() * 2;
-                    ctx.beginPath();
-                    ctx.arc(x, y, r, 0, Math.PI * 2);
-                    ctx.fill();
+                    const len = 2 + Math.random() * 5;
+                    const ang = Math.random() * Math.PI * 2;
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(x, y);
+                    targetCtx.lineTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len);
+                    targetCtx.stroke();
+                }
+                targetCtx.restore();
+            };
+
+            const addPaperNoise = (targetCtx: CanvasRenderingContext2D, intensity = 0.03) => {
+                const imageData = targetCtx.getImageData(0, 0, baseWidth, baseHeight);
+                const data = imageData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    const noise = (Math.random() - 0.5) * intensity * 255;
+                    data[i] = Math.max(0, Math.min(255, data[i] + noise));
+                    data[i+1] = Math.max(0, Math.min(255, data[i+1] + noise));
+                    data[i+2] = Math.max(0, Math.min(255, data[i+2] + noise));
+                }
+                targetCtx.putImageData(imageData, 0, 0);
+            };
+
+            // Material Specific Effects
+            if (paperMaterial === 'aged') {
+                ctx.save();
+                // Organic brown spots
+                for (let i = 0; i < 15; i++) {
+                    const x = Math.random() * baseWidth;
+                    const y = Math.random() * baseHeight;
+                    const r = 20 + Math.random() * 60;
+                    const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+                    grad.addColorStop(0, 'rgba(139, 69, 19, 0.05)');
+                    grad.addColorStop(1, 'rgba(139, 69, 19, 0)');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(x - r, y - r, r * 2, r * 2);
                 }
                 ctx.restore();
+            }
+
+            if (isVintage || isCream || paperMaterial === 'aged') {
+                ctx.save();
+                ctx.fillStyle = paperMaterial === 'aged' ? 'rgba(100, 50, 0, 0.05)' : 'rgba(255, 230, 150, 0.04)';
+                ctx.fillRect(0, 0, baseWidth, baseHeight);
+                ctx.restore();
+            }
+
+            // Paper Texture Generation
+            if (paperTexture) {
+                addPaperFibers(ctx);
+                addPaperNoise(ctx, paperMaterial === 'aged' ? 0.05 : 0.02);
             }
 
             // Custom Background
@@ -199,87 +257,122 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
                 });
             } 
 
-            // 3. RULED LINES SYSTEM (Draw BEFORE text)
+            // 3. RULED LINES SYSTEM
             const marginL = PAPER_CONFIG.margins.left;
             const marginR = PAPER_CONFIG.margins.right;
             const marginT = PAPER_CONFIG.margins.top;
             const marginB = PAPER_CONFIG.margins.bottom;
-            const lineH = PAPER_CONFIG.lineSpacing;
+            
+            // Spacing variants
+            let lineH = PAPER_CONFIG.lineSpacing;
+            if (paperMaterial === 'college') lineH = 30;
+            if (paperMaterial === 'wide') lineH = 50;
 
-            if (paperMaterial === 'ruled' || paperMaterial === 'white' || isVintage || isCream) {
+            const drawRuledLines = () => {
                 ctx.save();
-                
-                // 1. Horizontal Ruled Lines
-                ctx.strokeStyle = '#d0d0d0'; // Light gray default
-                // Temporary red lines for visual verification as requested
-                // ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)'; 
+                ctx.strokeStyle = '#d0d0d0';
                 ctx.lineWidth = 1;
-                
-                // Draw lines from margin top to bottom
-                // We interpret these lines as the EXACT BASELINES where text sits
                 for (let y = marginT + lineH; y <= baseHeight - marginB; y += lineH) {
                     ctx.beginPath();
                     ctx.moveTo(0, y);
                     ctx.lineTo(baseWidth, y);
                     ctx.stroke();
                 }
-                
-                // 2. Vertical Margin Line (Notebook style)
-                ctx.strokeStyle = 'rgba(255, 80, 80, 0.4)'; // Distinct red/pink
+                // Vertical margin
+                ctx.strokeStyle = 'rgba(229, 115, 115, 0.4)';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.moveTo(marginL, 0); 
+                ctx.moveTo(marginL, 0);
                 ctx.lineTo(marginL, baseHeight);
                 ctx.stroke();
-                
                 ctx.restore();
-            } else if (paperMaterial === 'graph') {
-                ctx.strokeStyle = '#e0e0e0';
-                ctx.lineWidth = 1;
+            };
+
+            const drawGraphPaper = () => {
+                ctx.save();
                 const step = 40;
-                for (let x = 0; x < baseWidth; x += step) {
+                for (let x = 0; x <= baseWidth; x += step) {
+                    ctx.strokeStyle = (x % (step * 5) === 0) ? '#C0C0C0' : '#E0E0E0';
+                    ctx.lineWidth = (x % (step * 5) === 0) ? 1 : 0.5;
                     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, baseHeight); ctx.stroke();
                 }
-                for (let y = 0; y < baseHeight; y += step) {
+                for (let y = 0; y <= baseHeight; y += step) {
+                    ctx.strokeStyle = (y % (step * 5) === 0) ? '#C0C0C0' : '#E0E0E0';
+                    ctx.lineWidth = (y % (step * 5) === 0) ? 1 : 0.5;
                     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(baseWidth, y); ctx.stroke();
                 }
-            } else if (paperMaterial === 'dotted') {
-                ctx.fillStyle = '#c0c0c0';
-                const step = 30;
-                for (let x = 30; x < baseWidth; x += step) {
-                    for (let y = 30; y < baseHeight; y += step) {
-                        ctx.beginPath(); ctx.arc(x, y, 1.5, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+            };
+
+            const drawDottedPaper = () => {
+                ctx.save();
+                ctx.fillStyle = '#CCCCCC';
+                const step = 40;
+                for (let x = step; x < baseWidth; x += step) {
+                    for (let y = step; y < baseHeight; y += step) {
+                        ctx.beginPath(); ctx.arc(x, y, 1, 0, Math.PI * 2); ctx.fill();
                     }
                 }
-            }
-
-            // 4. REALISTIC PAPER NOISE
-            const needsTexture = paperMaterial === 'white' || paperMaterial === 'ruled' || isVintage || isCream;
-            if (needsTexture) {
-                const noiseCanvas = document.createElement('canvas');
-                const noiseSize = 256;
-                noiseCanvas.width = noiseSize;
-                noiseCanvas.height = noiseSize;
-                const nCtx = noiseCanvas.getContext('2d')!;
-                
-                const imgData = nCtx.createImageData(noiseSize, noiseSize);
-                const data = imgData.data;
-                
-                for (let i = 0; i < data.length; i += 4) {
-                    const noise = Math.random() * 255;
-                    data[i] = noise;     // R
-                    data[i+1] = noise;   // G
-                    data[i+2] = noise;   // B
-                    data[i+3] = Math.random() * 12; // Very low opacity (approx 0.05 max)
-                }
-                nCtx.putImageData(imgData, 0, 0);
-
-                ctx.save();
-                ctx.fillStyle = ctx.createPattern(noiseCanvas, 'repeat')!;
-                ctx.globalCompositeOperation = 'multiply';
-                ctx.fillRect(0, 0, baseWidth, baseHeight);
                 ctx.restore();
+            };
+
+            const drawTemplates = () => {
+                if (paperMaterial === 'love-letter') {
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(255, 105, 180, 0.3)';
+                    ctx.lineWidth = 15;
+                    ctx.strokeRect(30, 30, baseWidth - 60, baseHeight - 60);
+                    ctx.restore();
+                } else if (paperMaterial === 'birthday') {
+                    // Confetti
+                    ctx.save();
+                    const colors = ['#FFD700', '#FF69B4', '#00BFFF', '#32CD32'];
+                    for (let i = 0; i < 100; i++) {
+                        ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+                        ctx.beginPath();
+                        ctx.arc(Math.random() * baseWidth, Math.random() * baseHeight, 2 + Math.random() * 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.restore();
+                } else if (paperMaterial === 'professional') {
+                    ctx.save();
+                    ctx.fillStyle = '#333';
+                    ctx.font = 'bold 24px serif';
+                    ctx.fillText('MEMORANDUM', marginL, 80);
+                    ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(marginL, 90); ctx.lineTo(baseWidth - marginR, 90); ctx.stroke();
+                    ctx.restore();
+                }
+            };
+
+            if (['ruled', 'college', 'wide', 'white', 'vintage', 'aged', 'cream', 'love-letter', 'professional'].includes(paperMaterial)) {
+                drawRuledLines();
+            } else if (paperMaterial === 'graph') {
+                drawGraphPaper();
+            } else if (paperMaterial === 'dotted') {
+                drawDottedPaper();
+            } else if (paperMaterial === 'custom' && customPaperImage) {
+                // Render custom paper image
+                const img = new Image();
+                img.src = customPaperImage;
+                // Since this is inside renderContent which might be async, 
+                // we should ensure it's loaded before continuing
+                await new Promise((resolve) => {
+                    if (img.complete) resolve(null);
+                    else {
+                        img.onload = () => resolve(null);
+                        img.onerror = () => resolve(null);
+                    }
+                });
+                
+                // Draw image covering the whole base paper size
+                ctx.drawImage(img, 0, 0, baseWidth, baseHeight);
             }
+            drawTemplates();
+
+            // Set blend mode for ink
+            ctx.globalCompositeOperation = 'multiply';
+
 
             if (!text.trim()) {
                 if (targetPage === 1) {
@@ -544,7 +637,9 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
                 }
             }
 
-            // 5. POST-PROCESSING IMPERFECTIONS (Only for screen render)
+            // Reset composite operation
+            ctx.globalCompositeOperation = 'source-over';
+
             if (!isExport) {
                 // Vignette / Edge Shadow
                 const grad = ctx.createRadialGradient(
@@ -562,7 +657,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
             }
 
             return pageNum; // Total pages encountered
-    }, [fontSize, letterSpacing, wordSpacing, inkColor, paperMaterial, customPaperImage, baseWidth, baseHeight, currentFontFamily, text, handwritingStyle]);
+    }, [fontSize, letterSpacing, wordSpacing, inkColor, paperMaterial, customPaperImage, paperTexture, baseWidth, baseHeight, currentFontFamily, text, handwritingStyle]);
 
 
     // Export & Rendering Logic
@@ -657,27 +752,58 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
         render();
     }, [renderContent, currentPage, totalPages, displayWidth, displayHeight, onRenderComplete, baseWidth, baseHeight]);
 
+    const paperColors: Record<string, string> = {
+        'white': '#FEFEFE',
+        'ruled': '#FDFDFD',
+        'college': '#FDFDFD',
+        'wide': '#FDFDFD',
+        'graph': '#FDFDFD',
+        'dotted': '#FDFDFD',
+        'vintage': '#F5E6D3',
+        'aged': '#E8DCC4',
+        'cream': '#FFF8E7',
+        'love-letter': '#FFF0F5',
+        'birthday': '#FFFBF0',
+        'christmas': '#F0FFF4',
+        'professional': '#FFFFFF'
+    };
+
     return (
-        <div className="relative transition-all duration-500 ease-in-out">
+        <div className="relative transition-all duration-500 ease-in-out group pb-8">
             <div 
-                className={`transform-gpu transition-all duration-500 rounded-sm overflow-hidden ${paperShadow ? 'shadow-[0_20px_50px_rgba(0,0,0,0.15)]' : ''}`}
+                className={`transform-gpu transition-all duration-700 rounded-sm overflow-hidden relative ${paperShadow ? 'shadow-[0_25px_60px_-15px_rgba(0,0,0,0.2)] ring-1 ring-black/5 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)]' : ''}`}
                 style={{
                     width: displayWidth,
                     height: displayHeight,
-                    backgroundColor: paperMaterial === 'vintage' ? '#f5f0e1' : 
-                                   (paperMaterial as string) === 'cream' ? '#fffaf0' : '#ffffff',
-                    boxShadow: paperShadow ? '0 10px 30px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' : 'none'
+                    backgroundColor: paperColors[paperMaterial] || '#ffffff',
+                    transform: `rotate(${paperShadow ? '-0.5deg' : '0deg'}) scale(${paperShadow ? 0.99 : 1})`,
+                    transition: 'all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)'
                 }}
             >
+                {paperShadow && (
+                    <div className="absolute top-0 right-0 w-20 h-20 pointer-events-none overflow-hidden origin-top-right">
+                        <div className="absolute top-[-10px] right-[-10px] w-24 h-24 bg-white shadow-[-10px_10px_20px_rgba(0,0,0,0.15)] rotate-45 transform border-b border-l border-gray-100/50" />
+                        <div className="absolute top-0 right-0 w-full h-full bg-linear-to-bl from-gray-300/10 to-transparent" />
+                    </div>
+                )}
+                
                 <canvas
                     ref={internalCanvasRef}
-                    className="w-full h-full"
+                    className="w-full h-full select-none"
+                    style={{
+                        mixBlendMode: 'multiply'
+                    }}
                 />
+
+                {/* Subtle paper grain overlay for UI depth */}
+                {paperTexture && (
+                    <div className="absolute inset-0 pointer-events-none opacity-[0.04] mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/pinstriped-suit.png')]" />
+                )}
             </div>
             
             {/* Pagination Indicator */}
-            <div className="absolute -bottom-10 left-0 right-0 flex justify-center items-center gap-4 text-sm text-gray-400 font-medium">
-                <span>Page {currentPage} of {totalPages}</span>
+            <div className="absolute bottom-0 left-0 right-0 flex justify-center items-center gap-4 text-sm text-gray-400 font-medium">
+                <span className="bg-white/50 backdrop-blur-sm px-3 py-1 rounded-full border border-gray-100">Page {currentPage} of {totalPages}</span>
             </div>
         </div>
     );
