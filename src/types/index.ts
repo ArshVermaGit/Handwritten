@@ -14,6 +14,14 @@ export type PaperOrientation = 'portrait' | 'landscape';
 
 export type ToastType = 'success' | 'error' | 'info';
 
+export interface Token {
+    type: 'tag' | 'text';
+    tagName?: string;
+    isClosing?: boolean;
+    attributes?: { src?: string };
+    content?: string;
+}
+
 export interface AppState {
     text: string;
     lastSaved: Date | null;
