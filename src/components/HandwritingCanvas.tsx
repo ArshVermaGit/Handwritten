@@ -9,21 +9,27 @@ interface HandwritingCanvasProps {
     currentPage: number;
 }
 
-const PAPER_CONFIG = {
-    width: 210, // mm
-    height: 297, // mm
-    margins: {
-        top: 120,    // px at 300 DPI
-        bottom: 100, // px at 300 DPI
-        left: 100,   // px at 300 DPI
-        right: 100   // px at 300 DPI
-    },
-    ppi: 300,
-    lineSpacing: 40 // Default px
+const PAGE_CONFIG = {
+    a4: { width: 2480, height: 3508 },
+    letter: { width: 2550, height: 3300 },
+    legal: { width: 2550, height: 4200 },
+    a5: { width: 1748, height: 2480 },
+    a6: { width: 1240, height: 1748 },
+    tabloid: { width: 3300, height: 5100 }
 };
 
-// Convert mm to pixels at 300 PPI (approx 2480x3508 for A4)
-const mmToPx = (mm: number) => Math.round((mm * PAPER_CONFIG.ppi) / 25.4);
+const MARGINS = {
+    top: 120,
+    bottom: 100,
+    left: 100,
+    right: 100
+};
+
+const PPI = 300;
+const LINE_HEIGHT = 40; // matches ruled line spacing
+
+// Helper for display scaling
+const pxToDisplay = (px: number) => (px * 96) / PPI;
 
 interface Token {
     type: 'tag' | 'text';
@@ -109,6 +115,8 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
         wordSpacing,
         inkColor,
         paperMaterial,
+        paperSize,
+        paperOrientation,
         paperShadow,
         paperTexture,
         customPaperImage
@@ -116,13 +124,17 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
 
     const [totalPages, setTotalPages] = useState(1);
 
-    // Calculate canvas dimensions using 300 DPI as base
-    const baseWidth = mmToPx(PAPER_CONFIG.width);
-    const baseHeight = mmToPx(PAPER_CONFIG.height);
+    const config = PAGE_CONFIG[paperSize as keyof typeof PAGE_CONFIG] || PAGE_CONFIG.a4;
+    const isLandscape = paperOrientation === 'landscape';
     
-    // For display, we use a smaller size or fit to container
-    const displayWidth = (PAPER_CONFIG.width * 96) / 25.4;
-    const displayHeight = (PAPER_CONFIG.height * 96) / 25.4;
+    const baseWidth = isLandscape ? config.height : config.width;
+    const baseHeight = isLandscape ? config.width : config.height;
+    
+    const displayWidth = pxToDisplay(baseWidth);
+    const displayHeight = pxToDisplay(baseHeight);
+
+    const usableHeight = baseHeight - MARGINS.top - MARGINS.bottom;
+    const linesPerPage = Math.floor(usableHeight / LINE_HEIGHT);
 
     const currentFontFamily = fontFamilies[handwritingStyle] || 'Caveat';
 
@@ -258,13 +270,13 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
             } 
 
             // 3. RULED LINES SYSTEM
-            const marginL = PAPER_CONFIG.margins.left;
-            const marginR = PAPER_CONFIG.margins.right;
-            const marginT = PAPER_CONFIG.margins.top;
-            const marginB = PAPER_CONFIG.margins.bottom;
+            const marginL = MARGINS.left;
+            const marginR = MARGINS.right;
+            const marginT = MARGINS.top;
+            const marginB = MARGINS.bottom;
             
             // Spacing variants
-            let lineH = PAPER_CONFIG.lineSpacing;
+            let lineH = LINE_HEIGHT;
             if (paperMaterial === 'college') lineH = 30;
             if (paperMaterial === 'wide') lineH = 50;
 
@@ -425,7 +437,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
             let bold = false;
             let italic = false;
             // Base Font Size scaled to PPI
-            const fontScale = PAPER_CONFIG.ppi / 96; 
+            const fontScale = PPI / 96; 
             let baseFSize = fontSize * fontScale;
 
             ctx.textBaseline = 'alphabetic'; // Text sits ON the line
@@ -522,11 +534,11 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
                             currentBaselineY = marginT + (lineH * currentLineIndex);
                             currentX = textStartX + (isParagraph ? 30 : 0);
                             
-                            if (currentBaselineY > baseHeight - marginB) {
+                            if (currentLineIndex > linesPerPage) {
                                 pageNum++;
                                 currentLineIndex = 1;
                                 currentBaselineY = marginT + (lineH * currentLineIndex);
-                                currentX = textStartX + 30;
+                                currentX = textStartX + (isParagraph ? 30 : 0);
                             }
                         }
                     }
@@ -593,7 +605,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
                                         }
 
                                         // Move to next line
-                                        if (marginT + (lineH * (currentLineIndex + 1)) > baseHeight - marginB) { 
+                                        if (currentLineIndex >= linesPerPage) { 
                                             pageNum++; 
                                             currentLineIndex = 1;
                                         } else {
@@ -613,7 +625,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
                                 continue; 
                             } else {
                                 // Word fits on a line but not the current one - move to next line
-                                if (marginT + (lineH * (currentLineIndex + 1)) > baseHeight - marginB) {
+                                if (currentLineIndex >= linesPerPage) {
                                     pageNum++;
                                     currentLineIndex = 1;
                                 } else {
@@ -657,7 +669,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
             }
 
             return pageNum; // Total pages encountered
-    }, [fontSize, letterSpacing, wordSpacing, inkColor, paperMaterial, customPaperImage, paperTexture, baseWidth, baseHeight, currentFontFamily, text, handwritingStyle]);
+    }, [fontSize, letterSpacing, wordSpacing, inkColor, paperMaterial, customPaperImage, paperTexture, baseWidth, baseHeight, currentFontFamily, text, handwritingStyle, linesPerPage]);
 
 
     // Export & Rendering Logic
@@ -675,19 +687,23 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
 
     useImperativeHandle(ref, () => ({
         exportPDF: async () => {
+            const widthMM = (baseWidth * 25.4) / PPI;
+            const heightMM = (baseHeight * 25.4) / PPI;
+            const isLandscape = paperOrientation === 'landscape';
+            
             const pdf = new jsPDF({
-                orientation: 'portrait',
+                orientation: isLandscape ? 'landscape' : 'portrait',
                 unit: 'mm',
-                format: 'a4'
+                format: [widthMM, heightMM]
             });
 
             const offscreenCanvas = document.createElement('canvas');
             
             for (let i = 1; i <= totalPages; i++) {
-                if (i > 1) pdf.addPage();
+                if (i > 1) pdf.addPage([widthMM, heightMM], isLandscape ? 'landscape' : 'portrait');
                 await renderPageToCanvas(i, offscreenCanvas);
                 const imgData = offscreenCanvas.toDataURL('image/jpeg', 0.95);
-                pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+                pdf.addImage(imgData, 'JPEG', 0, 0, widthMM, heightMM);
             }
             
             return pdf;
