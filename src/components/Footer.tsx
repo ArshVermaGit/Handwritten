@@ -15,7 +15,7 @@ export default function Footer() {
                             <h3 className="text-2xl font-display font-bold text-ink tracking-tight uppercase">InkPad</h3>
                         </div>
                         <p className="text-ink/40 text-sm leading-relaxed font-medium">
-                            A heritage-inspired digital studio for generating authentic handwriting. Bridging craftsmanship and technology to redefine modern document creation.
+                            A quiet space for creating hand-written documents. We're here to bring a bit of warmth and personality back to your digital notes.
                         </p>
                     </div>
 
@@ -50,7 +50,7 @@ export default function Footer() {
                 </div>
 
                 <div className="mt-32 pt-12 border-t border-black/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black uppercase tracking-[0.3em] text-ink/20">
-                    <p>&copy; {new Date().getFullYear()} InkPad Ecosystem. Designed for Excellence.</p>
+                    <p>&copy; {new Date().getFullYear()} InkPad. Built with care and a love for the written word.</p>
                     <div className="flex gap-8">
                         <a href="#" className="hover:text-ink transition-colors">Privacy</a>
                         <a href="#" className="hover:text-ink transition-colors">Terms</a>
