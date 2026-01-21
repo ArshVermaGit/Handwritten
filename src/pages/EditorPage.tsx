@@ -1,37 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Trash2, 
-    ZoomIn, 
-    ZoomOut, 
-    Loader2,
-    Upload,
-    FileText,
-    Download,
-    FileDown,
-    Bold,
-    Italic,
-    Underline,
-    List,
-    Layers,
-    ChevronLeft,
-    ChevronRight,
-    Search,
-    HelpCircle,
-    LayoutTemplate,
-    Zap,
-    Monitor,
-    Type,
-    Settings2,
-    Sparkles,
-    RotateCcw,
-    Palette,
-    FileImage,
-    Layout,
-    Share2,
-    CheckCircle2,
-    Image as ImageIcon,
-    User
+    Trash2, ZoomIn, ZoomOut, Loader2, Upload, FileText, Download, FileDown, 
+    Bold, Italic, Underline, List, Layers, ChevronLeft, ChevronRight, Search, 
+    Zap, Type, Settings2, Sparkles, Palette, FileImage, Layout, CheckCircle2, 
+    Image as ImageIcon, PanelLeftClose, PanelLeft, Minimize2
 } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { HandwritingCanvas } from '../components/HandwritingCanvas';
@@ -39,8 +12,10 @@ import type { HandwritingCanvasHandle } from '../components/HandwritingCanvas';
 import type { PaperMaterial } from '../types';
 import { useDebounce } from '../hooks/useDebounce';
 import { useToast } from '../hooks/useToast';
+import logo from '../assets/logo.png';
 
-// Font Definitions
+// --- CONSTANTS & CONFIG ---
+
 const HANDWRITING_FONTS = [
     { id: 'caveat', name: 'Caveat', family: "'Caveat', cursive" },
     { id: 'gloria-hallelujah', name: 'Gloria Hallelujah', family: "'Gloria Hallelujah', cursive" },
@@ -54,7 +29,6 @@ const HANDWRITING_FONTS = [
     { id: 'nothing-you-could-do', name: 'Nothing You Could Do', family: "'Nothing You Could Do', cursive" },
 ];
 
-// Ink Color Presets
 const INK_COLORS = [
     { id: 'blue-dark', name: 'Blue Dark', color: '#0051a8' },
     { id: 'blue-light', name: 'Blue Light', color: '#0066cc' },
@@ -63,7 +37,6 @@ const INK_COLORS = [
     { id: 'red', name: 'Red', color: '#cc0000' },
 ];
 
-// Paper Types with CSS backgrounds
 const PAPER_TYPES = [
     { id: 'white', name: 'White', bg: '#ffffff', pattern: 'none' },
     { id: 'ruled', name: 'Standard Ruled', bg: '#ffffff', pattern: 'repeating-linear-gradient(transparent, transparent 38px, #e0e0e0 38px, #e0e0e0 40px)' },
@@ -80,1051 +53,608 @@ const PAPER_TYPES = [
     { id: 'custom', name: 'Custom Upload', bg: '#ffffff', pattern: 'none' },
 ];
 
+const PRESETS = {
+    homework: { handwritingStyle: 'gloria-hallelujah', inkColor: '#0051a8', paperMaterial: 'college' as const, fontSize: 18, lineHeight: 1.6, paperShadow: true, paperTilt: false },
+    love: { handwritingStyle: 'indie-flower', inkColor: '#cc0000', paperMaterial: 'love-letter' as const, fontSize: 20, lineHeight: 1.4, paperShadow: true, paperTilt: true },
+    professional: { handwritingStyle: 'patrick-hand', inkColor: '#000000', paperMaterial: 'professional' as const, fontSize: 16, lineHeight: 1.5, paperShadow: false, paperTilt: false },
+    history: { handwritingStyle: 'caveat', inkColor: '#333333', paperMaterial: 'aged' as const, fontSize: 17, lineHeight: 1.8, paperShadow: true, paperTilt: false }
+} as const;
+
+// --- COMPONENTS ---
+
+const Tooltip = ({ children, text }: { children: React.ReactNode, text: string }) => (
+    <div className="group relative flex items-center justify-center">
+        {children}
+        <div className="absolute left-full ml-3 px-2 py-1 bg-ink text-white text-[10px] font-bold uppercase tracking-widest rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl">
+            {text}
+            <div className="absolute left-0 top-1/2 -translate-x-1 -translate-y-1/2 border-y-4 border-y-transparent border-r-4 border-r-ink" />
+        </div>
+    </div>
+);
+
+const SectionLabel = ({ icon, title }: { icon: React.ReactNode, title: string }) => (
+    <div className="flex items-center gap-2 mb-3 text-ink/40">
+        {icon}
+        <span className="text-[10px] font-black uppercase tracking-[0.2em]">{title}</span>
+    </div>
+);
+
+// --- MAIN PAGE COMPONENT ---
+
 export default function EditorPage() {
     const {
-        text,
-        setText,
-        lastSaved,
-        setLastSaved,
-        zoom,
-        setZoom,
-        editorMode,
-        setEditorMode,
-        uploadedFileName,
-        setUploadedFileName,
-        handwritingStyle,
-        setHandwritingStyle,
-        fontSize,
-        setFontSize,
-        letterSpacing,
-        setLetterSpacing,
-        lineHeight,
-        setLineHeight,
-        wordSpacing,
-        setWordSpacing,
-        inkColor,
-        setInkColor,
-        paperMaterial,
-        setPaperMaterial,
-        paperShadow,
-        setPaperShadow,
-        paperTexture,
-        setPaperTexture,
-        paperTilt,
-        setPaperTilt: setStorePaperTilt,
-        isRendering,
-        setIsRendering,
-        renderingProgress,
-        applyPreset: applyStorePreset,
-        reset: resetStore
+        text, setText, lastSaved, setLastSaved, zoom, setZoom, editorMode, setEditorMode,
+        uploadedFileName, setUploadedFileName, handwritingStyle, setHandwritingStyle,
+        fontSize, setFontSize, letterSpacing, setLetterSpacing, lineHeight, setLineHeight,
+        wordSpacing, setWordSpacing, inkColor, setInkColor, paperMaterial, setPaperMaterial,
+        paperShadow, setPaperShadow, paperTexture, setPaperTexture, paperTilt, setPaperTilt,
+        isRendering, setIsRendering, applyPreset
     } = useStore();
+
     const [fontSearch, setFontSearch] = useState('');
     const richTextRef = useRef<HTMLDivElement>(null);
-    const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
-    const [isPresetsOpen, setIsPresetsOpen] = useState(false);
+    const [isHelpOpen, setIsHelpOpen] = useState(false);
+    const [activePanel, setActivePanel] = useState<'style' | 'paper' | 'export' | null>('style'); 
+    const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true); 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
 
-    // Page state
+    // Page State
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    
-    // UI Layout State
-    const [activeTab, setActiveTab] = useState<'style' | 'paper' | 'export'>('style');
-    
-    // Auto-save feedback logic
     const [secondsAgo, setSecondsAgo] = useState(0);
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setSecondsAgo(prev => prev + 1);
-        }, 1000);
-        return () => clearInterval(interval);
-    }, []);
 
-    // Rendering State
+    // Render & Export State
     const [isLoading, setIsLoading] = useState(true);
-    const [isSampleLoading, setIsSampleLoading] = useState(false);
     const debouncedText = useDebounce(text, 300);
     const debouncedFontFamily = useDebounce(handwritingStyle, 300);
     const debouncedPaperMaterial = useDebounce(paperMaterial, 300);
-    
-    // Export State
     const [isExporting, setIsExporting] = useState(false);
     const [exportFormat, setExportFormat] = useState<'image/png' | 'image/jpeg'>('image/png');
     const [exportQuality, setExportQuality] = useState(1.0);
     const canvasRef = useRef<HandwritingCanvasHandle>(null);
     const { addToast } = useToast();
 
+    // Derived
+    const wordCount = useMemo(() => text.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length, [text]);
+    const charCount =  text.replace(/<[^>]*>/g, '').length;
+    const filteredFonts = useMemo(() => HANDWRITING_FONTS.filter(f => f.name.toLowerCase().includes(fontSearch.toLowerCase())), [fontSearch]);
 
-    // Export Handlers
-    const handleExportPDF = useCallback(async () => {
-        if (!canvasRef.current || isExporting) return;
-        setIsExporting(true);
-        addToast('Creating your PDF...');
-        try {
-            const pdf = await canvasRef.current.exportPDF();
-            pdf.save(`${uploadedFileName || 'inkpad-document'}.pdf`);
-            addToast('PDF Downloaded!');
-        } catch (error) {
-            console.error(error);
-            addToast('Export failed', 'error');
-        } finally {
-            setIsExporting(false);
-        }
-    }, [isExporting, uploadedFileName, addToast]);
+    // --- EFFECTS ---
 
-    const handleExportPNG = useCallback(async () => {
-        if (!canvasRef.current || isExporting) return;
-        setIsExporting(true);
-        const formatLabel = exportFormat === 'image/png' ? 'PNG' : 'JPEG';
-        addToast(`Capturing Page as ${formatLabel}...`);
+    useEffect(() => { setTimeout(() => setIsLoading(false), 800); }, []);
 
-        try {
-            const dataUrl = await canvasRef.current.exportPNG(exportQuality, exportFormat);
-            const link = document.createElement('a');
-            link.download = `${uploadedFileName || 'inkpad-page'}.${exportFormat === 'image/png' ? 'png' : 'jpg'}`;
-            link.href = dataUrl;
-            link.click();
-            addToast(`${formatLabel} Downloaded!`);
-        } catch (error) {
-            console.error(error);
-            addToast('Export failed', 'error');
-        } finally {
-            setIsExporting(false);
-        }
-    }, [isExporting, uploadedFileName, addToast, exportFormat, exportQuality]);
-
-    const handleExportZIP = useCallback(async () => {
-        if (!canvasRef.current || isExporting) return;
-        setIsExporting(true);
-        addToast('Saving everything as a ZIP file...');
-        try {
-            const blob = await canvasRef.current.exportZIP();
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.download = `${uploadedFileName || 'inkpad-workspace'}.zip`;
-            link.href = url;
-            link.click();
-            URL.revokeObjectURL(url);
-            addToast('ZIP Archive Downloaded!');
-        } catch (error) {
-            console.error(error);
-            addToast('Export failed', 'error');
-        } finally {
-            setIsExporting(false);
-        }
-    }, [isExporting, uploadedFileName, addToast]);
-
-    const presets = {
-        homework: {
-            handwritingStyle: 'gloria-hallelujah',
-            inkColor: '#0051a8',
-            paperMaterial: 'college' as const,
-            fontSize: 18,
-            lineHeight: 1.6,
-            paperShadow: true,
-            paperTilt: false,
-        },
-        love: {
-            handwritingStyle: 'indie-flower',
-            inkColor: '#cc0000',
-            paperMaterial: 'love-letter' as const,
-            fontSize: 20,
-            lineHeight: 1.4,
-            paperShadow: true,
-            paperTilt: true,
-        },
-        professional: {
-            handwritingStyle: 'patrick-hand',
-            inkColor: '#000000',
-            paperMaterial: 'professional' as const,
-            fontSize: 16,
-            lineHeight: 1.5,
-            paperShadow: false,
-            paperTilt: false,
-        },
-        history: {
-            handwritingStyle: 'caveat',
-            inkColor: '#333333',
-            paperMaterial: 'aged' as const,
-            fontSize: 17,
-            lineHeight: 1.8,
-            paperShadow: true,
-            paperTilt: false,
-        }
-    } as const;
-
-
-    const SectionHeader = ({ icon, title }: { icon: React.ReactNode, title: string }) => (
-        <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-accent/10 text-accent rounded-xl shadow-inner-paper">
-                {icon}
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-ink/60">{title}</span>
-        </div>
-    );
-
-    const HelpModal = () => (
-        <AnimatePresence>
-            {isHelpModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={() => setIsHelpModalOpen(false)}
-                        className="fixed inset-0 bg-ink/40 backdrop-blur-md" 
-                    />
-                    <motion.div 
-                        initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                        className="relative w-full max-w-lg glass border border-white/50 rounded-[2.5rem] shadow-2xl overflow-hidden p-10"
-                    >
-                        <h2 className="text-3xl font-display font-black text-ink mb-8 flex items-center gap-4">
-                            <Sparkles className="text-accent" fill="currentColor" /> How-to Guide
-                        </h2>
-                        
-                        <div className="space-y-8">
-                            <div className="grid grid-cols-2 gap-6">
-                                <div className="p-6 bg-paper rounded-4xl border border-black/5 shadow-inner-paper">
-                                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-4">Shortcuts</h3>
-                                    <ul className="space-y-3 text-xs font-bold text-ink/70">
-                                        <li className="flex justify-between"><span>Generate</span> <span className="text-accent/60">Ctrl+G</span></li>
-                                        <li className="flex justify-between"><span>PNG Export</span> <span className="text-accent/60">Ctrl+D</span></li>
-                                        <li className="flex justify-between"><span>Clear Editor</span> <span className="text-accent/60">Ctrl+K</span></li>
-                                    </ul>
-                                </div>
-                                <div className="p-6 bg-paper rounded-4xl border border-black/5 shadow-inner-paper">
-                                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-4">Modes</h3>
-                                    <p className="text-[11px] text-ink/60 leading-relaxed font-bold">
-                                        Use <span className="text-ink">Rich Mode</span> for more control, bold text, and images.
-                                    </p>
-                                </div>
-                            </div>
-                            
-                            <div className="space-y-4">
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-ink/30">Pro Tips</h3>
-                                <div className="flex gap-4 items-start p-5 border-2 border-dashed border-black/5 rounded-3xl bg-paper/50">
-                                    <Monitor size={20} className="text-accent shrink-0" />
-                                    <p className="text-[11px] text-ink/50 font-bold leading-relaxed">
-                                        Use <span className="text-ink">Themes</span> to instantly get the right look.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button 
-                            onClick={() => setIsHelpModalOpen(false)}
-                            className="w-full mt-10 btn-premium rounded-2xl py-5"
-                        >
-                            Got it
-                        </button>
-                    </motion.div>
-                </div>
-            )}
-        </AnimatePresence>
-    );
-
-    const WorkspaceHeader = () => (
-        <header className="h-20 flex items-center justify-between px-8 border-b border-black/5 bg-paper/80 backdrop-blur-md z-30 shrink-0">
-            <div className="flex items-center gap-10">
-                <div className="flex items-center gap-3 group cursor-pointer" onClick={() => resetStore()}>
-                    <div className="w-9 h-9 bg-ink rounded-xl flex items-center justify-center group-hover:bg-accent transition-all duration-500 shadow-lg shadow-ink/10 group-hover:scale-110">
-                        <span className="text-white font-display font-black text-xl italic leading-none">I</span>
-                    </div>
-                    <h1 className="text-2xl font-display font-bold tracking-tight text-ink uppercase">InkPad</h1>
-                </div>
-                
-                <div className="h-8 w-px bg-black/5" />
-                
-                <div className="flex flex-col">
-                    <div className="flex items-center gap-3 group">
-                        <input 
-                            type="text"
-                            value={uploadedFileName || 'New Document'}
-                            onChange={(e) => setUploadedFileName(e.target.value)}
-                            className="text-sm font-bold bg-transparent border-none p-0 focus:ring-0 w-64 hover:bg-black/5 rounded-lg px-2 py-1 transition-all text-ink/80"
-                        />
-                        <Share2 size={14} className="text-ink/20 group-hover:text-accent cursor-pointer transition-colors" />
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] px-2">
-                        {isLoading ? (
-                            <span className="flex items-center gap-2 text-accent"><Loader2 size={10} className="animate-spin" /> Saving...</span>
-                        ) : (
-                            <span className="flex items-center gap-2 text-ink/30"><CheckCircle2 size={10} className="text-accent" /> {lastSaved ? `Saved ${secondsAgo}s ago` : 'Waiting for text'}</span>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            <div className="flex items-center gap-6">
-                <div className="hidden md:flex items-center gap-1 p-1 bg-black/5 rounded-2xl border border-black/5">
-                    <button 
-                        onClick={() => setEditorMode('plain')}
-                        className={`px-6 py-2 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all ${editorMode === 'plain' ? 'glass shadow-sm text-ink' : 'text-ink/30 hover:text-ink'}`}
-                    >
-                        Plain
-                    </button>
-                    <button 
-                        onClick={() => setEditorMode('rich')}
-                        className={`px-6 py-2 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all ${editorMode === 'rich' ? 'glass shadow-sm text-ink' : 'text-ink/30 hover:text-ink'}`}
-                    >
-                        Rich
-                    </button>
-                </div>
-
-                <div className="h-8 w-px bg-black/5" />
-
-                <button
-                    onClick={handleExportPDF}
-                    disabled={isExporting}
-                    className="btn-premium rounded-2xl py-3 px-8 text-[10px] shadow-xl shadow-ink/10"
-                >
-                    {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-                    Download PDF
-                </button>
-
-                <div className="w-11 h-11 flex items-center justify-center glass hover:bg-white rounded-2xl transition-all border border-black/5 cursor-pointer group shadow-sm">
-                    <User size={20} className="text-ink/40 group-hover:text-ink transition-colors" />
-                </div>
-            </div>
-        </header>
-    );
-
-    const SlimActionBar = () => (
-        <aside className="w-20 flex flex-col items-center py-8 gap-8 border-r border-black/5 bg-paper/50 z-20 shrink-0">
-            <button 
-                onClick={() => setIsPresetsOpen(!isPresetsOpen)}
-                className={`p-4 rounded-2xl transition-all group relative ${isPresetsOpen ? 'bg-accent text-white shadow-xl shadow-accent/20 scale-110' : 'hover:bg-black/5 text-ink/30 hover:text-ink'}`}
-                title="Themes & Presets"
-            >
-                <LayoutTemplate size={24} />
-                {isPresetsOpen && <motion.div layoutId="sidebar-accent" className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-6 bg-accent rounded-full" />}
-            </button>
-            
-            <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="p-4 rounded-2xl hover:bg-black/5 text-ink/30 hover:text-ink transition-all group scale-100 hover:scale-110"
-                title="Import Text"
-            >
-                <Upload size={24} />
-            </button>
-
-            <button 
-                onClick={() => setActiveTab('export')}
-                className={`p-4 rounded-2xl transition-all group relative ${activeTab === 'export' ? 'bg-accent text-white shadow-xl shadow-accent/20 scale-110' : 'hover:bg-black/5 text-ink/30 hover:text-ink'}`}
-                title="Export Center"
-            >
-                <Download size={24} />
-                {activeTab === 'export' && <motion.div layoutId="sidebar-accent" className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-6 bg-accent rounded-full" />}
-            </button>
-
-            <div className="mt-auto flex flex-col gap-6">
-                <button 
-                    onClick={() => setIsHelpModalOpen(true)}
-                    className="p-4 rounded-2xl hover:bg-black/5 text-ink/20 hover:text-ink transition-all"
-                    title="Documentation"
-                >
-                    <HelpCircle size={24} />
-                </button>
-                <button 
-                    onClick={() => resetStore()}
-                    className="p-4 rounded-2xl hover:bg-red-50 text-ink/10 hover:text-red-500 transition-all border border-transparent hover:border-red-100"
-                    title="Reset Everything"
-                >
-                    <Trash2 size={24} />
-                </button>
-            </div>
-        </aside>
-    );
-
-    const RightSettingsSidebar = () => (
-        <aside className="w-80 h-full border-l border-gray-100 bg-white flex flex-col overflow-hidden z-20 shrink-0">
-            {/* Tab Switcher */}
-            <div className="px-8 pt-8 mb-10">
-                <div className="flex p-1 bg-black/5 rounded-2xl border border-black/5">
-                    {(['style', 'paper', 'export'] as const).map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`flex-1 py-2 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all ${
-                                activeTab === tab 
-                                ? 'glass shadow-sm text-ink' 
-                                : 'text-ink/30 hover:text-ink'
-                            }`}
-                        >
-                            {tab}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-8 pb-8 scrollbar-hide">
-                <AnimatePresence mode="wait">
-                    {activeTab === 'style' && (
-                        <motion.div
-                            key="style"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            className="space-y-8"
-                        >
-                            <div className="space-y-4">
-                                <SectionHeader icon={<Type size={14} />} title="Typography" />
-                                <div className="relative group">
-                                    <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink/20 group-focus-within:text-accent transition-colors" />
-                                    <input 
-                                        type="text"
-                                        placeholder="Find your style..."
-                                        value={fontSearch}
-                                        onChange={(e) => setFontSearch(e.target.value)}
-                                        className="w-full bg-black/5 border border-black/5 rounded-2xl py-3 pl-11 pr-4 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-accent/10 transition-all shadow-inner-paper placeholder:text-ink/20"
-                                    />
-                                </div>
-                                <div className="relative">
-                                    <select 
-                                        value={handwritingStyle}
-                                        onChange={(e) => setHandwritingStyle(e.target.value)}
-                                        className="w-full bg-black/5 border border-black/5 rounded-2xl py-3 px-5 text-xs font-bold focus:ring-2 focus:ring-accent/20 outline-none appearance-none cursor-pointer text-ink/80"
-                                    >
-                                        {filteredFonts.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-                                    </select>
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-ink/20 shadow-inner-paper">
-                                        <ChevronRight size={14} className="rotate-90" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Layout Settings</label>
-                                    <button onClick={() => resetStore()} className="text-[9px] font-bold text-blue-500 uppercase tracking-widest hover:underline">Reset</button>
-                                </div>
-                                
-                                {[
-                                    { label: 'Font Size', value: fontSize, min: 12, max: 32, step: 1, setter: setFontSize },
-                                    { label: 'Letter Gap', value: letterSpacing, min: -2, max: 10, step: 0.1, setter: setLetterSpacing },
-                                    { label: 'Word Gap', value: wordSpacing, min: 0, max: 20, step: 0.5, setter: setWordSpacing },
-                                    { label: 'Line Height', value: lineHeight, min: 1, max: 3, step: 0.1, setter: setLineHeight },
-                                ].map((item) => (
-                                    <div key={item.label} className="space-y-4">
-                                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                                            <span className="text-ink/60">{item.label}</span>
-                                            <span className="text-accent bg-accent/10 px-2 py-0.5 rounded shadow-inner-paper">{item.value === -2 ? 0 : item.value}{item.label.includes('Size') ? 'px' : ''}</span>
-                                        </div>
-                                        <input 
-                                            type="range" min={item.min} max={item.max} step={item.step} value={item.value}
-                                            onChange={(e) => item.setter(parseFloat(e.target.value))}
-                                            className="w-full h-1 bg-black/5 rounded-full appearance-none cursor-pointer accent-accent"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="space-y-4 pt-4 border-t border-gray-50">
-                                <SectionHeader icon={<Palette size={14} />} title="Ink Color" />
-                                <div className="flex flex-wrap gap-2">
-                                    {INK_COLORS.map((c) => (
-                                        <button
-                                            key={c.id}
-                                            onClick={() => setInkColor(c.color)}
-                                            className={`w-8 h-8 rounded-full border-2 transition-all ${inkColor === c.color ? 'border-blue-500 scale-110 shadow-lg' : 'border-transparent shadow-sm'}`}
-                                            style={{ backgroundColor: c.color }}
-                                            title={c.name}
-                                        />
-                                    ))}
-                                    <div className="relative group overflow-hidden w-8 h-8 rounded-full border border-gray-100 shadow-sm">
-                                        <input 
-                                            type="color" 
-                                            value={inkColor}
-                                            onChange={(e) => setInkColor(e.target.value)}
-                                            className="absolute -inset-1 cursor-pointer w-[150%] h-[150%]"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {activeTab === 'paper' && (
-                        <motion.div
-                            key="paper"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            className="space-y-10"
-                        >
-                            <div className="space-y-4">
-                                <SectionHeader icon={<FileText size={14} />} title="Select Paper" />
-                                <div className="grid grid-cols-2 gap-3">
-                                    {PAPER_TYPES.slice(0, 10).map((paper) => (
-                                        <button
-                                            key={paper.id}
-                                            onClick={() => setPaperMaterial(paper.id as PaperMaterial)}
-                                            className={`p-4 rounded-2xl text-left transition-all border group ${
-                                                paperMaterial === paper.id 
-                                                ? 'bg-black text-white border-black shadow-xl shadow-black/10' 
-                                                : 'bg-white text-gray-500 border-gray-100 hover:border-gray-200 hover:bg-gray-50 shadow-sm'
-                                            }`}
-                                        >
-                                            <Layout size={16} className={`mb-3 ${paperMaterial === paper.id ? 'text-blue-400' : 'text-gray-300'}`} />
-                                            <span className="text-[10px] font-black uppercase tracking-tight leading-none block">{paper.name}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="space-y-4 pt-6 border-t border-gray-50">
-                                <SectionHeader icon={<Settings2 size={14} />} title="Authentic Feel" />
-                                <div className="grid grid-cols-1 gap-3">
-                                    {[
-                                        { id: 'shadow', label: 'Cast Shadows', icon: <Layers size={14} />, active: paperShadow, toggle: () => setPaperShadow(!paperShadow), bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100', activeBg: 'bg-blue-500', iconBg: 'bg-blue-100' },
-                                        { id: 'grain', label: 'Paper Texture', icon: <Sparkles size={14} />, active: paperTexture, toggle: () => setPaperTexture(!paperTexture), bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', activeBg: 'bg-emerald-500', iconBg: 'bg-emerald-100' },
-                                        { id: 'tilt', label: 'Handwriting Slant', icon: <RotateCcw size={14} />, active: paperTilt, toggle: () => setStorePaperTilt(!paperTilt), bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', activeBg: 'bg-amber-500', iconBg: 'bg-amber-100' },
-                                    ].map((effect) => (
-                                        <button
-                                            key={effect.id}
-                                            onClick={effect.toggle}
-                                            className={`flex items-center justify-between p-4 rounded-2xl font-bold text-xs transition-all border ${
-                                                effect.active 
-                                                ? `${effect.bg} ${effect.text} ${effect.border} shadow-sm` 
-                                                : 'bg-gray-50 text-gray-400 border-transparent hover:border-gray-100'
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className={`p-1.5 rounded-lg ${effect.active ? effect.iconBg : 'bg-gray-100/50'}`}>
-                                                    {effect.icon}
-                                                </div>
-                                                {effect.label}
-                                            </div>
-                                            <div className={`w-8 h-4 rounded-full relative transition-colors ${effect.active ? effect.activeBg : 'bg-gray-200'}`}>
-                                                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${effect.active ? 'left-4.5' : 'left-0.5'}`} />
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {activeTab === 'export' && (
-                        <motion.div
-                            key="export"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            className="space-y-8"
-                        >
-                            <div className="space-y-4">
-                                <SectionHeader icon={<FileDown size={14} />} title="Download Quality" />
-                                <div className="p-5 bg-gray-50 rounded-3xl border border-gray-100 space-y-6">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Format</label>
-                                        <div className="flex p-1 bg-white rounded-xl border border-gray-100">
-                                            {(['image/png', 'image/jpeg'] as const).map((fmt) => (
-                                                <button
-                                                    key={fmt}
-                                                    onClick={() => setExportFormat(fmt)}
-                                                    className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all ${exportFormat === fmt ? 'bg-black text-white' : 'text-gray-400 hover:text-black'}`}
-                                                >
-                                                    {fmt.split('/')[1]}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Quality</label>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            {[
-                                                { label: 'Ultra', val: 1.0 },
-                                                { label: 'High', val: 0.9 },
-                                                { label: 'Mid', val: 0.7 },
-                                            ].map((q) => (
-                                                <button
-                                                    key={q.label}
-                                                    onClick={() => setExportQuality(q.val)}
-                                                    className={`py-2 text-[10px] font-bold uppercase border rounded-xl transition-all ${exportQuality === q.val ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20' : 'bg-white text-gray-400 border-gray-100 hover:border-gray-200'}`}
-                                                >
-                                                    {q.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4 pt-4">
-                                <SectionHeader icon={<Download size={14} />} title="Single Page" />
-                                <div className="grid grid-cols-1 gap-2">
-                                    <button 
-                                        onClick={handleExportPNG}
-                                        disabled={isExporting}
-                                        className="w-full flex items-center justify-between p-4 bg-white border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 rounded-2xl transition-all group"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <FileImage size={18} className="text-blue-500" />
-                                            <span className="text-xs font-bold">Download Page</span>
-                                        </div>
-                                        <ChevronRight size={14} className="text-gray-300 group-hover:text-blue-500" />
-                                    </button>
-                                    <button 
-                                        onClick={handleExportZIP}
-                                        disabled={isExporting}
-                                        className="w-full flex items-center justify-between p-4 bg-white border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50/30 rounded-2xl transition-all group"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <Layers size={18} className="text-emerald-500" />
-                                            <span className="text-xs font-bold">Export All (ZIP)</span>
-                                        </div>
-                                        <ChevronRight size={14} className="text-gray-300 group-hover:text-emerald-500" />
-                                    </button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
-        </aside>
-    );
-
-    const CenterStage = () => (
-        <section className="flex-1 bg-paper-dark/30 relative flex flex-col overflow-hidden">
-            {/* Floating Presets Menu */}
-            <AnimatePresence>
-                {isPresetsOpen && (
-                    <motion.div 
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="absolute left-4 top-4 z-40 w-64 bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-white/50 overflow-hidden"
-                    >
-                        <div className="p-4 border-b border-gray-50">
-                            <h3 className="text-[10px] font-black uppercase tracking-widest text-blue-500">Instant Styles</h3>
-                        </div>
-                        <div className="p-2 space-y-1 max-h-[400px] overflow-y-auto scrollbar-hide">
-                            {Object.entries(presets).map(([key, preset]) => (
-                                <button
-                                    key={key}
-                                    onClick={() => {
-                                        applyStorePreset(preset);
-                                        setIsPresetsOpen(false);
-                                        addToast(`Applied ${key} style!`);
-                                    }}
-                                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 rounded-xl transition-all group text-left"
-                                >
-                                    <span className="text-xs font-bold uppercase tracking-tight">{key}</span>
-                                    <Zap size={14} className="text-gray-200 group-hover:text-blue-500 transition-colors" />
-                                </button>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* TOP HUD (Zoom & Pages) */}
-            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-4 p-1.5 bg-white/90 backdrop-blur-md rounded-full shadow-lg border border-white/50">
-                <div className="flex items-center gap-1 border-r border-gray-100 pr-2">
-                     {zoomLevels.map((lvl) => (
-                        <button
-                            key={lvl.label}
-                            onClick={() => setZoom(lvl.value)}
-                            className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all ${
-                                Math.abs(zoom - lvl.value) < 0.01 
-                                ? 'bg-black text-white' 
-                                : 'hover:bg-gray-100 text-gray-400'
-                            }`}
-                        >
-                            {lvl.label}
-                        </button>
-                    ))}
-                </div>
-                <div className="flex items-center gap-3 px-2">
-                    <button 
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                        className="p-1 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30"
-                    >
-                        <ChevronLeft size={16} />
-                    </button>
-                    <span className="text-[10px] font-black uppercase tracking-widest">
-                        Page {currentPage} <span className="text-gray-300">/</span> {totalPages}
-                        <span className="ml-4 text-gray-400 border-l border-gray-100 pl-4">{wordCount} words / {charCount} characters</span>
-                    </span>
-                    <button 
-                        disabled={currentPage === totalPages}
-                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                        className="p-1 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30"
-                    >
-                        <ChevronRight size={16} />
-                    </button>
-                </div>
-            </div>
-
-            {/* WORKSPACE CONTENT (Editor or Canvas) */}
-            <div className="flex-1 flex overflow-hidden">
-                {/* Editor Sidebar (Conditional) */}
-                <motion.div 
-                    layout
-                    className="w-[480px] h-full flex flex-col bg-white border-r border-gray-100 overflow-hidden shrink-0"
-                >
-                    <div className="flex-1 overflow-y-auto p-8 pt-20">
-                        <div className="flex items-center justify-between mb-4">
-                            <SectionHeader icon={<FileText size={14} />} title="Your text" />
-                            <button 
-                                onClick={() => loadSampleText()}
-                                className="text-[10px] font-black uppercase tracking-widest text-blue-500 hover:underline"
-                            >
-                                Try a Sample
-                            </button>
-                        </div>
-
-                        <div className="relative group flex-1 flex flex-col min-h-[400px]">
-                            {editorMode === 'plain' ? (
-                                <textarea
-                                    value={text}
-                                    onChange={handleTextChange}
-                                    placeholder="Start writing here..."
-                                    className="flex-1 w-full p-6 bg-gray-50/50 rounded-3xl border-2 border-transparent focus:border-blue-100 focus:bg-white resize-none outline-none text-sm font-medium leading-relaxed transition-all placeholder:text-gray-300 scrollbar-hide shadow-inner"
-                                />
-                            ) : (
-                                <div
-                                    ref={richTextRef}
-                                    contentEditable
-                                    onInput={handleRichTextChange}
-                                    className="flex-1 w-full p-6 bg-gray-50/50 rounded-3xl border-2 border-transparent focus:border-blue-100 focus:bg-white outline-none text-sm font-medium leading-relaxed transition-all prose prose-sm max-w-none scrollbar-hide overflow-y-auto shadow-inner"
-                                    dangerouslySetInnerHTML={{ __html: text }}
-                                />
-                            )}
-                            {editorMode === 'rich' && (
-                                <div className="absolute top-4 right-4 flex items-center gap-2 p-1.5 bg-white/80 backdrop-blur rounded-xl shadow-sm border border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => execCommand('bold')} className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"><Bold size={14} /></button>
-                                    <button onClick={() => execCommand('italic')} className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"><Italic size={14} /></button>
-                                    <button onClick={() => execCommand('underline')} className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"><Underline size={14} /></button>
-                                    <div className="w-px h-4 bg-gray-100 mx-1" />
-                                    <button onClick={() => execCommand('insertUnorderedList')} className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"><List size={14} /></button>
-                                    <button onClick={() => imageInputRef.current?.click()} className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"><ImageIcon size={14} /></button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* PREVIEW AREA */}
-                <div className="flex-1 h-full overflow-auto flex items-center justify-center p-20 scrollbar-hide relative bg-[#f0f1f3]">
-                    <AnimatePresence mode="wait">
-                        {isLoading || isRendering || isSampleLoading ? (
-                            <motion.div 
-                                key="loading"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="flex flex-col items-center gap-4"
-                            >
-                                <Loader2 className="w-10 h-10 text-black/10 animate-spin" />
-                                <div className="flex flex-col items-center gap-2">
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-300">
-                                        {isRendering ? `Writing... ${Math.round(renderingProgress * 100)}%` : 'Loading Editor'}
-                                    </span>
-                                    {isRendering && renderingProgress > 0 && (
-                                        <div className="w-48 h-1 bg-gray-100 rounded-full overflow-hidden">
-                                            <motion.div 
-                                                className="h-full bg-blue-500"
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${renderingProgress * 100}%` }}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                key="canvas"
-                                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                                animate={{ 
-                                    scale: zoom, 
-                                    opacity: 1, 
-                                    y: 0 
-                                }}
-                                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                                className="origin-center"
-                            >
-                                <HandwritingCanvas 
-                                    ref={canvasRef}
-                                    text={debouncedText}
-                                    currentPage={currentPage}
-                                    onRenderComplete={(total) => {
-                                        if (total !== totalPages) setTotalPages(total);
-                                    }}
-                                />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    {/* ZOOM HUD */}
-                    <div className="absolute bottom-8 right-8 flex flex-col gap-2">
-                        <button 
-                            onClick={() => setZoom(Math.min(zoom + 0.1, 2))}
-                            className="p-3 bg-white hover:bg-black hover:text-white rounded-2xl shadow-xl transition-all group border border-gray-100"
-                            title="Zoom In"
-                        >
-                            <ZoomIn size={18} className="text-gray-400 group-hover:text-white" />
-                        </button>
-                        <button 
-                            onClick={() => setZoom(Math.max(zoom - 0.1, 0.5))}
-                            className="p-3 bg-white hover:bg-black hover:text-white rounded-2xl shadow-xl transition-all group border border-gray-100"
-                            title="Zoom Out"
-                        >
-                            <ZoomOut size={18} className="text-gray-400 group-hover:text-white" />
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-    );
-
-    // List of filtered fonts
-    const filteredFonts = useMemo(() => {
-        if (!fontSearch.trim()) return HANDWRITING_FONTS;
-        return HANDWRITING_FONTS.filter(f => 
-            f.name.toLowerCase().includes(fontSearch.toLowerCase())
-        );
-    }, [fontSearch]);
-
-    // Initial load
-    useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 800);
-        return () => clearTimeout(timer);
-    }, []);
-
-    // Last saved display timer
     useEffect(() => {
         if (!lastSaved) return;
-        const interval = setInterval(() => {
-            const now = new Date();
-            const diff = Math.floor((now.getTime() - lastSaved.getTime()) / 1000);
-            setSecondsAgo(diff);
-        }, 1000);
-        return () => clearInterval(interval);
+        const i = setInterval(() => setSecondsAgo(Math.floor((new Date().getTime() - lastSaved.getTime()) / 1000)), 1000);
+        return () => clearInterval(i);
     }, [lastSaved]);
 
-    // Handle rendering state based on debounced values
     useEffect(() => {
-        if (text !== debouncedText || handwritingStyle !== debouncedFontFamily || paperMaterial !== debouncedPaperMaterial) {
-            setIsRendering(true);
-        } else {
-            // Once they match, the canvas will start rendering and eventually call onRenderComplete
-        }
+        if (text !== debouncedText || handwritingStyle !== debouncedFontFamily || paperMaterial !== debouncedPaperMaterial) setIsRendering(true);
     }, [text, debouncedText, handwritingStyle, debouncedFontFamily, paperMaterial, debouncedPaperMaterial, setIsRendering]);
 
-    // 10-second Auto-save Interval
     useEffect(() => {
-        const autoSaveInterval = setInterval(() => {
-            setLastSaved(new Date());
-        }, 10000);
-        return () => clearInterval(autoSaveInterval);
+        const i = setInterval(() => setLastSaved(new Date()), 10000);
+        return () => clearInterval(i);
     }, [setLastSaved]);
 
-    // Handle Plain Text Changes
-    const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setText(e.target.value);
-    };
+    // --- HANDLERS ---
 
-    // Handle Rich Text Changes
+    const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value);
+    
     const handleRichTextChange = () => {
-        if (richTextRef.current) {
-            setText(richTextRef.current.innerHTML);
-        }
+        if (richTextRef.current) setText(richTextRef.current.innerHTML);
     };
 
-    // Sync Rich Text Ref on mode switch or load
     useEffect(() => {
         if (editorMode === 'rich' && richTextRef.current && richTextRef.current.innerHTML !== text) {
             richTextRef.current.innerHTML = text;
         }
     }, [editorMode, text]);
 
-    // File Upload Logic
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const maxFileSize = 5 * 1024 * 1024; // 5MB limit
-        if (file.size > maxFileSize) {
-            addToast('File too large (max 5MB)', 'error');
-            return;
-        }
-
-        setIsLoading(true);
-        try {
-            if (file.type === 'text/plain') {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const content = event.target?.result as string;
-                    setText(content);
-                    setUploadedFileName(file.name);
-                    addToast('Text file loaded!', 'success');
-                };
-                reader.readAsText(file);
-            } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-                const arrayBuffer = await file.arrayBuffer();
-                const result = await (await import('mammoth')).convertToHtml({ arrayBuffer });
-                setText(result.value);
-                setUploadedFileName(file.name);
-                addToast('DOCX file loaded!', 'success');
-            } else if (file.type === 'application/pdf') {
-                const pdfjs = await import('pdfjs-dist');
-                // Set worker src - assuming the CDN is fine for now or it's handled by vite
-                pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-                
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-                let fullText = '';
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    fullText += textContent.items
-                        .map((item) => {
-                            const textItem = item as { str?: string };
-                            return textItem.str || '';
-                        })
-                        .join(' ') + '\n\n';
-                }
-                setText(fullText);
-                setUploadedFileName(file.name);
-                addToast('PDF text extracted!', 'success');
-            } else {
-                addToast('Unsupported file type. Use .txt, .docx, or .pdf', 'error');
-            }
-        } catch (error) {
-            console.error('Upload error:', error);
-            addToast('Failed to read file', 'error');
-        } finally {
-            setIsLoading(false);
-            if (e.target) e.target.value = ''; // Reset input
-        }
-    };
-
-    const loadSampleText = () => {
-        setIsSampleLoading(true);
-        setTimeout(() => {
-            const sample = `<h1>Welcome to InkPad!</h1>
-<p>This is a <b>digital manuscript</b> that feels like it was written by hand. You can format your text with <i>italics</i>, <u>underlines</u>, and different heading levels.</p>
-
-<h3>Writing Experience</h3>
-<p>InkPad is designed for those who miss the touch of paper but love the convenience of digital. Whether you're drafting a letter, a journal entry, or just some quick notes, we bring the soul back to your writing.</p>
-
-<ul>
-  <li>Instant Handwriting Conversion</li>
-  <li>Custom Paper & Ink Styles</li>
-  <li>High-Resolution PDF Exports</li>
-</ul>
-
-<p>Try changing the handwriting style in the sidebar or adjusting the typography to find your perfect flow.</p>`;
-            setText(sample);
-            setEditorMode('rich');
-            addToast('Sample text loaded!', 'success');
-            setIsSampleLoading(false);
-        }, 600);
-    };
-
     const execCommand = (command: string, value: string | undefined = undefined) => {
         document.execCommand(command, false, value);
         handleRichTextChange();
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+         const file = e.target.files?.[0];
+         if (!file) return;
+         if (file.size > 5 * 1024 * 1024) return addToast('File too large (max 5MB)', 'error');
+         
+         setIsLoading(true);
+         try {
+             if (file.type === 'text/plain') {
+                 const textContent = await file.text();
+                 setText(textContent);
+             } else if (file.type.includes('wordprocessingml')) {
+                 const arrayBuffer = await file.arrayBuffer();
+                 const mammoth = await import('mammoth');
+                 const result = await mammoth.convertToHtml({ arrayBuffer });
+                 setText(result.value);
+             } else if (file.type === 'application/pdf') {
+                 const pdfjs = await import('pdfjs-dist');
+                 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+                 const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+                 let fullText = '';
+                 for (let i = 1; i <= pdf.numPages; i++) {
+                     const page = await pdf.getPage(i);
+                     const tx = await page.getTextContent();
+                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                     fullText += tx.items.map((item: any) => item.str).join(' ') + '\n\n';
+                 }
+                 setText(fullText);
+             }
+             setUploadedFileName(file.name);
+             addToast('Document loaded successfully', 'success');
+         } catch (err) {
+             console.error(err);
+             addToast('Failed to load document', 'error');
+         } finally {
+             setIsLoading(false);
+             if (e.target) e.target.value = '';
+         }
     };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = (event) => {
-                const dataUrl = event.target?.result as string;
-                execCommand('insertImage', dataUrl);
-            };
+            reader.onload = (ev) => execCommand('insertImage', ev.target?.result as string);
             reader.readAsDataURL(file);
         }
     };
 
-    const clearContent = useCallback(() => {
-        if (window.confirm('Are you sure you want to clear everything?')) {
-            setText('');
-            setUploadedFileName(null);
-            setLastSaved(null);
-            if (richTextRef.current) richTextRef.current.innerHTML = '';
-            // We should also reset visual settings if we want a TOTAL clear
-            resetStore();
-            addToast('Workspace cleared', 'info');
+    const loadSampleText = () => {
+        setTimeout(() => {
+            setText(`<h1>Hello, Creator!</h1><p>Welcome to your new <b>digital desk</b>. This space is designed to feel as warm and natural as real paper, but with the power of digital tools.</p><h3>Why InkPad?</h3><p>Because writing should feel <i>good</i>. We've added subtle imperfections, ink spread, and paper textures to make your documents look authentically hand-crafted.</p><ul><li>Export to high-res PDF</li><li>Customize every stroke</li><li>Enjoy the process</li></ul>`);
+            setEditorMode('rich');
+        }, 500);
+    };
+
+    const handleExportPDF = useCallback(async () => { 
+        if(!canvasRef.current || isExporting) return; 
+        setIsExporting(true); 
+        addToast('Preparing PDF...'); 
+        try { 
+            (await canvasRef.current.exportPDF()).save('inkpad-doc.pdf'); 
+            addToast('PDF Downloaded'); 
+        } catch(error){ 
+            console.error(error);
+            addToast('Export failed', 'error'); 
+        } finally { 
+            setIsExporting(false); 
         }
-    }, [setText, setUploadedFileName, setLastSaved, resetStore, addToast]);
+    }, [isExporting, addToast]);
 
+    const handleExportPNG = useCallback(async () => { 
+        if(!canvasRef.current || isExporting) return; 
+        setIsExporting(true); 
+        addToast('Capturing Image...'); 
+        try { 
+            const url = await canvasRef.current.exportPNG(exportQuality, exportFormat); 
+            const a = document.createElement('a'); 
+            a.href = url; 
+            a.download = `inkpad-page.${exportFormat.split('/')[1]}`; 
+            a.click(); 
+            addToast('Image Downloaded'); 
+        } catch(error){ 
+            console.error(error);
+            addToast('Export failed', 'error'); 
+        } finally { 
+            setIsExporting(false); 
+        }
+    }, [isExporting, addToast, exportQuality, exportFormat]);
 
+    const handleExportZIP = useCallback(async () => { 
+        if(!canvasRef.current || isExporting) return; 
+        setIsExporting(true); 
+        addToast('Zipping...'); 
+        try { 
+            const blob = await canvasRef.current.exportZIP(); 
+            const url = URL.createObjectURL(blob); 
+            const a = document.createElement('a'); 
+            a.href = url; 
+            a.download = 'inkpad-all.zip'; 
+            a.click(); 
+            URL.revokeObjectURL(url); 
+            addToast('ZIP Downloaded'); 
+        } catch(error){ 
+            console.error(error);
+            addToast('Export failed', 'error'); 
+        } finally { 
+            setIsExporting(false); 
+        }
+    }, [isExporting, addToast]);
 
+    const shortcuts = useCallback((e: KeyboardEvent) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'g') { e.preventDefault(); handleExportPDF(); }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'd') { e.preventDefault(); handleExportPNG(); }
+    }, [handleExportPDF, handleExportPNG]);
 
-    const wordCount = useMemo(() => {
-        const plainText = text.replace(/<[^>]*>/g, ' ');
-        return plainText.trim() ? plainText.trim().split(/\s+/).length : 0;
-    }, [text]);
+    useEffect(() => { window.addEventListener('keydown', shortcuts); return () => window.removeEventListener('keydown', shortcuts); }, [shortcuts]);
 
-    const charCount = text.replace(/<[^>]*>/g, '').length;
-
-    // Headless SEO / Accessibility Titles
-    useEffect(() => {
-        document.title = text ? `Editing: ${text.slice(0, 20)}... | InkPad` : 'InkPad | Beautiful Handwriting Generator';
-    }, [text]);
-
-    // Keyboard Shortcuts
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.ctrlKey || e.metaKey) {
-                if (e.key === 'g') {
-                    e.preventDefault();
-                    handleExportPDF();
-                }
-                if (e.key === 'd') {
-                    e.preventDefault();
-                    handleExportPNG();
-                }
-                if (e.key === 'k') {
-                    e.preventDefault();
-                    clearContent();
-                }
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [clearContent, handleExportPDF, handleExportPNG]);
-
-    const zoomLevels = [
-        { label: 'Fit', value: 0.65 }, // Roughly fit for most displays
-        { label: '75%', value: 0.75 },
-        { label: '100%', value: 1 },
-        { label: '125%', value: 1.25 },
-        { label: '150%', value: 1.5 },
-    ];
 
     return (
-        <div className="flex flex-col h-screen bg-white font-sans text-gray-900 overflow-hidden select-none">
-            {/* TOP HEADER */}
-            <WorkspaceHeader />
+        <div className="relative w-full h-screen bg-[#F2F0E9] text-ink font-sans overflow-hidden selection:bg-accent/20">
+            {/* Background Texture */}
+            <div className="absolute inset-0 opacity-40 bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] pointer-events-none mix-blend-multiply" />
             
-            <div className="flex-1 flex overflow-hidden">
-                {/* LEFT SLIM BAR */}
-                <SlimActionBar />
+            {/* --- HEADER (Floating Desk Bar) --- */}
+            <header className="absolute top-0 left-0 right-0 h-16 px-6 flex items-center justify-between z-50 bg-[#F2F0E9]/80 backdrop-blur-md border-b border-black/5">
+                <div className="flex items-center gap-4">
+                     <a href="/" className="flex items-center gap-3 group">
+                        <img src={logo} alt="InkPad" className="w-8 h-8 object-contain transition-transform group-hover:rotate-12" />
+                        <span className="text-xl font-display font-bold uppercase tracking-tight text-ink">InkPad</span>
+                    </a>
+                    <div className="h-6 w-px bg-black/10 mx-2" />
+                    <div className="flex flex-col">
+                        <input 
+                            value={uploadedFileName || 'Untitled Document'}
+                            onChange={(e) => setUploadedFileName(e.target.value)}
+                            className="bg-transparent border-none p-0 text-sm font-bold text-ink focus:ring-0 placeholder:text-ink/40 w-48"
+                            placeholder="Name your file..."
+                        />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-ink/30">
+                            {isRendering ? 'Refining Ink...' : lastSaved ? `Saved ${secondsAgo}s ago` : 'Ready'}
+                        </span>
+                    </div>
+                </div>
 
-                {/* MAIN CONTENT AREA */}
-                <CenterStage />
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 bg-white/50 p-1 rounded-xl border border-black/5">
+                         <button onClick={() => setEditorMode('plain')} className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${editorMode === 'plain' ? 'bg-ink text-white shadow-lg' : 'text-ink/40 hover:text-ink'}`}>Plain</button>
+                         <button onClick={() => setEditorMode('rich')} className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${editorMode === 'rich' ? 'bg-ink text-white shadow-lg' : 'text-ink/40 hover:text-ink'}`}>Rich</button>
+                    </div>
+                    
+                    <button onClick={handleExportPDF} disabled={isExporting} className="btn-premium rounded-xl py-2 px-6 text-[10px] shadow-lg shadow-ink/10 flex items-center gap-2">
+                        {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                        <span>Export PDF</span>
+                    </button>
+                </div>
+            </header>
 
-                {/* RIGHT SETTINGS SIDEBAR */}
-                <RightSettingsSidebar />
+            {/* --- MAIN WORKSPACE --- */}
+            <div className="absolute inset-x-0 bottom-0 top-16 flex overflow-hidden">
+                
+                {/* 1. LEFT PANEL: INPUT EDITOR (Collapsible) */}
+                <motion.div 
+                    initial={false}
+                    animate={{ width: isLeftPanelOpen ? 400 : 0, opacity: isLeftPanelOpen ? 1 : 0 }}
+                    className="relative h-full bg-white border-r border-black/5 shadow-xl shadow-ink/5 z-30 flex flex-col"
+                >
+                    <div className="flex-1 overflow-hidden relative flex flex-col min-w-[400px]">
+                        <div className="p-4 border-b border-black/5 flex items-center justify-between bg-gray-50/50">
+                            <SectionLabel icon={<FileText size={14} />} title="Input Source" />
+                            <div className="flex gap-2">
+                                <Tooltip text="Clear">
+                                    <button onClick={() => { if(confirm('Clear all?')) setText(''); }} className="p-2 hover:bg-red-50 text-ink/30 hover:text-red-500 rounded-lg transition-colors"><Trash2 size={16}/></button>
+                                </Tooltip>
+                                <Tooltip text="Import">
+                                    <button onClick={() => fileInputRef.current?.click()} className="p-2 hover:bg-black/5 text-ink/30 hover:text-ink rounded-lg transition-colors"><Upload size={16}/></button>
+                                </Tooltip>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+                            {text ? (
+                                editorMode === 'plain' ? (
+                                    <textarea 
+                                        value={text} 
+                                        onChange={handleTextChange} 
+                                        className="w-full h-full bg-transparent border-none resize-none focus:ring-0 p-0 text-sm leading-relaxed text-ink/80 placeholder:text-ink/20 font-medium"
+                                        placeholder="Start typing your masterpiece..." 
+                                    />
+                                ) : (
+                                    <div 
+                                        ref={richTextRef}
+                                        contentEditable
+                                        onInput={handleRichTextChange}
+                                        className="prose prose-sm max-w-none outline-none text-ink/80"
+                                        dangerouslySetInnerHTML={{ __html: text }}
+                                    />
+                                )
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
+                                    <FileText size={48} className="mb-4 text-ink/20" />
+                                    <p className="text-sm font-bold">Your desk is empty.</p>
+                                    <button onClick={loadSampleText} className="mt-4 text-xs font-black uppercase tracking-widest text-accent hover:underline">Write a Sample</button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Rich Text Toolbar (Floating at bottom of input) */}
+                        {editorMode === 'rich' && (
+                            <div className="p-2 border-t border-black/5 bg-gray-50 flex gap-1 justify-center">
+                                <button onClick={() => execCommand('bold')} className="p-2 hover:bg-white rounded shadow-sm transition-all"><Bold size={14}/></button>
+                                <button onClick={() => execCommand('italic')} className="p-2 hover:bg-white rounded shadow-sm transition-all"><Italic size={14}/></button>
+                                <button onClick={() => execCommand('underline')} className="p-2 hover:bg-white rounded shadow-sm transition-all"><Underline size={14}/></button>
+                                <div className="w-px h-6 bg-black/10 mx-2" />
+                                <button onClick={() => execCommand('insertUnorderedList')} className="p-2 hover:bg-white rounded shadow-sm transition-all"><List size={14}/></button>
+                                <button onClick={() => imageInputRef.current?.click()} className="p-2 hover:bg-white rounded shadow-sm transition-all"><ImageIcon size={14}/></button>
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
+
+                {/* Left Panel Toggle (Floating on 'Desk') */}
+                <button 
+                    onClick={() => setIsLeftPanelOpen(!isLeftPanelOpen)}
+                    className={`absolute bottom-6 left-6 z-40 p-3 bg-white border border-black/5 rounded-full shadow-lg text-ink/50 hover:text-ink transition-all ${isLeftPanelOpen ? 'translate-x-[380px]' : 'translate-x-0'}`}
+                >
+                    {isLeftPanelOpen ? <PanelLeftClose size={20} /> : <PanelLeft size={20} />}
+                </button>
+
+
+                {/* 2. CENTER STAGE: THE DESK & CANVAS */}
+                <div className="flex-1 relative overflow-hidden flex flex-col items-center justify-center perspective-1000">
+                    
+                    {/* Zoom HUD */}
+                    <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 p-1.5 bg-white/60 backdrop-blur-md rounded-full border border-white/40 shadow-xl shadow-ink/5">
+                        <button onClick={() => setZoom(Math.max(0.5, zoom - 0.1))} className="p-2 hover:bg-white rounded-full transition-colors"><ZoomOut size={16} className="text-ink/60"/></button>
+                        <span className="text-[10px] font-black w-12 text-center text-ink/80">{Math.round(zoom * 100)}%</span>
+                        <button onClick={() => setZoom(Math.min(2, zoom + 0.1))} className="p-2 hover:bg-white rounded-full transition-colors"><ZoomIn size={16} className="text-ink/60"/></button>
+                    </div>
+
+                    {/* Pagination HUD */}
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 py-2 px-4 bg-ink/5 backdrop-blur-sm rounded-2xl border border-white/20">
+                         <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage===1} className="disabled:opacity-20 hover:text-accent"><ChevronLeft size={18}/></button>
+                         <div className="flex flex-col items-center">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-ink/60">Page {currentPage} of {totalPages}</span>
+                            <span className="text-[8px] font-bold text-ink/30">{wordCount} words / {charCount} chars</span>
+                         </div>
+                         <button onClick={() => setCurrentPage(p => Math.min(totalPages, p+1))} disabled={currentPage===totalPages} className="disabled:opacity-20 hover:text-accent"><ChevronRight size={18}/></button>
+                    </div>
+
+                    {/* CANVAS CONTAINER */}
+                    <div className="w-full h-full overflow-auto flex items-center justify-center p-20 scrollbar-hide">
+                         <AnimatePresence mode="wait">
+                            {isLoading || isRendering ? (
+                                <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="flex flex-col items-center gap-4">
+                                    <div className="relative">
+                                        <div className="w-16 h-16 rounded-full border-4 border-ink/10 border-t-accent animate-spin" />
+                                        <div className="absolute inset-0 flex items-center justify-center"><Loader2 size={24} className="text-accent animate-pulse" /></div>
+                                    </div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-ink/40 animate-pulse">Inking...</p>
+                                </motion.div>
+                            ) : (
+                                <motion.div 
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                    animate={{ opacity: 1, scale: zoom, y: 0 }}
+                                    transition={{ type: "spring", stiffness: 200, damping: 25 }}
+                                    className="relative shadow-2xl shadow-ink/20"
+                                >
+                                    <HandwritingCanvas 
+                                        ref={canvasRef}
+                                        text={debouncedText}
+                                        currentPage={currentPage}
+                                        onRenderComplete={setTotalPages}
+                                    />
+                                </motion.div>
+                            )}
+                         </AnimatePresence>
+                    </div>
+                </div>
+
+
+                {/* 3. RIGHT PANEL: TOOLS & SETTINGS (Notebook Style) */}
+                <div className="relative w-[340px] bg-white border-l border-black/5 shadow-2xl shadow-ink/10 z-30 flex flex-col">
+                    {/* Tabs */}
+                    <div className="flex p-2 bg-gray-50 border-b border-black/5 gap-1">
+                        {[
+                            { id: 'style', icon: <Palette size={16}/>, label: 'Style' },
+                            { id: 'paper', icon: <Layout size={16}/>, label: 'Paper' },
+                            { id: 'export', icon: <FileDown size={16}/>, label: 'Export' }
+                        ].map(tab => (
+                            <button 
+                                key={tab.id}
+                                onClick={() => setActivePanel(tab.id as 'style' | 'paper' | 'export')}
+                                className={`flex-1 py-3 rounded-lg flex flex-col items-center gap-1 transition-all ${activePanel === tab.id ? 'bg-white shadow-sm text-ink' : 'text-ink/40 hover:text-ink hover:bg-black/5'}`}
+                            >
+                                {tab.icon}
+                                <span className="text-[9px] font-black uppercase tracking-widest">{tab.label}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-6 scrollbar-hide bg-[url('https://www.transparenttextures.com/patterns/graphy.png')] bg-fixed">
+                        
+                        {/* STYLE TAB */}
+                        {activePanel === 'style' && (
+                            <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
+                                
+                                {/* Presets */}
+                                <div className="space-y-3">
+                                    <SectionLabel icon={<Zap size={14}/>} title="Quick Looks" />
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {Object.entries(PRESETS).map(([key, preset]) => (
+                                            <button 
+                                                key={key}
+                                                onClick={() => { applyPreset(preset); addToast(`Applied ${key} theme`); }}
+                                                className="px-3 py-2 bg-white border border-black/5 rounded-lg text-left hover:border-accent hover:shadow-md transition-all group"
+                                            >
+                                                <span className="text-[10px] font-black uppercase tracking-widest block group-hover:text-accent">{key}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Font Selector */}
+                                <div className="space-y-3">
+                                    <SectionLabel icon={<Type size={14}/>} title="Handwriting" />
+                                    <div className="relative">
+                                        <Search size={14} className="absolute left-3 top-3 text-ink/30" />
+                                        <input 
+                                            value={fontSearch}
+                                            onChange={e => setFontSearch(e.target.value)}
+                                            placeholder="Filter fonts..."
+                                            className="w-full bg-white border border-black/5 rounded-xl py-2.5 pl-9 pr-3 text-xs font-bold focus:ring-1 focus:ring-accent"
+                                        />
+                                    </div>
+                                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1 scrollbar-thin">
+                                        {filteredFonts.map(font => (
+                                            <button
+                                                key={font.id}
+                                                onClick={() => setHandwritingStyle(font.id)}
+                                                className={`w-full p-3 rounded-xl flex items-center justify-between border transition-all ${handwritingStyle === font.id ? 'bg-ink text-white border-ink' : 'bg-white border-black/5 hover:border-ink/20'}`}
+                                            >
+                                                <span style={{ fontFamily: font.family }} className="text-lg">{font.name}</span>
+                                                {handwritingStyle === font.id && <CheckCircle2 size={14} className="text-accent" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Ink Color */}
+                                <div className="space-y-3">
+                                     <SectionLabel icon={<Palette size={14}/>} title="Ink Color" />
+                                     <div className="flex flex-wrap gap-2">
+                                        {INK_COLORS.map(c => (
+                                            <button 
+                                                key={c.id} 
+                                                onClick={() => setInkColor(c.color)}
+                                                className={`w-8 h-8 rounded-full border-2 transition-transform ${inkColor === c.color ? 'scale-110 border-ink shadow-md' : 'border-transparent hover:scale-105'}`} 
+                                                style={{ backgroundColor: c.color }}
+                                            />
+                                        ))}
+                                        <div className="relative w-8 h-8 rounded-full overflow-hidden border border-black/10">
+                                            <input type="color" value={inkColor} onChange={e => setInkColor(e.target.value)} className="absolute -inset-1 w-[150%] h-[150%] cursor-pointer" />
+                                        </div>
+                                     </div>
+                                </div>
+
+                                {/* Sliders */}
+                                <div className="space-y-6 pt-6 border-t border-black/5">
+                                    {[
+                                        { l: 'Size', v: fontSize, s: setFontSize, min: 10, max: 40, step: 1 },
+                                        { l: 'Spacing', v: letterSpacing, s: setLetterSpacing, min: -2, max: 10, step: 0.1 },
+                                        { l: 'Leading', v: lineHeight, s: setLineHeight, min: 1, max: 2.5, step: 0.1 },
+                                        { l: 'Word Gap', v: wordSpacing, s: setWordSpacing, min: 0, max: 20, step: 1 },
+                                    ].map(slider => (
+                                        <div key={slider.l} className="space-y-2">
+                                            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-ink/40">
+                                                <span>{slider.l}</span>
+                                                <span>{slider.v}</span>
+                                            </div>
+                                            <input 
+                                                type="range" 
+                                                min={slider.min} max={slider.max} step={slider.step} 
+                                                value={slider.v} 
+                                                onChange={e => slider.s(parseFloat(e.target.value))}
+                                                className="w-full h-1 bg-black/10 rounded-full appearance-none cursor-pointer accent-ink"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* PAPER TAB */}
+                        {activePanel === 'paper' && (
+                            <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
+                                <div className="grid grid-cols-2 gap-3">
+                                    {PAPER_TYPES.map(p => (
+                                        <button 
+                                            key={p.id}
+                                            onClick={() => setPaperMaterial(p.id as PaperMaterial)}
+                                            className={`p-3 rounded-xl border text-left transition-all ${paperMaterial === p.id ? 'bg-ink text-white border-ink shadow-lg' : 'bg-white border-black/5 hover:border-black/20'}`}
+                                        >
+                                            <div className={`w-full h-12 mb-2 rounded border bg-gray-50/50 ${paperMaterial === p.id ? 'border-white/20' : 'border-black/5'}`} style={{ background: p.bg }} />
+                                            <span className="text-[9px] font-black uppercase tracking-widest block truncate">{p.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="space-y-3 pt-6 border-t border-black/5">
+                                    <SectionLabel icon={<Sparkles size={14}/>} title="Realism" />
+                                    {[
+                                        { label: 'Paper Shadow', active: paperShadow, toggle: () => setPaperShadow(!paperShadow) },
+                                        { label: 'Texture Grain', active: paperTexture, toggle: () => setPaperTexture(!paperTexture) },
+                                        { label: 'Human Tilt', active: paperTilt, toggle: () => setPaperTilt(!paperTilt) },
+                                    ].map(opt => (
+                                        <button 
+                                            key={opt.label}
+                                            onClick={opt.toggle}
+                                            className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${opt.active ? 'bg-accent/10 border-accent text-accent' : 'bg-white border-black/5 text-ink/40'}`}
+                                        >
+                                            <span className="text-xs font-bold">{opt.label}</span>
+                                            <div className={`w-8 h-4 rounded-full relative ${opt.active ? 'bg-accent' : 'bg-gray-200'}`}>
+                                                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${opt.active ? 'left-4.5' : 'left-0.5'}`} />
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* EXPORT TAB */}
+                        {activePanel === 'export' && (
+                            <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
+                                <div className="space-y-4">
+                                     <SectionLabel icon={<Settings2 size={14}/>} title="Format" />
+                                     <div className="flex bg-black/5 p-1 rounded-xl">
+                                         {['image/png', 'image/jpeg'].map(f => (
+                                             <button 
+                                                key={f}
+                                                onClick={() => setExportFormat(f as 'image/png' | 'image/jpeg')}
+                                                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${exportFormat === f ? 'bg-white shadow-sm text-ink' : 'text-ink/40 hover:text-ink'}`}
+                                             >
+                                                {f.split('/')[1]}
+                                             </button>
+                                         ))}
+                                     </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                     <SectionLabel icon={<Minimize2 size={14}/>} title="Quality" />
+                                     <div className="grid grid-cols-3 gap-2">
+                                         {[0.7, 0.9, 1.0].map(q => (
+                                             <button 
+                                                key={q}
+                                                onClick={() => setExportQuality(q)}
+                                                className={`py-2 border rounded-lg text-xs font-bold transition-all ${exportQuality === q ? 'bg-accent text-white border-accent' : 'bg-white border-black/5 hover:border-black/20'}`}
+                                             >
+                                                {q === 1 ? 'Ultra' : q === 0.9 ? 'High' : 'Med'}
+                                             </button>
+                                         ))}
+                                     </div>
+                                </div>
+
+                                <div className="pt-6 space-y-3">
+                                    <button onClick={handleExportPNG} disabled={isExporting} className="w-full py-4 bg-ink text-white rounded-xl shadow-xl shadow-ink/20 hover:-translate-y-1 transition-all font-bold flex items-center justify-center gap-2">
+                                        <FileImage size={18}/> Download Image
+                                    </button>
+                                    <button onClick={handleExportZIP} disabled={isExporting} className="w-full py-4 bg-white border border-black/5 text-ink rounded-xl hover:bg-gray-50 transition-all font-bold flex items-center justify-center gap-2">
+                                        <Layers size={18}/> Export ZIP (All)
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
             </div>
 
-            {/* GLOBAL MODALS */}
-            <HelpModal />
-            
-            {/* HIDDEN INPUTS */}
-            <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".txt,.docx,.pdf" />
-            <input type="file" ref={imageInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
+             {/* HELP MODAL */}
+             <AnimatePresence>
+                {isHelpOpen && (
+                    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-ink/20 backdrop-blur-sm">
+                        <motion.div initial={{scale:0.9, opacity:0}} animate={{scale:1, opacity:1}} exit={{scale:0.9, opacity:0}} className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl">
+                             <div className="flex justify-between items-center mb-6">
+                                 <h2 className="text-2xl font-display font-bold">Help & Guide</h2>
+                                 <button onClick={() => setIsHelpOpen(false)} className="p-2 hover:bg-gray-100 rounded-full"><Trash2 className="rotate-45" size={20}/></button>
+                             </div>
+                             {/* ... content ... */}
+                             <button onClick={() => setIsHelpOpen(false)} className="w-full btn-premium py-3 rounded-xl mt-6">Got it</button>
+                        </motion.div>
+                    </div>
+                )}
+             </AnimatePresence>
+
+             <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".txt,.docx,.pdf" />
+             <input type="file" ref={imageInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
         </div>
     );
 }
