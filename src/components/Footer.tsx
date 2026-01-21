@@ -1,4 +1,5 @@
 import { Github, Linkedin, Twitter } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 export default function Footer() {
     return (
@@ -9,9 +10,11 @@ export default function Footer() {
                 <div className="flex flex-col md:flex-row justify-between items-start gap-20">
                     <div className="max-w-sm">
                         <div className="flex items-center gap-3 mb-6 group">
-                            <div className="w-8 h-8 bg-ink flex items-center justify-center transition-all duration-500 group-hover:rotate-12 group-hover:scale-110 shadow-lg shadow-ink/10">
-                                <span className="text-white font-display font-black text-lg italic leading-none">I</span>
-                            </div>
+                            <img 
+                                src={logo} 
+                                alt="InkPad Logo" 
+                                className="w-14 h-14 object-contain transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110 drop-shadow-md" 
+                            />
                             <h3 className="text-2xl font-display font-bold text-ink tracking-tight uppercase">InkPad</h3>
                         </div>
                         <p className="text-ink/40 text-sm leading-relaxed font-medium">
