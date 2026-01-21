@@ -4,8 +4,7 @@ import {
     PenTool,
     Layers,
     Download,
-    Zap,
-    ArrowRight
+    Zap
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -43,77 +42,129 @@ export default function LandingPage() {
 
     return (
         <div className="relative paper-texture overflow-hidden">
-            {/* Hero Section */}
-            <section className="relative min-h-[90vh] flex flex-col items-center justify-center overflow-hidden pt-20">
-                <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
+            {/* Hero Section V3 - Living Canvas / Creative Desk */}
+            <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#F2F0E9]">
+                {/* Paper Texture Overlay */}
+                <div className="absolute inset-0 opacity-40 bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] pointer-events-none mix-blend-multiply" />
+                
+                {/* Ambient Background Blobs (Warm & Organic) */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
                     <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 0.4 }}
-                        transition={{ duration: 2 }}
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-accent/5 rounded-full blur-3xl"
+                        animate={{ 
+                            scale: [1, 1.1, 1],
+                            rotate: [0, 5, -5, 0],
+                        }}
+                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                        className="absolute -top-[20%] -right-[10%] w-[800px] h-[800px] bg-orange-200/20 rounded-full blur-[100px]" 
                     />
-                    {/* Floating Ambient Text - Subtler */}
-                    <div className="absolute inset-0">
-                        <motion.span
-                            initial={{ opacity: 0, x: -50 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 1.5, delay: 0.5 }}
-                            className="absolute top-[15%] left-[10%] font-handwriting text-4xl text-ink/5 rotate-[-10deg] blur-sm"
-                        >
-                            soulful
-                        </motion.span>
-                        <motion.span
-                            initial={{ opacity: 0, x: 50 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 1.5, delay: 0.8 }}
-                            className="absolute bottom-[20%] right-[15%] font-handwriting text-5xl text-ink/5 rotate-12 blur-sm"
-                        >
-                            expressive
-                        </motion.span>
-                    </div>
+                    <motion.div 
+                        animate={{ 
+                            scale: [1, 1.2, 1],
+                            x: [0, 50, 0],
+                        }}
+                        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                        className="absolute -bottom-[20%] -left-[10%] w-[600px] h-[600px] bg-amber-200/20 rounded-full blur-[100px]" 
+                    />
                 </div>
 
-                <div className="max-w-5xl mx-auto text-center px-6 relative z-10">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                    >
-                        <span className="inline-block py-1 px-3 rounded-full bg-accent/10 text-accent text-xs font-black tracking-widest uppercase mb-8 border border-accent/20">
-                            New: Our Best Ink Yet
-                        </span>
+                <div className="max-w-7xl mx-auto px-6 relative z-10 w-full pt-20">
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-16">
                         
-                        <h1 className="text-7xl md:text-9xl font-display font-black text-ink tracking-tighter mb-8 leading-[0.9]">
-                            Make it <br />
-                            <span className="italic font-serif text-accent">Personal.</span>
-                        </h1>
-
-                        <p className="text-xl md:text-2xl text-ink/50 max-w-2xl mx-auto font-medium leading-relaxed mb-12">
-                            The simple joy of writing by hand, reimagined for the digital age. 
-                            Experience the flow of real ink on paper.
-                        </p>
-
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                            <button
-                                className="group relative px-10 py-5 bg-ink text-white rounded-2xl overflow-hidden shadow-2xl shadow-ink/20 hover:scale-105 active:scale-95 transition-all duration-300"
-                                onClick={() => navigate('/editor')}
+                        {/* Left: Text Content */}
+                        <motion.div 
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.8, ease: "easeOut" }}
+                            className="text-center lg:text-left relative"
+                        >
+                            <motion.div
+                                initial={{ rotate: -5, opacity: 0 }}
+                                animate={{ rotate: -2, opacity: 1 }}
+                                transition={{ delay: 0.2, duration: 0.6 }}
+                                className="inline-block mb-6 relative"
                             >
-                                <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                                <span className="relative flex items-center gap-3 text-sm font-black tracking-[0.2em] uppercase">
-                                    Start Writing <ArrowRight size={16} />
+                                <div className="absolute inset-0 bg-yellow-200/50 transform rotate-2 rounded-sm blur-sm" />
+                                <span className="relative font-handwriting text-2xl text-ink/70 font-bold block px-2">
+                                    Notes that feel real.
                                 </span>
-                            </button>
-                            <button 
-                                onClick={() => {
-                                    const el = document.getElementById('features');
-                                    el?.scrollIntoView({ behavior: 'smooth' });
-                                }}
-                                className="px-10 py-5 bg-transparent text-ink border border-ink/10 rounded-2xl hover:bg-white hover:border-transparent hover:shadow-xl transition-all duration-300 text-sm font-black tracking-[0.2em] uppercase"
+                            </motion.div>
+
+                            <h1 className="text-7xl md:text-9xl font-display font-black text-ink tracking-tighter mb-8 leading-[0.85] relative">
+                                <span className="block text-transparent bg-clip-text bg-linear-to-br from-ink to-ink/70">Creative</span>
+                                <span className="block italic font-serif text-accent relative">
+                                    Flow
+                                    <svg className="absolute w-full h-3 -bottom-1 left-0 text-accent opacity-40" viewBox="0 0 100 10" preserveAspectRatio="none">
+                                        <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="2" fill="none" />
+                                    </svg>
+                                </span>
+                            </h1>
+
+                            <p className="text-xl md:text-2xl text-ink/60 mb-10 max-w-lg mx-auto lg:mx-0 font-medium leading-relaxed font-serif italic">
+                                "The warmth of paper, captured in pixels."
+                            </p>
+
+                            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
+                                <button
+                                    className="group relative px-8 py-4 bg-ink text-white rounded-2xl overflow-hidden shadow-2xl shadow-ink/20 hover:-translate-y-1 transition-all duration-300"
+                                    onClick={() => navigate('/editor')}
+                                >
+                                    <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                                    <span className="relative flex items-center gap-3 text-sm font-black tracking-[0.2em] uppercase">
+                                        Start Creating <PenTool size={16} />
+                                    </span>
+                                </button>
+                                <motion.div 
+                                    whileHover={{ scale: 1.05, rotate: 2 }}
+                                    className="px-6 py-4 bg-white/50 backdrop-blur-sm border border-black/5 rounded-2xl text-ink text-sm font-bold shadow-sm cursor-pointer"
+                                >
+                                    ✍️ No signup needed
+                                </motion.div>
+                            </div>
+                        </motion.div>
+
+                        {/* Right: Creative Desk Composition */}
+                        <div className="relative w-full max-w-lg lg:max-w-xl aspect-square">
+                             {/* Main Paper Sheet */}
+                            <motion.div
+                                initial={{ opacity: 0, rotate: 5, y: 50 }}
+                                animate={{ opacity: 1, rotate: -3, y: 0 }}
+                                transition={{ duration: 1, delay: 0.2 }}
+                                className="absolute inset-4 bg-white shadow-2xl shadow-ink/10 rounded-sm p-8 flex flex-col items-center justify-center text-center transform origin-bottom-right transition-transform hover:rotate-0 hover:scale-[1.02] duration-500"
                             >
-                                How it works
-                            </button>
+                                <div className="w-full h-full border border-black/5 p-6 flex flex-col items-center justify-center bg-[radial-gradient(#00000003_1px,transparent_1px)] bg-size-[16px_16px]">
+                                    <p className="font-handwriting text-5xl text-ink mb-2">Hello World!</p>
+                                    <p className="font-handwriting text-2xl text-accent/80">This is digital ink.</p>
+                                    <div className="mt-8 w-32 h-1 bg-black/5 rounded-full" />
+                                </div>
+                            </motion.div>
+
+                            {/* Sticky Note */}
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0 }}
+                                animate={{ opacity: 1, scale: 1, rotate: 12 }}
+                                transition={{ duration: 0.6, delay: 0.8, type: "spring" }}
+                                className="absolute -top-4 -right-4 w-40 h-40 bg-yellow-200 shadow-lg shadow-yellow-500/10 p-4 flex items-center justify-center transform hover:rotate-6 transition-transform"
+                            >
+                                <p className="font-handwriting text-xl text-ink/70 leading-tight">Don't forget to write today!</p>
+                                <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-12 h-4 bg-yellow-300/50 blur-[1px]" />
+                            </motion.div>
+
+                            {/* Polaroid Photo */}
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0 }}
+                                animate={{ opacity: 1, scale: 1, rotate: -15 }}
+                                transition={{ duration: 0.6, delay: 1, type: "spring" }}
+                                className="absolute -bottom-8 -left-8 bg-white p-3 pb-8 shadow-xl shadow-black/10 transform hover:rotate-[-10deg] transition-transform w-48"
+                            >
+                                <div className="w-full h-32 bg-gray-100 overflow-hidden relative">
+                                    <div className="absolute inset-0 bg-accent/20" />
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <Layers size={32} className="text-white drop-shadow-md" />
+                                    </div>
+                                </div>
+                            </motion.div>
                         </div>
-                    </motion.div>
+                    </div>
                 </div>
             </section>
 
