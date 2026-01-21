@@ -17,23 +17,23 @@ export default function LandingPage() {
 
     const features = [
         {
-            title: 'Natural Flow',
-            desc: 'Every stroke captures the rhythm of a real pen, making your digital writing feel alive.',
+            title: 'Real Feel',
+            desc: 'Captures the rhythm of a real pen, making your writing feel alive.',
             icon: <PenTool className="w-6 h-6" />
         },
         {
-            title: 'Quiet Space',
-            desc: 'A simple, beautiful environment built for deep writing and reflection.',
+            title: 'Your Space',
+            desc: 'A simple, clean place for you to just write.',
             icon: <Layers className="w-6 h-6" />
         },
         {
-            title: 'Authentic Pages',
-            desc: 'Beautiful exports that feel like you\'ve just scanned a hand-written letter.',
+            title: 'Looks Like Paper',
+            desc: 'Exports that look exactly like a scanned letter.',
             icon: <Download className="w-6 h-6" />
         },
         {
-            title: 'Smooth & Natural',
-            desc: 'Watch your words come to life instantly as you type, with a fluid, human feel.',
+            title: 'Instant Ink',
+            desc: 'See your words appear instantly as you type.',
             icon: <Zap className="w-6 h-6" />
         }
     ];
@@ -62,7 +62,7 @@ export default function LandingPage() {
                         className="inline-flex items-center gap-2 px-4 py-1.5 mb-10 glass rounded-full border border-black/5"
                     >
                         <div className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-ink/60">New: Our Most Natural Ink Ever</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-ink/60">New: Our Best Ink Yet</span>
                     </motion.div>
 
                     <h1 className="text-7xl md:text-9xl mb-10 tracking-tight leading-[0.9] font-black text-ink">
@@ -73,7 +73,7 @@ export default function LandingPage() {
                                 transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
                                 className="inline-block"
                             >
-                                Bring back the
+                                Make it
                             </motion.span>
                         </span>
                         <span className="block overflow-hidden">
@@ -83,7 +83,7 @@ export default function LandingPage() {
                                 transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
                                 className="block italic font-serif hero-text-shimmer"
                             >
-                                Human Touch.
+                                Personal.
                             </motion.span>
                         </span>
                     </h1>
@@ -94,7 +94,7 @@ export default function LandingPage() {
                         transition={{ delay: 0.8 }}
                         className="text-xl md:text-2xl text-ink/60 mb-16 max-w-2xl mx-auto leading-relaxed font-medium"
                     >
-                        Turn your digital notes into beautiful, handwritten documents. Get the natural feel of real ink with all the perks of digital editing.
+                        Turn your notes into handwritten documents. Get the feel of real ink with the ease of digital editing.
                     </motion.p>
 
                     <motion.div 
@@ -110,12 +110,7 @@ export default function LandingPage() {
                             Start Writing 
                             <ArrowRight size={18} className="transition-transform duration-300 group-hover:translate-x-1" />
                         </button>
-                        <button
-                            className="btn-premium-outline rounded-xl text-xs py-5 px-10 glass"
-                            onClick={() => navigate('/gallery')}
-                        >
-                            Explore Styles
-                        </button>
+
                     </motion.div>
                 </motion.div>
 
@@ -141,23 +136,23 @@ export default function LandingPage() {
 
                     <motion.div
                         style={{ y: yParallaxMedium }}
-                        className="font-handwriting text-[25vw] absolute -top-10 -left-20 text-ink/5 italic -rotate-12"
+                        className="font-handwriting text-[25vw] absolute -top-10 -left-20 text-ink/2 italic -rotate-12 blur-3xl select-none"
                     >
-                        soulful
+                        type
                     </motion.div>
 
                     <motion.div
                         style={{ y: yParallaxFast, rotate: 8 }}
-                        className="font-script text-[18vw] absolute top-1/2 -right-20 text-ink/5"
+                        className="font-script text-[18vw] absolute top-1/2 -right-20 text-ink/2 blur-2xl select-none"
                     >
-                        human
+                        write
                     </motion.div>
 
                     <motion.div
                         style={{ y: yParallaxSlow, rotate: -5 }}
-                        className="font-serif italic text-[12vw] absolute bottom-20 left-10 text-ink/5"
+                        className="font-serif italic text-[12vw] absolute bottom-20 left-10 text-ink/2 blur-3xl select-none"
                     >
-                        craftsmanship
+                        create
                     </motion.div>
                 </div>
             </section>
@@ -172,7 +167,7 @@ export default function LandingPage() {
                             viewport={{ once: true }}
                             className="text-5xl md:text-6xl font-display font-black text-ink mb-6"
                         >
-                            Made for <br /><span className="text-accent italic font-serif">True Realism.</span>
+                            Made for <br /><span className="text-accent italic font-serif">Writers.</span>
                         </motion.h2>
                         <motion.div 
                             initial={{ width: 0 }}
@@ -220,7 +215,7 @@ export default function LandingPage() {
                                 viewport={{ once: true }}
                                 className="text-6xl md:text-8xl font-display font-black text-white mb-10 tracking-tighter leading-none"
                             >
-                                A Love for <br /><span className="text-accent italic font-serif">Deep Ink.</span>
+                                Dedicated to <br /><span className="text-accent italic font-serif">Writing.</span>
                             </motion.h2>
                             <motion.p 
                                 initial={{ opacity: 0, x: -30 }}
