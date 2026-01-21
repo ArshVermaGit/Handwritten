@@ -3,6 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 
+import logo from '../assets/logo.png';
+
 const navItems = [
     { name: 'Home', path: '/' },
     { name: 'Editor', path: '/editor' },
@@ -31,9 +33,11 @@ export default function Navbar() {
         >
             <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
                 <Link to="/" className="flex items-center gap-3 group">
-                    <div className="w-9 h-9 bg-ink flex items-center justify-center transition-all duration-500 group-hover:rotate-12 group-hover:scale-110 shadow-lg shadow-ink/20">
-                        <span className="text-white font-display font-black text-xl italic leading-none">I</span>
-                    </div>
+                    <img 
+                        src={logo} 
+                        alt="InkPad Logo" 
+                        className="w-14 h-14 object-contain transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110 drop-shadow-md" 
+                    />
                     <span className="text-2xl font-display font-bold tracking-tight text-ink uppercase">InkPad</span>
                 </Link>
 
