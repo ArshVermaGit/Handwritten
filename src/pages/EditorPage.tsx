@@ -160,7 +160,7 @@ export default function EditorPage() {
     const handleExportPDF = useCallback(async () => {
         if (!canvasRef.current || isExporting) return;
         setIsExporting(true);
-        addToast('Generating High-Resolution PDF...');
+        addToast('Creating your PDF...');
         try {
             const pdf = await canvasRef.current.exportPDF();
             pdf.save(`${uploadedFileName || 'inkpad-document'}.pdf`);
@@ -197,7 +197,7 @@ export default function EditorPage() {
     const handleExportZIP = useCallback(async () => {
         if (!canvasRef.current || isExporting) return;
         setIsExporting(true);
-        addToast('Compressing Workspace into ZIP...');
+        addToast('Saving everything as a ZIP file...');
         try {
             const blob = await canvasRef.current.exportZIP();
             const url = URL.createObjectURL(blob);
@@ -282,7 +282,7 @@ export default function EditorPage() {
                         className="relative w-full max-w-lg glass border border-white/50 rounded-[2.5rem] shadow-2xl overflow-hidden p-10"
                     >
                         <h2 className="text-3xl font-display font-black text-ink mb-8 flex items-center gap-4">
-                            <Sparkles className="text-accent" fill="currentColor" /> Mastery Guide
+                            <Sparkles className="text-accent" fill="currentColor" /> Help Guide
                         </h2>
                         
                         <div className="space-y-8">
@@ -304,11 +304,11 @@ export default function EditorPage() {
                             </div>
                             
                             <div className="space-y-4">
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-ink/30">Artisan Tips</h3>
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-ink/30">Tips</h3>
                                 <div className="flex gap-4 items-start p-5 border-2 border-dashed border-black/5 rounded-3xl bg-paper/50">
                                     <Monitor size={20} className="text-accent shrink-0" />
                                     <p className="text-[11px] text-ink/50 font-bold leading-relaxed">
-                                        Leverage <span className="text-ink">Presets</span> to instantly achieve professional results across various document types.
+                                        Use <span className="text-ink">Presets</span> to instantly get the right look for different types of notes.
                                     </p>
                                 </div>
                             </div>
@@ -342,7 +342,7 @@ export default function EditorPage() {
                     <div className="flex items-center gap-3 group">
                         <input 
                             type="text"
-                            value={uploadedFileName || 'Untitled Masterpiece'}
+                            value={uploadedFileName || 'My Document'}
                             onChange={(e) => setUploadedFileName(e.target.value)}
                             className="text-sm font-bold bg-transparent border-none p-0 focus:ring-0 w-64 hover:bg-black/5 rounded-lg px-2 py-1 transition-all text-ink/80"
                         />
@@ -350,9 +350,9 @@ export default function EditorPage() {
                     </div>
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] px-2">
                         {isLoading ? (
-                            <span className="flex items-center gap-2 text-accent"><Loader2 size={10} className="animate-spin" /> Synchronizing...</span>
+                            <span className="flex items-center gap-2 text-accent"><Loader2 size={10} className="animate-spin" /> Saving...</span>
                         ) : (
-                            <span className="flex items-center gap-2 text-ink/30"><CheckCircle2 size={10} className="text-accent" /> {lastSaved ? `Preserved ${secondsAgo}s ago` : 'Awaiting Input'}</span>
+                            <span className="flex items-center gap-2 text-ink/30"><CheckCircle2 size={10} className="text-accent" /> {lastSaved ? `Saved ${secondsAgo}s ago` : 'Waiting for text'}</span>
                         )}
                     </div>
                 </div>
@@ -382,7 +382,7 @@ export default function EditorPage() {
                     className="btn-premium rounded-2xl py-3 px-8 text-[10px] shadow-xl shadow-ink/10"
                 >
                     {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-                    Export Master PDF
+                    Download PDF
                 </button>
 
                 <div className="w-11 h-11 flex items-center justify-center glass hover:bg-white rounded-2xl transition-all border border-black/5 cursor-pointer group shadow-sm">
@@ -431,7 +431,7 @@ export default function EditorPage() {
                 <button 
                     onClick={() => resetStore()}
                     className="p-4 rounded-2xl hover:bg-red-50 text-ink/10 hover:text-red-500 transition-all border border-transparent hover:border-red-100"
-                    title="Reset Master"
+                    title="Reset Everything"
                 >
                     <Trash2 size={24} />
                 </button>
@@ -498,7 +498,7 @@ export default function EditorPage() {
 
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Layout Control</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Layout Settings</label>
                                     <button onClick={() => resetStore()} className="text-[9px] font-bold text-blue-500 uppercase tracking-widest hover:underline">Reset</button>
                                 </div>
                                 
@@ -523,7 +523,7 @@ export default function EditorPage() {
                             </div>
 
                             <div className="space-y-4 pt-4 border-t border-gray-50">
-                                <SectionHeader icon={<Palette size={14} />} title="Ink Choice" />
+                                <SectionHeader icon={<Palette size={14} />} title="Ink Color" />
                                 <div className="flex flex-wrap gap-2">
                                     {INK_COLORS.map((c) => (
                                         <button
@@ -556,7 +556,7 @@ export default function EditorPage() {
                             className="space-y-10"
                         >
                             <div className="space-y-4">
-                                <SectionHeader icon={<FileText size={14} />} title="Manuscript Paper" />
+                                <SectionHeader icon={<FileText size={14} />} title="Select Paper" />
                                 <div className="grid grid-cols-2 gap-3">
                                     {PAPER_TYPES.slice(0, 10).map((paper) => (
                                         <button
@@ -576,7 +576,7 @@ export default function EditorPage() {
                             </div>
 
                             <div className="space-y-4 pt-6 border-t border-gray-50">
-                                <SectionHeader icon={<Settings2 size={14} />} title="Natural imperfections" />
+                                <SectionHeader icon={<Settings2 size={14} />} title="Natural details" />
                                 <div className="grid grid-cols-1 gap-3">
                                     {[
                                         { id: 'shadow', label: 'Cast Shadows', icon: <Layers size={14} />, active: paperShadow, toggle: () => setPaperShadow(!paperShadow), bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100', activeBg: 'bg-blue-500', iconBg: 'bg-blue-100' },
@@ -617,7 +617,7 @@ export default function EditorPage() {
                             className="space-y-8"
                         >
                             <div className="space-y-4">
-                                <SectionHeader icon={<FileDown size={14} />} title="Resolution Settings" />
+                                <SectionHeader icon={<FileDown size={14} />} title="Download Quality" />
                                 <div className="p-5 bg-gray-50 rounded-3xl border border-gray-100 space-y-6">
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Format</label>
@@ -771,7 +771,7 @@ export default function EditorPage() {
                 >
                     <div className="flex-1 overflow-y-auto p-8 pt-20">
                         <div className="flex items-center justify-between mb-4">
-                            <SectionHeader icon={<FileText size={14} />} title="Input Message" />
+                            <SectionHeader icon={<FileText size={14} />} title="Your text" />
                             <button 
                                 onClick={() => loadSampleText()}
                                 className="text-[10px] font-black uppercase tracking-widest text-blue-500 hover:underline"
@@ -1047,14 +1047,16 @@ export default function EditorPage() {
     };
 
     const clearContent = useCallback(() => {
-        if (window.confirm('Are you sure you want to clear all text and saved data?')) {
+        if (window.confirm('Are you sure you want to clear everything?')) {
             setText('');
             setUploadedFileName(null);
             setLastSaved(null);
             if (richTextRef.current) richTextRef.current.innerHTML = '';
-            localStorage.removeItem('inkpad-core-storage');
+            // We should also reset visual settings if we want a TOTAL clear
+            resetStore();
+            addToast('Workspace cleared', 'info');
         }
-    }, [setText, setUploadedFileName, setLastSaved]);
+    }, [setText, setUploadedFileName, setLastSaved, resetStore, addToast]);
 
 
 
