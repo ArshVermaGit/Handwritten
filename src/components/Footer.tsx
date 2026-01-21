@@ -20,7 +20,7 @@ export default function Footer() {
                     </div>
 
                     <div className="flex flex-col gap-6">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-ink/20">Artisan</h4>
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-ink/20">Developer</h4>
                         <a
                             href="https://github.com/ArshVermaGit"
                             target="_blank"
@@ -38,19 +38,17 @@ export default function Footer() {
                     </div>
 
                     <div className="flex flex-col gap-6">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-ink/20">Studio</h4>
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-ink/20">Menu</h4>
                         <ul className="space-y-4 text-xs font-black uppercase tracking-[0.2em] text-ink/40">
                             <li><a href="/" className="hover:text-ink transition-colors">Home</a></li>
-                            <li><a href="/editor" className="hover:text-ink transition-colors">Workspace</a></li>
-                            <li><a href="/gallery" className="hover:text-ink transition-colors">Exhibition</a></li>
-                            <li><a href="/styles" className="hover:text-ink transition-colors">Styles</a></li>
-                            <li><a href="/about" className="hover:text-ink transition-colors">Manifesto</a></li>
+                            <li><a href="/editor" className="hover:text-ink transition-colors">Editor</a></li>
+                            <li><a href="/about" className="hover:text-ink transition-colors">About</a></li>
                         </ul>
                     </div>
                 </div>
 
                 <div className="mt-32 pt-12 border-t border-black/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black uppercase tracking-[0.3em] text-ink/20">
-                    <p>&copy; {new Date().getFullYear()} InkPad. Built with care and a love for the written word.</p>
+                    <p>&copy; {new Date().getFullYear()} InkPad. Built for people who love to write.</p>
                     <div className="flex gap-8">
                         <a href="#" className="hover:text-ink transition-colors">Privacy</a>
                         <a href="#" className="hover:text-ink transition-colors">Terms</a>
