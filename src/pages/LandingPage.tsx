@@ -43,31 +43,21 @@ export default function LandingPage() {
     return (
         <div className="relative paper-texture overflow-hidden">
             {/* Hero Section V3 - Living Canvas / Creative Desk */}
-            <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#F2F0E9]">
+            <section className="relative min-h-screen flex items-start justify-center overflow-hidden bg-[#F2F0E9] pt-32 lg:pt-40">
                 {/* Paper Texture Overlay */}
                 <div className="absolute inset-0 opacity-40 bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] pointer-events-none mix-blend-multiply" />
                 
                 {/* Ambient Background Blobs (Warm & Organic) */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <motion.div 
-                        animate={{ 
-                            scale: [1, 1.1, 1],
-                            rotate: [0, 5, -5, 0],
-                        }}
-                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    <div 
                         className="absolute -top-[20%] -right-[10%] w-[800px] h-[800px] bg-orange-200/20 rounded-full blur-[100px]" 
                     />
-                    <motion.div 
-                        animate={{ 
-                            scale: [1, 1.2, 1],
-                            x: [0, 50, 0],
-                        }}
-                        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                    <div 
                         className="absolute -bottom-[20%] -left-[10%] w-[600px] h-[600px] bg-amber-200/20 rounded-full blur-[100px]" 
                     />
                 </div>
 
-                <div className="max-w-7xl mx-auto px-6 relative z-10 w-full pt-20">
+                <div className="max-w-7xl mx-auto px-6 relative z-10 w-full">
                     <div className="flex flex-col lg:flex-row items-center justify-between gap-16">
                         
                         {/* Left: Text Content */}
@@ -92,7 +82,7 @@ export default function LandingPage() {
                             <h1 className="text-7xl md:text-9xl font-display font-black text-ink tracking-tighter mb-8 leading-[0.85] relative">
                                 <span className="block text-transparent bg-clip-text bg-linear-to-br from-ink to-ink/70">Creative</span>
                                 <span className="block italic font-serif text-accent relative">
-                                    Flow
+                                    InkPad
                                     <svg className="absolute w-full h-3 -bottom-1 left-0 text-accent opacity-40" viewBox="0 0 100 10" preserveAspectRatio="none">
                                         <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="2" fill="none" />
                                     </svg>
@@ -198,7 +188,7 @@ export default function LandingPage() {
                                 transition={{ delay: i * 0.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                                 className="card-premium group"
                             >
-                                <div className="mb-8 w-14 h-14 glass rounded-2xl flex items-center justify-center text-accent transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110 border border-black/5">
+                                <div className="mb-8 w-14 h-14 bg-white rounded-xl border border-black/5 shadow-sm flex items-center justify-center text-accent transition-transform duration-500 group-hover:rotate-6 group-hover:scale-110">
                                     {feature.icon}
                                 </div>
                                 <h3 className="text-xl font-display font-black text-ink mb-4 tracking-tight uppercase">{feature.title}</h3>
@@ -261,9 +251,9 @@ export default function LandingPage() {
                         whileInView={{ scale: 1, opacity: 1 }}
                         viewport={{ once: true }}
                         transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                        className="glass p-20 rounded-[3rem] border border-black/5 shadow-2xl overflow-hidden relative"
+                        className="bg-white p-20 rounded-[3rem] border border-black/5 shadow-2xl shadow-ink/10 overflow-hidden relative"
                     >
-                        <div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-accent to-transparent opacity-30" />
+                        <div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-accent to-transparent opacity-20" />
                         
                         <h2 className="text-5xl md:text-7xl font-display font-black text-ink mb-8 tracking-tighter italic">Ready to create?</h2>
                         <p className="text-ink/40 text-lg mb-12 max-w-xl mx-auto font-medium">
