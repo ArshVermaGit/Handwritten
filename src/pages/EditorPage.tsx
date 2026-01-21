@@ -409,32 +409,43 @@ export default function EditorPage() {
 
                     {/* CANVAS CONTAINER */}
                     <div className="w-full h-full overflow-auto flex items-center justify-center p-20 scrollbar-hide">
-                         <AnimatePresence mode="wait">
-                            {isLoading || isRendering ? (
-                                <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="flex flex-col items-center gap-4">
-                                    <div className="relative">
-                                        <div className="w-16 h-16 rounded-full border-4 border-ink/10 border-t-accent animate-spin" />
-                                        <div className="absolute inset-0 flex items-center justify-center"><Loader2 size={24} className="text-accent animate-pulse" /></div>
-                                    </div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-ink/40 animate-pulse">Inking...</p>
-                                </motion.div>
-                            ) : (
-                                <motion.div 
-                                    layout
-                                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                                    animate={{ opacity: 1, scale: zoom, y: 0 }}
-                                    transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                                    className="relative shadow-2xl shadow-ink/20"
-                                >
-                                    <HandwritingCanvas 
-                                        ref={canvasRef}
-                                        text={debouncedText}
-                                        currentPage={currentPage}
-                                        onRenderComplete={setTotalPages}
-                                    />
-                                </motion.div>
-                            )}
-                         </AnimatePresence>
+                         
+                        <div className="relative"> 
+                            {/* Loader Overlay */}
+                            <AnimatePresence>
+                                {(isLoading || isRendering) && (
+                                    <motion.div 
+                                        initial={{opacity:0}} 
+                                        animate={{opacity:1}} 
+                                        exit={{opacity:0}} 
+                                        className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-sm"
+                                    >
+                                        <div className="relative">
+                                            <div className="w-16 h-16 rounded-full border-4 border-ink/10 border-t-accent animate-spin" />
+                                            <div className="absolute inset-0 flex items-center justify-center"><Loader2 size={24} className="text-accent animate-pulse" /></div>
+                                        </div>
+                                        <p className="mt-4 text-[10px] font-black uppercase tracking-widest text-ink/40 animate-pulse">Inking...</p>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Canvas - ALWAYS RENDERED */}
+                            <motion.div 
+                                layout
+                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                animate={{ opacity: 1, scale: zoom, y: 0 }}
+                                transition={{ type: "spring", stiffness: 200, damping: 25 }}
+                                className="relative shadow-2xl shadow-ink/20"
+                            >
+                                <HandwritingCanvas 
+                                    ref={canvasRef}
+                                    text={debouncedText}
+                                    currentPage={currentPage}
+                                    onRenderComplete={setTotalPages}
+                                />
+                            </motion.div>
+                        </div>
+
                     </div>
                 </div>
 
