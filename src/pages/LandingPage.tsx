@@ -17,32 +17,32 @@ export default function LandingPage() {
 
     const features = [
         {
-            title: 'Precision Rendering',
-            desc: 'Our proprietary algorithm replicates the nuances of natural handwriting speed and pressure.',
+            title: 'Natural Flow',
+            desc: 'Every stroke captures the rhythm of a real pen, making your digital writing feel alive.',
             icon: <PenTool className="w-6 h-6" />
         },
         {
-            title: 'Stationery Design',
-            desc: 'A focused, distraction-free interface designed for modern document creation.',
+            title: 'Quiet Space',
+            desc: 'A simple, beautiful environment built for deep writing and reflection.',
             icon: <Layers className="w-6 h-6" />
         },
         {
-            title: 'Instant PDF Export',
-            desc: 'High-fidelity exports that look identical to authentic scanned physical paper.',
+            title: 'Authentic Pages',
+            desc: 'Beautiful exports that feel like you\'ve just scanned a hand-written letter.',
             icon: <Download className="w-6 h-6" />
         },
         {
-            title: 'Blazing Fast',
-            desc: 'Real-time previews with virtually zero latency, powered by high-performance canvas logic.',
+            title: 'Smooth & Natural',
+            desc: 'Watch your words come to life instantly as you type, with a fluid, human feel.',
             icon: <Zap className="w-6 h-6" />
         }
     ];
 
     const useCases = [
-        { title: 'Students', desc: 'Convert digital notes to authentic-looking handwritten assignments.' },
-        { title: 'Journaling', desc: 'Preserve the feeling of handwriting in your digital diary.' },
-        { title: 'Personalized Mail', desc: 'Create letters that feel deeply personal and sincere.' },
-        { title: 'Professional Docs', desc: 'Add a human touch to digital signatures and memos.' }
+        { title: 'Students', desc: 'Turn your typed notes into realistic handwritten assignments.' },
+        { title: 'Journaling', desc: 'Keep the personal feel of a diary in a digital format.' },
+        { title: 'Letters', desc: 'Create notes that feel personal and sincere.' },
+        { title: 'Professional', desc: 'Add a human touch to your digital signatures and memos.' }
     ];
 
     return (
@@ -62,7 +62,7 @@ export default function LandingPage() {
                         className="inline-flex items-center gap-2 px-4 py-1.5 mb-10 glass rounded-full border border-black/5"
                     >
                         <div className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-ink/60">New: Advanced Ink Simulation 2.0</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-ink/60">New: Our Most Natural Ink Ever</span>
                     </motion.div>
 
                     <h1 className="text-7xl md:text-9xl mb-10 tracking-tight leading-[0.9] font-black text-ink">
@@ -73,7 +73,7 @@ export default function LandingPage() {
                                 transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
                                 className="inline-block"
                             >
-                                Rewrite the
+                                Bring back the
                             </motion.span>
                         </span>
                         <span className="block overflow-hidden">
@@ -83,7 +83,7 @@ export default function LandingPage() {
                                 transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
                                 className="block italic font-serif hero-text-shimmer"
                             >
-                                Digital Experience
+                                Human Touch.
                             </motion.span>
                         </span>
                     </h1>
@@ -94,7 +94,7 @@ export default function LandingPage() {
                         transition={{ delay: 0.8 }}
                         className="text-xl md:text-2xl text-ink/60 mb-16 max-w-2xl mx-auto leading-relaxed font-medium"
                     >
-                        Experience the soulful warmth of traditional handwriting combined with the raw power of modern AI. Elevate your digital notes into timeless art.
+                        Turn your digital notes into beautiful, handwritten documents. Get the natural feel of real ink with all the perks of digital editing.
                     </motion.p>
 
                     <motion.div 
@@ -107,7 +107,7 @@ export default function LandingPage() {
                             className="btn-premium rounded-xl text-xs py-5 px-10 group"
                             onClick={() => navigate('/editor')}
                         >
-                            Start Your Journey 
+                            Start Writing 
                             <ArrowRight size={18} className="transition-transform duration-300 group-hover:translate-x-1" />
                         </button>
                         <button
@@ -172,7 +172,7 @@ export default function LandingPage() {
                             viewport={{ once: true }}
                             className="text-5xl md:text-6xl font-display font-black text-ink mb-6"
                         >
-                            Engineered for <br /><span className="text-accent italic font-serif">Absolute Authenticity.</span>
+                            Made for <br /><span className="text-accent italic font-serif">True Realism.</span>
                         </motion.h2>
                         <motion.div 
                             initial={{ width: 0 }}
@@ -220,7 +220,7 @@ export default function LandingPage() {
                                 viewport={{ once: true }}
                                 className="text-6xl md:text-8xl font-display font-black text-white mb-10 tracking-tighter leading-none"
                             >
-                                A Heritage <br /><span className="text-accent italic font-serif">of Ink.</span>
+                                A Love for <br /><span className="text-accent italic font-serif">Deep Ink.</span>
                             </motion.h2>
                             <motion.p 
                                 initial={{ opacity: 0, x: -30 }}
@@ -229,7 +229,7 @@ export default function LandingPage() {
                                 transition={{ delay: 0.2 }}
                                 className="text-white/40 text-xl leading-relaxed max-w-lg font-medium"
                             >
-                                InkPad bridges the gap between digital efficiency and the timeless warmth of traditional writing.
+                                InkPad brings back the simple joy of writing by hand in a digital world.
                             </motion.p>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-16">
@@ -269,13 +269,13 @@ export default function LandingPage() {
                         
                         <h2 className="text-5xl md:text-7xl font-display font-black text-ink mb-8 tracking-tighter italic">Ready to create?</h2>
                         <p className="text-ink/40 text-lg mb-12 max-w-xl mx-auto font-medium">
-                            Join thousands who are rediscovering the beauty of handwriting in the digital age.
+                            Rediscover the simple beauty of a pen on paper.
                         </p>
                         <button
                             className="btn-premium rounded-2xl px-16 py-6 text-sm tracking-[0.2em] shadow-2xl shadow-ink/20 hover:scale-105 active:scale-95 transition-all mx-auto"
                             onClick={() => navigate('/editor')}
                         >
-                            Initialize Workspace
+                            Open Editor
                         </button>
                     </motion.div>
                 </div>
