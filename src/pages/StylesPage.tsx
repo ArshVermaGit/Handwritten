@@ -13,48 +13,63 @@ export default function StylesPage() {
     };
 
     return (
-        <div className="section-padding bg-white">
+        <div className="section-padding paper-texture min-h-screen">
             <div className="max-w-7xl mx-auto">
-                <div className="max-w-2xl mb-24">
-                    <h1 className="text-5xl md:text-7xl mb-8 tracking-tighter">Handwriting Library.</h1>
-                    <p className="text-gray-400 text-xl font-medium">
-                        Discover the perfect handwriting engine for your digital documents.
+                <div className="max-w-3xl mb-32">
+                    <motion.div 
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 glass rounded-full border border-black/5"
+                    >
+                        <div className="w-1.5 h-1.5 bg-accent rounded-full" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-ink/60">The Typography Collection</span>
+                    </motion.div>
+                    
+                    <h1 className="text-6xl md:text-8xl font-display font-black text-ink mb-10 tracking-tight leading-none">
+                        Engineered <br /><span className="italic font-serif hero-text-shimmer">Handwriting.</span>
+                    </h1>
+                    <p className="text-ink/40 text-xl font-medium leading-relaxed max-w-xl">
+                        Discover the perfect handwriting engine for your digital documents, carefully optimized for authentic rendering.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-12">
+                <div className="grid grid-cols-1 gap-16">
                     {allFonts.map((font, i) => (
                         <motion.div
                             key={font.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.05 }}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: i * 0.05, duration: 1, ease: [0.16, 1, 0.3, 1] }}
                             onClick={() => handleSelect(font.id)}
-                            className={`card-premium group cursor-pointer border-l-4 flex flex-col lg:flex-row justify-between items-center gap-12 ${handwritingStyle === font.id ? 'border-l-black shadow-premium-hover' : 'border-l-transparent'
+                            className={`card-premium group cursor-pointer border-l-[6px] flex flex-col lg:flex-row justify-between items-center gap-12 p-10 transition-all duration-700 ${handwritingStyle === font.id ? 'border-l-accent bg-paper-dark/30' : 'border-l-transparent'
                                 }`}
                         >
-                            <div className="flex-1">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] block mb-4">
-                                    {font.type === 'custom' ? 'Your Font' : `Library Engine ${i + 1}`}
+                            <div className="flex-1 w-full">
+                                <span className="text-[10px] font-black text-accent uppercase tracking-[0.4em] block mb-6 px-1">
+                                    {font.type === 'custom' ? 'Exclusive Signature' : `Proprietary Engine №${i + 1}`}
                                 </span>
-                                <h2 className="text-3xl md:text-4xl mb-4 group-hover:translate-x-2 transition-transform duration-500 uppercase tracking-tighter">{font.name}</h2>
-                                <div className="flex items-center gap-4">
-                                    <div className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest ${font.type === 'custom' ? 'bg-black text-white' : 'bg-gray-100 text-gray-500'
+                                <h2 className="text-4xl md:text-5xl mb-8 group-hover:translate-x-3 transition-transform duration-700 font-display font-black text-ink uppercase tracking-tight">{font.name}</h2>
+                                <div className="flex items-center gap-6">
+                                    <div className={`px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] rounded-lg shadow-inner-paper ${font.type === 'custom' ? 'bg-ink text-white' : 'bg-black/5 text-ink/40'
                                         }`}>
-                                        {font.type === 'custom' ? 'Local' : 'Global'}
+                                        {font.type === 'custom' ? 'Private' : 'System'}
                                     </div>
                                     {handwritingStyle === font.id && (
-                                        <span className="text-[8px] font-bold text-black uppercase tracking-widest border border-black px-2 py-0.5">Active</span>
+                                        <span className="flex items-center gap-2 text-[9px] font-black text-accent uppercase tracking-[0.2em] animate-pulse">
+                                            <div className="w-1.5 h-1.5 bg-accent rounded-full" />
+                                            Active Engine
+                                        </span>
                                     )}
                                 </div>
                             </div>
 
-                            <div className="flex-1 w-full lg:w-auto overflow-hidden bg-gray-50 p-12 flex items-center justify-center min-h-[160px]">
+                            <div className="flex-[1.5] w-full min-h-[200px] glass rounded-3xl p-12 flex items-center justify-center relative overflow-hidden group-hover:shadow-2xl transition-all duration-700 border border-black/5">
+                                <div className="absolute inset-0 bg-ink opacity-0 group-hover:opacity-[0.02] transition-opacity duration-700" />
                                 <span
-                                    className="text-3xl md:text-4xl text-black select-none pointer-events-none text-center"
-                                    style={{ fontFamily: `"${font.family}", cursive` }}
+                                    className="text-3xl md:text-5xl text-ink select-none pointer-events-none text-center leading-relaxed"
+                                    style={{ fontFamily: font.family }}
                                 >
-                                    The quick brown fox jumps over the lazy dog.
+                                    The artistic expression of digital ink flows through every stroke.
                                 </span>
                             </div>
                         </motion.div>
