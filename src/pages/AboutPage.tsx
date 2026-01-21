@@ -42,17 +42,17 @@ export default function AboutPage() {
 
                         <div className="space-y-6 text-lg font-medium text-gray-600 leading-relaxed max-w-2xl">
                             <p>
-                                I'm a Tech Gaming Technology student at VIT Bhopal and a full-stack digital creator.
-                                My expertise lies in game development with Unity, but I also build dynamic websites and apps.
-                                I've earned numerous certifications and treat every project, like my portfolio <span className="text-black font-bold">arshcreates</span>,
-                                as an opportunity to blend creative vision with technical precision.
+                                Hi, I'm Arsh. I'm a student at VIT Bhopal with a passion for building digital experiences. 
+                                Whether it's developing games in Unity or creating websites like this one, I love the challenge of 
+                                turning a simple idea into something people can actually use and enjoy.
                             </p>
                             <p>
-                                My development philosophy is simple: turn great ideas into polished, engaging digital reality.
-                                I love the challenge of coding and design, focusing on creating seamless user experiences across all platforms.
+                                I focus on making things that look great and work even better. 
+                                For me, coding isn't just about logic—it's about creating something that feels 
+                                right for the person on the other side of the screen.
                             </p>
                             <p className="text-black font-bold">
-                                Take a look around—I'm ready to tackle the next big project!
+                                Have a look around, and feel free to reach out if you'd like to collaborate!
                             </p>
                         </div>
 
