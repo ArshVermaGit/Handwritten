@@ -592,7 +592,7 @@ export default function EditorPage() {
                                         >
                                             <span className="text-xs font-bold">{opt.label}</span>
                                             <div className={`w-8 h-4 rounded-full relative ${opt.active ? 'bg-accent' : 'bg-gray-200'}`}>
-                                                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${opt.active ? 'left-4.5' : 'left-0.5'}`} />
+                                                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${opt.active ? 'left-[18px]' : 'left-0.5'}`} />
                                             </div>
                                         </button>
                                     ))}
