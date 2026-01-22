@@ -459,12 +459,12 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
                 // 2. Baseline Drift (Sinusoidal wave: A=2-3px, λ=500-800px)
                 const driftY = driftAmplitude * Math.sin(x / driftWavelength);
                 
-                // 3. CHARACTER-LEVEL RANDOMIZATION
-                const yVar = (Math.random() - 0.5) * 4; // ±2px
-                const xVar = (Math.random() - 0.5) * 2; // ±1px
-                const localSlantVar = (Math.random() - 0.5) * 0.035; // ±1 degree
+                // 3. CHARACTER-LEVEL RANDOMIZATION (reduced for legibility)
+                const yVar = (Math.random() - 0.5) * 1.5; // ±0.75px (was ±2px)
+                const xVar = (Math.random() - 0.5) * 0.5; // ±0.25px (was ±1px)
+                const localSlantVar = (Math.random() - 0.5) * 0.02; // ±0.5 degrees (was ±1deg)
                 const rotation = globalSlant + localSlantVar;
-                const sizeVar = 1 + (Math.random() - 0.5) * 0.1; // ±5%
+                const sizeVar = 1 + (Math.random() - 0.5) * 0.04; // ±2% (was ±5%)
                 const finalSize = bFSize * sizeVar;
 
                 // 4. INK EFFECTS & PRESSURE
@@ -550,10 +550,9 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
                    ctx.restore();
                 }
 
-                const w = ctx.measureText(char).width;
-                const spacingVar = (Math.random() - 0.5) * 3; 
-                
-                return w + letterSpacing + spacingVar;
+                // Use pre-calculated charWidth (line 480) instead of measuring after ctx.restore()
+                // Also remove spacingVar to prevent cumulative spacing errors
+                return charWidth + letterSpacing;
             };
 
             for (const token of tokens) {
