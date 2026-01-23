@@ -1,62 +1,71 @@
-import { Github, Linkedin, Twitter } from 'lucide-react';
+import { Github, Linkedin, Twitter, Heart, ArrowUpRight } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 export default function Footer() {
     return (
-        <footer className="bg-[#F2F0E9] border-t border-black/5 py-24 px-6 md:px-12 lg:px-24 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-accent to-transparent opacity-20" />
-            
-            <div className="max-w-7xl mx-auto relative z-10">
-                <div className="flex flex-col md:flex-row justify-between items-start gap-20">
-                    <div className="max-w-sm">
-                        <div className="flex items-center gap-3 mb-6 group">
-                            <img 
-                                src={logo} 
-                                alt="InkPad Logo" 
-                                className="w-14 h-14 object-contain transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110 drop-shadow-md" 
-                            />
-                            <h3 className="text-2xl font-display font-bold text-ink tracking-tight uppercase">InkPad</h3>
+        <footer className="bg-[#FAF9F6] text-ink pt-20 pb-10 border-t border-black/5 relative overflow-hidden">
+            <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
+                
+                {/* CTA Section - Redesigned for Light Mode */}
+                <div className="flex flex-col md:flex-row items-center justify-between pb-20 border-b border-black/5 gap-10">
+                    <div>
+                        <h2 className="text-4xl md:text-5xl font-display font-bold mb-4 text-ink">
+                            Ready to write <br/>
+                            <span className="text-accent italic font-serif">with soul?</span>
+                        </h2>
+                        <p className="text-ink/60 max-w-md text-lg">
+                            Join thousands of writers who have rediscovered the joy of digital handwriting.
+                        </p>
+                    </div>
+                    <a 
+                        href="/editor" 
+                        className="group flex items-center gap-4 px-8 py-5 bg-ink text-white rounded-full font-bold text-lg hover:scale-105 transition-all duration-300 shadow-xl shadow-ink/20"
+                    >
+                        Open Editor
+                        <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center group-hover:bg-white group-hover:text-ink transition-colors">
+                            <ArrowUpRight size={18} />
                         </div>
-                        <p className="text-ink/40 text-sm leading-relaxed font-medium">
-                            A quiet space for creating hand-written documents. We're here to bring a bit of warmth and personality back to your digital notes.
+                    </a>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-12 lg:gap-24 py-16">
+                    <div className="md:col-span-2">
+                        <div className="flex items-center gap-3 mb-6">
+                             <img src={logo} alt="InkPad" className="w-10 h-10 object-contain" />
+                             <span className="font-display font-bold text-2xl tracking-tight text-ink">InkPad.</span>
+                        </div>
+                        <p className="text-ink/60 leading-relaxed max-w-sm text-sm font-medium">
+                            A digital sanctuary for your thoughts. We blend the nostalgia of analog writing with the power of modern technology.
                         </p>
                     </div>
 
-                    <div className="flex flex-col gap-6">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-ink/20">Developer</h4>
-                        <a
-                            href="https://github.com/ArshVermaGit"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xl font-display font-black text-ink hover:text-accent transition-colors duration-300 relative group"
-                        >
-                            Arsh Verma
-                            <span className="absolute -bottom-1 left-0 w-full h-px bg-ink/10 group-hover:bg-accent transition-colors" />
-                        </a>
-                        <div className="flex gap-6 mt-2">
-                            <a href="https://github.com/ArshVermaGit" className="text-ink/30 hover:text-ink transition-colors"><Github size={20} /></a>
-                            <a href="https://linkedin.com/in/arshverma" className="text-ink/30 hover:text-ink transition-colors"><Linkedin size={20} /></a>
-                            <a href="https://X.com/arshverma" className="text-ink/30 hover:text-ink transition-colors"><Twitter size={20} /></a>
-                        </div>
+                    <div>
+                        <h4 className="font-black text-xs uppercase tracking-[0.2em] text-ink/40 mb-8">Navigation</h4>
+                        <ul className="space-y-4">
+                            <li><a href="/" className="text-ink/60 hover:text-ink transition-colors text-sm font-bold">Home</a></li>
+                            <li><a href="/editor" className="text-ink/60 hover:text-ink transition-colors text-sm font-bold">Editor</a></li>
+                            <li><a href="/about" className="text-ink/60 hover:text-ink transition-colors text-sm font-bold">About Us</a></li>
+                            <li><a href="#" className="text-ink/60 hover:text-ink transition-colors text-sm font-bold">Pricing</a></li>
+                        </ul>
                     </div>
 
-                    <div className="flex flex-col gap-6">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-ink/20">Menu</h4>
-                        <ul className="space-y-4 text-xs font-black uppercase tracking-[0.2em] text-ink/40">
-                            <li><a href="/" className="hover:text-ink transition-colors">Home</a></li>
-                            <li><a href="/editor" className="hover:text-ink transition-colors">Editor</a></li>
-                            <li><a href="/about" className="hover:text-ink transition-colors">About</a></li>
+                    <div>
+                        <h4 className="font-black text-xs uppercase tracking-[0.2em] text-ink/40 mb-8">Socials</h4>
+                        <ul className="space-y-4">
+                            <li><a href="https://twitter.com/arshverma" className="text-ink/60 hover:text-ink transition-colors flex items-center gap-3 text-sm font-bold group"><Twitter size={16} className="group-hover:text-sky-500 transition-colors"/> Twitter</a></li>
+                            <li><a href="https://github.com/ArshVermaGit" className="text-ink/60 hover:text-ink transition-colors flex items-center gap-3 text-sm font-bold group"><Github size={16} className="group-hover:text-purple-600 transition-colors"/> GitHub</a></li>
+                            <li><a href="https://linkedin.com/in/arshverma" className="text-ink/60 hover:text-ink transition-colors flex items-center gap-3 text-sm font-bold group"><Linkedin size={16} className="group-hover:text-blue-600 transition-colors"/> LinkedIn</a></li>
                         </ul>
                     </div>
                 </div>
 
-                <div className="mt-32 pt-12 border-t border-black/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black uppercase tracking-[0.3em] text-ink/20">
-                    <p>&copy; {new Date().getFullYear()} InkPad. Built for people who love to write.</p>
-                    <div className="flex gap-8">
-                        <a href="#" className="hover:text-ink transition-colors">Privacy</a>
-                        <a href="#" className="hover:text-ink transition-colors">Terms</a>
-                        <a href="#" className="hover:text-ink transition-colors">API</a>
-                    </div>
+                <div className="border-t border-black/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <p className="text-xs text-ink/40 font-bold">
+                        &copy; {new Date().getFullYear()} InkPad Inc. All rights reserved.
+                    </p>
+                    <p className="text-xs text-ink/40 font-bold flex items-center gap-2">
+                        Designed & Built with <Heart size={12} className="text-red-500 fill-current" /> by <a href="https://www.arshcreates.com" className="text-ink hover:underline decoration-ink/30 underline-offset-4">Arsh Verma</a>
+                    </p>
                 </div>
             </div>
         </footer>
