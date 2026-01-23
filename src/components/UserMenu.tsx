@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { LogOut, User as UserIcon, Settings, ChevronDown } from 'lucide-react';
+import { LogOut, Clock, ChevronDown } from 'lucide-react';
+import HistoryModal from './HistoryModal';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function UserMenu() {
     const { user, logout, setAuthModalOpen } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     // Close on click outside
@@ -67,11 +69,14 @@ export default function UserMenu() {
                         </div>
                         
                         <div className="p-1">
-                            <button className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-ink/70 hover:text-ink hover:bg-gray-50 rounded-lg transition-colors text-left">
-                                <UserIcon size={14} /> Profile
-                            </button>
-                            <button className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-ink/70 hover:text-ink hover:bg-gray-50 rounded-lg transition-colors text-left">
-                                <Settings size={14} /> Settings
+                            <button 
+                                onClick={() => {
+                                    setIsHistoryOpen(true);
+                                    setIsOpen(false);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-ink/70 hover:text-ink hover:bg-gray-50 rounded-lg transition-colors text-left"
+                            >
+                                <Clock size={14} /> History
                             </button>
                         </div>
 
@@ -89,6 +94,8 @@ export default function UserMenu() {
                     </motion.div>
                 )}
             </AnimatePresence>
+            
+            <HistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
         </div>
     );
 }
