@@ -1,116 +1,74 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #FAF9F6;
+  --color-paper-dark: #F2F0E9;
+  
+  --color-ink: #111827;
+  --color-ink-light: #4B5563;
+  
+  --color-accent: #6366f1;
+  --color-accent-light: #818cf8;
+
+  --font-handwriting: 'Caveat', cursive;
+  --font-script: 'Dancing Script', cursive;
+  --font-print: 'Patrick Hand', cursive;
+  --font-display: 'Playfair Display', serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-serif: 'Merriweather', serif;
+}
+
+/* 
+   We define the variables again in :root for backward compatibility 
+   if the code accesses them directly, though @theme handles utilities.
+   However, our tailwind.config.js (if used) maps to var(--color-ink).
+   In v4, @theme can replace tailwind.config.js. 
+   To be safe and ensure 'bg-ink' works whether via config or theme:
+*/
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --color-paper: #FAF9F6;
+  --color-paper-dark: #F2F0E9;
+  --color-ink: #111827;
+  --color-ink-light: #4B5563;
+  --color-accent: #6366f1;
+  --color-accent-light: #818cf8;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+@layer utilities {
+  .btn-primary {
+    @apply px-6 py-3 rounded-full bg-ink text-white font-bold transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-ink/20;
+  }
+  
+  .btn-secondary {
+    @apply px-6 py-3 rounded-full bg-white border border-black/5 text-ink font-bold transition-colors hover:bg-gray-50;
+  }
+
+  .paper-card {
+    @apply bg-white rounded-2xl shadow-xl shadow-ink/5 border border-black/5 p-6;
+  }
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  @apply bg-paper text-ink antialiased;
+  font-feature-settings: "rlig" 1, "calt" 1;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+h1, h2, h3, h4, h5, h6 {
+  @apply font-display tracking-tight text-ink;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
   }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
 
-@media print {
-    body {
-        background: white !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    /* Hide UI elements */
-    button, 
-    nav, 
-    aside, 
-    .no-print,
-    [role="tooltip"],
-    .fixed,
-    .absolute:not(.paper-content) {
-        display: none !important;
-    }
-
-    /* Layout adjustments */
-    .flex, .grid {
-        display: block !important;
-    }
-
-    .flex-1 {
-        padding: 0 !important;
-        overflow: visible !important;
-    }
-
-    /* Target the paper container */
-    .origin-center {
-        transform: scale(1) !important;
-        margin: 0 auto !important;
-        box-shadow: none !important;
-        rotate: 0deg !important;
-    }
-
-    canvas {
-        width: 100% !important;
-        height: auto !important;
-        mix-blend-mode: normal !important;
-    }
-
-    @page {
-        margin: 0;
-        size: auto;
-    }
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
 }
