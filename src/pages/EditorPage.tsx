@@ -34,8 +34,8 @@ const HANDWRITING_FONTS = [
 const INK_COLORS = [
     { id: 'blue-dark', name: 'Blue Dark', color: '#0051a8' },
     { id: 'blue-light', name: 'Blue Light', color: '#0066cc' },
-    { id: 'black', name: 'Black', color: '#000000' },
-    { id: 'black-gray', name: 'Black Gray', color: '#333333' },
+    { id: 'black', name: 'Black', color: '#111827' },
+    { id: 'black-gray', name: 'Black Gray', color: '#374151' },
     { id: 'red', name: 'Red', color: '#cc0000' },
 ];
 
@@ -52,17 +52,16 @@ const PAPER_TYPES = [
     { id: 'birthday', name: 'Birthday', bg: '#fffbf0', pattern: 'none' },
     { id: 'christmas', name: 'Christmas', bg: '#f0fff4', pattern: 'none' },
     { id: 'professional', name: 'Professional', bg: '#ffffff', pattern: 'none' },
-    { id: 'custom', name: 'Custom Upload', bg: '#ffffff', pattern: 'none' },
 ];
 
 const PRESETS = {
     homework: { handwritingStyle: 'gloria-hallelujah', inkColor: '#0051a8', paperMaterial: 'college' as const, fontSize: 18, lineHeight: 1.6, paperShadow: true, paperTilt: false },
     love: { handwritingStyle: 'indie-flower', inkColor: '#cc0000', paperMaterial: 'love-letter' as const, fontSize: 20, lineHeight: 1.4, paperShadow: true, paperTilt: true },
-    professional: { handwritingStyle: 'patrick-hand', inkColor: '#000000', paperMaterial: 'professional' as const, fontSize: 16, lineHeight: 1.5, paperShadow: false, paperTilt: false },
-    history: { handwritingStyle: 'caveat', inkColor: '#333333', paperMaterial: 'aged' as const, fontSize: 17, lineHeight: 1.8, paperShadow: true, paperTilt: false }
+    professional: { handwritingStyle: 'patrick-hand', inkColor: '#111827', paperMaterial: 'professional' as const, fontSize: 16, lineHeight: 1.5, paperShadow: false, paperTilt: false },
+    history: { handwritingStyle: 'caveat', inkColor: '#374151', paperMaterial: 'aged' as const, fontSize: 17, lineHeight: 1.8, paperShadow: true, paperTilt: false }
 } as const;
 
-// --- COMPONENTS ---
+// --- HELPER COMPONENTS ---
 
 const Tooltip = ({ children, text }: { children: React.ReactNode, text: string }) => (
     <div className="group relative flex items-center justify-center">
@@ -71,13 +70,6 @@ const Tooltip = ({ children, text }: { children: React.ReactNode, text: string }
             {text}
             <div className="absolute left-0 top-1/2 -translate-x-1 -translate-y-1/2 border-y-4 border-y-transparent border-r-4 border-r-ink" />
         </div>
-    </div>
-);
-
-const SectionLabel = ({ icon, title }: { icon: React.ReactNode, title: string }) => (
-    <div className="flex items-center gap-2 mb-3 text-ink/40">
-        {icon}
-        <span className="text-[10px] font-black uppercase tracking-[0.2em]">{title}</span>
     </div>
 );
 
@@ -95,9 +87,8 @@ export default function EditorPage() {
 
     const [fontSearch, setFontSearch] = useState('');
     const richTextRef = useRef<HTMLDivElement>(null);
-    const [isHelpOpen, setIsHelpOpen] = useState(false);
-    const [activePanel, setActivePanel] = useState<'style' | 'paper' | 'export' | null>('style'); 
-    const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true); 
+    const [activeDockTab, setActiveDockTab] = useState<'style' | 'paper' | 'export' | null>(null);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true); 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -105,9 +96,8 @@ export default function EditorPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
-    // Render & Export State
-    // Render & Export State
-    const [isLoading, setIsLoading] = useState(false); // No artificial delay
+    // Export State
+    const [isLoading, setIsLoading] = useState(false);
     const debouncedText = useDebounce(text, 300);
     const debouncedFontFamily = useDebounce(handwritingStyle, 300);
     const debouncedPaperMaterial = useDebounce(paperMaterial, 300);
@@ -131,7 +121,6 @@ export default function EditorPage() {
         const i = setInterval(() => {
             const now = new Date();
             setLastSaved(now);
-            // Save to history if logged in and text exists
             if (user && text && text.trim().length > 0) {
                 addToHistory({
                     id: crypto.randomUUID(),
@@ -139,12 +128,11 @@ export default function EditorPage() {
                     text: text
                 });
             }
-        }, 30000); // Changed to 30s to avoid spamming history
+        }, 30000);
         return () => clearInterval(i);
     }, [setLastSaved, user, text, addToHistory]);
 
     // --- HANDLERS ---
-
     const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value);
     
     const handleRichTextChange = () => {
@@ -186,7 +174,7 @@ export default function EditorPage() {
                      const page = await pdf.getPage(i);
                      const tx = await page.getTextContent();
                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                     fullText += tx.items.map((item: any) => item.str).join(' ') + '\n\n';
+                     fullText += tx.items.map((item: any) => item.str).join(' ') + '\\n\\n';
                  }
                  setText(fullText);
              }
@@ -209,8 +197,6 @@ export default function EditorPage() {
             reader.readAsDataURL(file);
         }
     };
-
-
 
     const handleExportPDF = useCallback(async () => { 
         if(!canvasRef.current || isExporting) return; 
@@ -276,62 +262,51 @@ export default function EditorPage() {
 
 
     return (
-        <div className="relative w-full h-screen bg-[#F2F0E9] text-ink font-sans overflow-hidden selection:bg-accent/20">
+        <div className="relative w-full h-screen bg-paper text-ink font-sans overflow-hidden selection:bg-accent/20">
             {/* Background Texture */}
-            <div className="absolute inset-0 opacity-40 bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] pointer-events-none mix-blend-multiply" />
+            <div className="absolute inset-0 opacity-30 bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] pointer-events-none mix-blend-multiply" />
             
-            {/* --- HEADER (Floating Desk Bar) --- */}
-            <header className="absolute top-0 left-0 right-0 h-16 px-6 flex items-center justify-between z-50 bg-[#F2F0E9]/80 backdrop-blur-md border-b border-black/5">
-                <div className="flex items-center gap-4">
-                     <a href="/" className="flex items-center gap-3 group">
-                        <img src={logo} alt="InkPad" className="w-8 h-8 object-contain transition-transform group-hover:rotate-12" />
-                        <span className="text-xl font-display font-bold uppercase tracking-tight text-ink">InkPad</span>
-                    </a>
-                    <div className="h-6 w-px bg-black/10 mx-2" />
-                    <div className="flex flex-col">
-                        <input 
-                            value={uploadedFileName || 'Untitled Document'}
-                            onChange={(e) => setUploadedFileName(e.target.value)}
-                            className="bg-transparent border-none p-0 text-sm font-bold text-ink focus:ring-0 placeholder:text-ink/40 w-48"
-                            placeholder="Name your file..."
-                        />
-                        <span className="text-[9px] font-black uppercase tracking-widest text-ink/30">
-                            {isRendering ? 'Refining Ink...' : <TimeAgo date={lastSaved} />}
-                        </span>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1 bg-white/50 p-1 rounded-xl border border-black/5">
-                         <button onClick={() => setEditorMode('plain')} className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${editorMode === 'plain' ? 'bg-ink text-white shadow-lg' : 'text-ink/40 hover:text-ink'}`}>Plain</button>
-                         <button onClick={() => setEditorMode('rich')} className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${editorMode === 'rich' ? 'bg-ink text-white shadow-lg' : 'text-ink/40 hover:text-ink'}`}>Rich</button>
-                    </div>
-                    
-                    <button onClick={handleExportPDF} disabled={isExporting} className="btn-premium rounded-xl py-2 px-6 text-[10px] shadow-lg shadow-ink/10 flex items-center gap-2">
-                        {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-                        <span>Export PDF</span>
-                    </button>
-                </div>
+            {/* FLOATING HEADER */}
+            <header className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 py-2 px-6 bg-white/80 backdrop-blur-xl rounded-full shadow-lg shadow-ink/5 border border-white/40">
+                <a href="/" className="flex items-center gap-2 group">
+                    <img src={logo} alt="InkPad" className="w-6 h-6 object-contain" />
+                </a>
+                <div className="h-4 w-px bg-black/10" />
+                <input 
+                    value={uploadedFileName || 'Untitled Document'}
+                    onChange={(e) => setUploadedFileName(e.target.value)}
+                    className="bg-transparent border-none p-0 text-sm font-bold text-ink focus:ring-0 placeholder:text-ink/40 w-32 text-center"
+                    placeholder="Name..."
+                />
+                <div className="h-4 w-px bg-black/10" />
+                <span className="text-[9px] font-black uppercase tracking-widest text-ink/30 whitespace-nowrap">
+                    {isRendering ? 'Refining Ink...' : <TimeAgo date={lastSaved} />}
+                </span>
             </header>
 
-            {/* --- MAIN WORKSPACE --- */}
-            <div className="absolute inset-x-0 bottom-0 top-16 flex overflow-hidden">
+            {/* MAIN WORKSPACE */}
+            <div className="absolute inset-0 flex overflow-hidden">
                 
-                {/* 1. LEFT PANEL: INPUT EDITOR (Collapsible) */}
+                {/* 1. SIDEBAR: INPUT EDITOR (Collapsible Glass Panel) */}
                 <motion.div 
                     initial={false}
-                    animate={{ width: isLeftPanelOpen ? 400 : 0, opacity: isLeftPanelOpen ? 1 : 0 }}
-                    className="relative h-full bg-white border-r border-black/5 shadow-xl shadow-ink/5 z-30 flex flex-col"
+                    animate={{ x: isSidebarOpen ? 0 : -420, opacity: isSidebarOpen ? 1 : 0.5 }}
+                    className="absolute left-6 top-24 bottom-24 w-[400px] z-40 flex flex-col pointer-events-none"
+                    style={{ pointerEvents: isSidebarOpen ? 'auto' : 'none' }}
                 >
-                    <div className="flex-1 overflow-hidden relative flex flex-col min-w-[400px]">
-                        <div className="p-4 border-b border-black/5 flex items-center justify-between bg-gray-50/50">
-                            <SectionLabel icon={<FileText size={14} />} title="Input Source" />
-                            <div className="flex gap-2">
+                    <div className="flex-1 bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-ink/10 border border-white/50 flex flex-col overflow-hidden">
+                        
+                        <div className="p-4 border-b border-black/5 flex items-center justify-between">
+                            <div className="flex bg-black/5 rounded-lg p-0.5">
+                                 <button onClick={() => setEditorMode('plain')} className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${editorMode === 'plain' ? 'bg-white shadow-sm text-ink' : 'text-ink/40 hover:text-ink'}`}>Plain</button>
+                                 <button onClick={() => setEditorMode('rich')} className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${editorMode === 'rich' ? 'bg-white shadow-sm text-ink' : 'text-ink/40 hover:text-ink'}`}>Rich</button>
+                            </div>
+                            <div className="flex gap-1">
                                 <Tooltip text="Clear">
-                                    <button onClick={() => { if(confirm('Clear all?')) setText(''); }} className="p-2 hover:bg-red-50 text-ink/30 hover:text-red-500 rounded-lg transition-colors"><Trash2 size={16}/></button>
+                                    <button onClick={() => { if(confirm('Clear all?')) setText(''); }} className="p-2 hover:bg-red-50 text-ink/30 hover:text-red-500 rounded-lg transition-colors"><Trash2 size={14}/></button>
                                 </Tooltip>
                                 <Tooltip text="Import">
-                                    <button onClick={() => fileInputRef.current?.click()} className="p-2 hover:bg-black/5 text-ink/30 hover:text-ink rounded-lg transition-colors"><Upload size={16}/></button>
+                                    <button onClick={() => fileInputRef.current?.click()} className="p-2 hover:bg-black/5 text-ink/30 hover:text-ink rounded-lg transition-colors"><Upload size={14}/></button>
                                 </Tooltip>
                             </div>
                         </div>
@@ -341,7 +316,7 @@ export default function EditorPage() {
                                 <textarea 
                                     value={text} 
                                     onChange={handleTextChange} 
-                                    className="w-full h-full bg-transparent border-none resize-none focus:ring-0 focus:outline-none p-0 text-sm leading-relaxed text-ink/80 placeholder:text-ink/30 font-medium"
+                                    className="w-full h-full bg-transparent border-none resize-none focus:ring-0 focus:outline-none p-0 text-sm leading-relaxed text-ink/80 placeholder:text-ink/30 font-medium font-sans"
                                     placeholder="Start typing your masterpiece..." 
                                 />
                             ) : (
@@ -349,310 +324,253 @@ export default function EditorPage() {
                                     ref={richTextRef}
                                     contentEditable
                                     onInput={handleRichTextChange}
-                                    className="prose prose-sm max-w-none outline-none text-ink/80 min-h-full"
+                                    className="prose prose-sm max-w-none outline-none text-ink/80 min-h-full font-sans"
                                     dangerouslySetInnerHTML={{ __html: text || '<p>Start typing...</p>' }}
                                 />
                             )}
                         </div>
 
-                        {/* Rich Text Toolbar (Floating at bottom of input) */}
+                         {/* Rich Text Toolbar */}
                         {editorMode === 'rich' && (
-                            <div className="p-2 border-t border-black/5 bg-gray-50 flex gap-1 justify-center">
-                                <button onClick={() => execCommand('bold')} className="p-2 hover:bg-white rounded shadow-sm transition-all"><Bold size={14}/></button>
-                                <button onClick={() => execCommand('italic')} className="p-2 hover:bg-white rounded shadow-sm transition-all"><Italic size={14}/></button>
-                                <button onClick={() => execCommand('underline')} className="p-2 hover:bg-white rounded shadow-sm transition-all"><Underline size={14}/></button>
-                                <div className="w-px h-6 bg-black/10 mx-2" />
-                                <button onClick={() => execCommand('insertUnorderedList')} className="p-2 hover:bg-white rounded shadow-sm transition-all"><List size={14}/></button>
-                                <button onClick={() => imageInputRef.current?.click()} className="p-2 hover:bg-white rounded shadow-sm transition-all"><ImageIcon size={14}/></button>
+                            <div className="p-2 border-t border-black/5 bg-white/50 flex gap-1 justify-center">
+                                <button onClick={() => execCommand('bold')} className="p-2 hover:bg-white rounded transition-all text-ink/50 hover:text-ink"><Bold size={14}/></button>
+                                <button onClick={() => execCommand('italic')} className="p-2 hover:bg-white rounded transition-all text-ink/50 hover:text-ink"><Italic size={14}/></button>
+                                <button onClick={() => execCommand('underline')} className="p-2 hover:bg-white rounded transition-all text-ink/50 hover:text-ink"><Underline size={14}/></button>
+                                <div className="w-px h-6 bg-black/5 mx-2" />
+                                <button onClick={() => execCommand('insertUnorderedList')} className="p-2 hover:bg-white rounded transition-all text-ink/50 hover:text-ink"><List size={14}/></button>
+                                <button onClick={() => imageInputRef.current?.click()} className="p-2 hover:bg-white rounded transition-all text-ink/50 hover:text-ink"><ImageIcon size={14}/></button>
                             </div>
                         )}
                     </div>
                 </motion.div>
 
-                {/* Left Panel Toggle (Floating on 'Desk') */}
+                {/* Sidebar Toggle */}
                 <button 
-                    onClick={() => setIsLeftPanelOpen(!isLeftPanelOpen)}
-                    className={`absolute bottom-6 left-6 z-40 p-3 bg-white border border-black/5 rounded-full shadow-lg text-ink/50 hover:text-ink transition-all ${isLeftPanelOpen ? 'translate-x-[380px]' : 'translate-x-0'}`}
+                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                    className="absolute left-6 bottom-6 z-50 p-3 bg-white/90 backdrop-blur rounded-full shadow-lg border border-white/20 text-ink hover:scale-110 transition-transform"
                 >
-                    {isLeftPanelOpen ? <PanelLeftClose size={20} /> : <PanelLeft size={20} />}
+                    {isSidebarOpen ? <PanelLeftClose size={20} /> : <PanelLeft size={20} />}
                 </button>
 
 
-                {/* 2. CENTER STAGE: THE DESK & CANVAS */}
-                <div className="flex-1 relative overflow-hidden flex flex-col items-center justify-center perspective-1000">
+                {/* 2. CENTER STAGE: CANVAS */}
+                <div className="flex-1 relative flex items-center justify-center bg-transparent" onClick={() => setActiveDockTab(null)}>
                     
-                    {/* Zoom HUD */}
-                    <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 p-1.5 bg-white/60 backdrop-blur-md rounded-full border border-white/40 shadow-xl shadow-ink/5">
-                        <button onClick={() => setZoom(Math.max(0.5, zoom - 0.1))} className="p-2 hover:bg-white rounded-full transition-colors"><ZoomOut size={16} className="text-ink/60"/></button>
-                        <span className="text-[10px] font-black w-12 text-center text-ink/80">{Math.round(zoom * 100)}%</span>
-                        <button onClick={() => setZoom(Math.min(2, zoom + 0.1))} className="p-2 hover:bg-white rounded-full transition-colors"><ZoomIn size={16} className="text-ink/60"/></button>
-                    </div>
-
-                    {/* Pagination HUD */}
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 py-2 px-4 bg-ink/5 backdrop-blur-sm rounded-2xl border border-white/20">
-                         <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage===1} className="disabled:opacity-20 hover:text-accent"><ChevronLeft size={18}/></button>
-                         <div className="flex flex-col items-center">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-ink/60">Page {currentPage} of {totalPages}</span>
-                            <span className="text-[8px] font-bold text-ink/30">{wordCount} words / {charCount} chars</span>
-                         </div>
-                         <button onClick={() => setCurrentPage(p => Math.min(totalPages, p+1))} disabled={currentPage===totalPages} className="disabled:opacity-20 hover:text-accent"><ChevronRight size={18}/></button>
-                    </div>
-
-                    {/* CANVAS CONTAINER */}
-                    <div className="w-full h-full overflow-auto flex items-center justify-center p-20 scrollbar-hide">
-                         
-                        <div className="relative"> 
-                            {/* Loader Overlay */}
-                            <AnimatePresence>
-                                {(isLoading || isRendering) && (
-                                    <motion.div 
-                                        initial={{opacity:0}} 
-                                        animate={{opacity:1}} 
-                                        exit={{opacity:0}} 
-                                        className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-sm"
-                                    >
-                                        <div className="relative">
-                                            <div className="w-16 h-16 rounded-full border-4 border-ink/10 border-t-accent animate-spin" />
-                                            <div className="absolute inset-0 flex items-center justify-center"><Loader2 size={24} className="text-accent animate-pulse" /></div>
-                                        </div>
-                                        <p className="mt-4 text-[10px] font-black uppercase tracking-widest text-ink/40 animate-pulse">Inking...</p>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-
-                            {/* Canvas - ALWAYS RENDERED */}
-                            <motion.div 
-                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                                animate={{ opacity: 1, scale: zoom, y: 0 }}
-                                transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                                className="relative shadow-2xl shadow-ink/20"
-                            >
-                                <HandwritingCanvas 
-                                    ref={canvasRef}
-                                    text={debouncedText}
-                                    currentPage={currentPage}
-                                    onRenderComplete={setTotalPages}
-                                />
-                            </motion.div>
+                    {/* Zoom & Page Controls */}
+                    <div className="absolute right-6 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-4">
+                        <div className="flex flex-col gap-2 p-1.5 bg-white/80 backdrop-blur-md rounded-2xl border border-white/40 shadow-xl shadow-ink/5">
+                            <button onClick={() => setZoom(Math.max(0.5, zoom + 0.1))} className="p-2 hover:bg-white rounded-xl transition-colors"><ZoomIn size={16} className="text-ink/60"/></button>
+                            <span className="text-[10px] font-black text-center text-ink/40 py-1">{Math.round(zoom * 100)}%</span>
+                            <button onClick={() => setZoom(Math.max(0.5, zoom - 0.1))} className="p-2 hover:bg-white rounded-xl transition-colors"><ZoomOut size={16} className="text-ink/60"/></button>
                         </div>
 
+                        <div className="flex flex-col gap-2 p-1.5 bg-white/80 backdrop-blur-md rounded-2xl border border-white/40 shadow-xl shadow-ink/5 text-center">
+                             <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage===1} className="p-2 disabled:opacity-20 hover:text-accent"><ChevronLeft size={16}/></button>
+                             <span className="text-[10px] font-black text-ink/60">{currentPage}/{totalPages}</span>
+                             <button onClick={() => setCurrentPage(p => Math.min(totalPages, p+1))} disabled={currentPage===totalPages} className="p-2 disabled:opacity-20 hover:text-accent"><ChevronRight size={16}/></button>
+                        </div>
                     </div>
+
+                    {/* CANVAS */}
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: zoom }}
+                        transition={{ type: "spring", stiffness: 200, damping: 25 }}
+                        className="relative shadow-2xl shadow-ink/20"
+                    >
+                         {/* Loader Overlay */}
+                        <AnimatePresence>
+                            {(isLoading || isRendering) && (
+                                <motion.div 
+                                    initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} 
+                                    className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm"
+                                >
+                                    <Loader2 size={32} className="text-ink animate-spin" />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        <HandwritingCanvas 
+                            ref={canvasRef}
+                            text={debouncedText}
+                            currentPage={currentPage}
+                            onRenderComplete={setTotalPages}
+                            // Using store values inside component, passed props are minimal
+                        />
+                    </motion.div>
                 </div>
 
 
-                {/* 3. RIGHT PANEL: TOOLS & SETTINGS (Notebook Style) */}
-                <div className="relative w-[340px] bg-white border-l border-black/5 shadow-2xl shadow-ink/10 z-30 flex flex-col">
-                    {/* Tabs */}
-                    <div className="flex p-2 bg-gray-50 border-b border-black/5 gap-1">
-                        {[
-                            { id: 'style', icon: <Palette size={16}/>, label: 'Style' },
-                            { id: 'paper', icon: <Layout size={16}/>, label: 'Paper' },
-                            { id: 'export', icon: <FileDown size={16}/>, label: 'Export' }
+                {/* 3. DOCK: TOOLS (Floating Bottom Bar) */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-4">
+                    
+                    {/* EXPANDED TOOL PANELS */}
+                    <AnimatePresence>
+                        {activeDockTab && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                                className="mb-4 bg-white/90 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-2xl shadow-ink/10 p-6 w-[400px]"
+                            >
+                                {/* STYLE TOOLS */}
+                                {activeDockTab === 'style' && (
+                                    <div className="space-y-6">
+                                        
+                                        {/* Presets */}
+                                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                                            {Object.entries(PRESETS).map(([key, preset]) => (
+                                                <button 
+                                                    key={key}
+                                                    onClick={() => { applyPreset(preset); addToast(`Applied ${key} theme`); }}
+                                                    className="px-4 py-2 bg-white/50 border border-black/5 rounded-full hover:border-accent hover:text-accent transition-all text-[10px] font-black uppercase tracking-widest whitespace-nowrap"
+                                                >
+                                                    {key}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* Font & Color */}
+                                        <div className="flex gap-4">
+                                            <div className="flex-1 space-y-2">
+                                                <div className="text-[10px] font-bold uppercase text-ink/40">Font</div>
+                                                <select 
+                                                    value={handwritingStyle}
+                                                    onChange={(e) => setHandwritingStyle(e.target.value)}
+                                                    className="w-full bg-white border border-black/10 rounded-xl p-2 text-sm font-bold"
+                                                >
+                                                    {HANDWRITING_FONTS.map(f => (
+                                                        <option key={f.id} value={f.id}>{f.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="text-[10px] font-bold uppercase text-ink/40">Ink</div>
+                                                <div className="flex gap-1">
+                                                     {INK_COLORS.map(c => (
+                                                        <button 
+                                                            key={c.id} 
+                                                            onClick={() => setInkColor(c.color)}
+                                                            className={`w-8 h-8 rounded-full border-2 transition-transform ${inkColor === c.color ? 'scale-110 border-ink shadow-sm' : 'border-transparent hover:scale-105'}`} 
+                                                            style={{ backgroundColor: c.color }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Sliders */}
+                                        <div className="space-y-4">
+                                            {[
+                                                { l: 'Size', v: fontSize, s: setFontSize, min: 10, max: 40 },
+                                                { l: 'Spacing', v: letterSpacing, s: setLetterSpacing, min: -2, max: 10 },
+                                                { l: 'Line Height', v: lineHeight, s: setLineHeight, min: 1, max: 2.5, step: 0.1 },
+                                            ].map(slider => (
+                                                <div key={slider.l} className="flex items-center gap-3">
+                                                    <span className="text-[10px] font-bold uppercase text-ink/40 w-16">{slider.l}</span>
+                                                    <input 
+                                                        type="range" 
+                                                        min={slider.min} max={slider.max} step={slider.step || 1}
+                                                        value={slider.v} 
+                                                        onChange={e => slider.s(parseFloat(e.target.value))}
+                                                        className="flex-1 h-1 bg-black/5 rounded-full appearance-none cursor-pointer accent-ink"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* PAPER TOOLS */}
+                                {activeDockTab === 'paper' && (
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto scrollbar-hide">
+                                            {PAPER_TYPES.map(p => (
+                                                <button 
+                                                    key={p.id}
+                                                    onClick={() => setPaperMaterial(p.id as PaperMaterial)}
+                                                    className={`p-2 rounded-xl border text-center transition-all ${paperMaterial === p.id ? 'bg-ink text-white border-ink' : 'bg-white border-black/5 hover:border-black/20'}`}
+                                                >
+                                                    <div className="w-full h-8 mb-2 rounded border bg-white/50" style={{ background: p.bg }} />
+                                                    <span className="text-[8px] font-black uppercase tracking-widest truncate block">{p.name}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        
+                                        <div className="flex gap-2">
+                                            {[
+                                                { label: 'Shadow', active: paperShadow, toggle: () => setPaperShadow(!paperShadow) },
+                                                { label: 'Texture', active: paperTexture, toggle: () => setPaperTexture(!paperTexture) },
+                                                { label: 'Tilt', active: paperTilt, toggle: () => setPaperTilt(!paperTilt) },
+                                            ].map(opt => (
+                                                <button 
+                                                    key={opt.label}
+                                                    onClick={opt.toggle}
+                                                    className={`flex-1 py-2 px-3 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-all ${opt.active ? 'bg-accent/10 border-accent text-accent' : 'bg-white border-black/5 text-ink/40'}`}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* EXPORT TOOLS */}
+                                {activeDockTab === 'export' && (
+                                    <div className="space-y-6">
+                                        <div className="flex gap-2 bg-black/5 p-1 rounded-xl">
+                                             {['image/png', 'image/jpeg'].map(f => (
+                                                 <button 
+                                                    key={f}
+                                                    onClick={() => setExportFormat(f as 'image/png' | 'image/jpeg')}
+                                                    className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${exportFormat === f ? 'bg-white shadow-sm text-ink' : 'text-ink/40 hover:text-ink'}`}
+                                                 >
+                                                    {f.split('/')[1]}
+                                                 </button>
+                                             ))}
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button onClick={handleExportPNG} disabled={isExporting} className="flex-1 py-3 bg-ink text-white rounded-xl shadow-lg shadow-ink/20 hover:-translate-y-0.5 transition-all font-bold flex items-center justify-center gap-2">
+                                                <FileImage size={16}/> Image
+                                            </button>
+                                            <button onClick={handleExportPDF} disabled={isExporting} className="flex-1 py-3 bg-white border border-black/5 text-ink rounded-xl hover:bg-gray-50 transition-all font-bold flex items-center justify-center gap-2">
+                                                <FileText size={16}/> PDF
+                                            </button>
+                                            <button onClick={handleExportZIP} disabled={isExporting} className="flex-1 py-3 bg-white border border-black/5 text-ink rounded-xl hover:bg-gray-50 transition-all font-bold flex items-center justify-center gap-2">
+                                                <Layers size={16}/> ZIP
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* DOCK BAR */}
+                    <motion.div 
+                        initial={{ y: 100 }}
+                        animate={{ y: 0 }}
+                        className="flex items-center gap-2 px-2 py-2 bg-white/80 backdrop-blur-2xl rounded-full border border-white/40 shadow-2xl shadow-ink/20"
+                    >
+                         {[
+                            { id: 'style', icon: <Palette size={20}/>, label: 'Style' },
+                            { id: 'paper', icon: <Layout size={20}/>, label: 'Paper' },
+                            { id: 'export', icon: <Download size={20}/>, label: 'Export' }
                         ].map(tab => (
                             <button 
                                 key={tab.id}
-                                onClick={() => setActivePanel(tab.id as 'style' | 'paper' | 'export')}
-                                className={`flex-1 py-3 rounded-lg flex flex-col items-center gap-1 transition-all ${activePanel === tab.id ? 'bg-white shadow-sm text-ink' : 'text-ink/40 hover:text-ink hover:bg-black/5'}`}
+                                onClick={() => setActiveDockTab(activeDockTab === tab.id ? null : tab.id as any)}
+                                className={`p-4 rounded-full transition-all duration-300 ${activeDockTab === tab.id ? 'bg-ink text-white shadow-lg -translate-y-2' : 'hover:bg-black/5 text-ink/60 hover:text-ink'}`}
                             >
                                 {tab.icon}
-                                <span className="text-[9px] font-black uppercase tracking-widest">{tab.label}</span>
                             </button>
                         ))}
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-6 scrollbar-hide bg-[url('https://www.transparenttextures.com/patterns/graphy.png')] bg-fixed">
-                        
-                        {/* STYLE TAB */}
-                        {activePanel === 'style' && (
-                            <div className="space-y-8">
-                                
-                                {/* Presets */}
-                                <div className="space-y-3">
-                                    <SectionLabel icon={<Zap size={14}/>} title="Quick Looks" />
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {Object.entries(PRESETS).map(([key, preset]) => (
-                                            <button 
-                                                key={key}
-                                                onClick={() => { applyPreset(preset); addToast(`Applied ${key} theme`); }}
-                                                className="px-3 py-2 bg-white border border-black/5 rounded-lg text-left hover:border-accent hover:shadow-md transition-all group"
-                                            >
-                                                <span className="text-[10px] font-black uppercase tracking-widest block group-hover:text-accent">{key}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Font Selector */}
-                                <div className="space-y-3">
-                                    <SectionLabel icon={<Type size={14}/>} title="Handwriting" />
-                                    <div className="relative">
-                                        <Search size={14} className="absolute left-3 top-3 text-ink/30" />
-                                        <input 
-                                            value={fontSearch}
-                                            onChange={e => setFontSearch(e.target.value)}
-                                            placeholder="Filter fonts..."
-                                            className="w-full bg-white border border-black/5 rounded-xl py-2.5 pl-9 pr-3 text-xs font-bold focus:ring-1 focus:ring-accent"
-                                        />
-                                    </div>
-                                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1 scrollbar-thin">
-                                        {filteredFonts.map(font => (
-                                            <button
-                                                key={font.id}
-                                                onClick={() => setHandwritingStyle(font.id)}
-                                                className={`w-full p-3 rounded-xl flex items-center justify-between border transition-all ${handwritingStyle === font.id ? 'bg-ink text-white border-ink' : 'bg-white border-black/5 hover:border-ink/20'}`}
-                                            >
-                                                <span style={{ fontFamily: font.family }} className="text-lg">{font.name}</span>
-                                                {handwritingStyle === font.id && <CheckCircle2 size={14} className="text-accent" />}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Ink Color */}
-                                <div className="space-y-3">
-                                     <SectionLabel icon={<Palette size={14}/>} title="Ink Color" />
-                                     <div className="flex flex-wrap gap-2">
-                                        {INK_COLORS.map(c => (
-                                            <button 
-                                                key={c.id} 
-                                                onClick={() => setInkColor(c.color)}
-                                                className={`w-8 h-8 rounded-full border-2 transition-transform ${inkColor === c.color ? 'scale-110 border-ink shadow-md' : 'border-transparent hover:scale-105'}`} 
-                                                style={{ backgroundColor: c.color }}
-                                            />
-                                        ))}
-                                        <div className="relative w-8 h-8 rounded-full overflow-hidden border border-black/10">
-                                            <input type="color" value={inkColor} onChange={e => setInkColor(e.target.value)} className="absolute -inset-1 w-[150%] h-[150%] cursor-pointer" />
-                                        </div>
-                                     </div>
-                                </div>
-
-                                {/* Sliders */}
-                                <div className="space-y-6 pt-6 border-t border-black/5">
-                                    {[
-                                        { l: 'Size', v: fontSize, s: setFontSize, min: 10, max: 40, step: 1 },
-                                        { l: 'Spacing', v: letterSpacing, s: setLetterSpacing, min: -2, max: 10, step: 0.1 },
-                                        { l: 'Leading', v: lineHeight, s: setLineHeight, min: 1, max: 2.5, step: 0.1 },
-                                        { l: 'Word Gap', v: wordSpacing, s: setWordSpacing, min: 0, max: 20, step: 1 },
-                                    ].map(slider => (
-                                        <div key={slider.l} className="space-y-2">
-                                            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-ink/40">
-                                                <span>{slider.l}</span>
-                                                <span>{slider.v}</span>
-                                            </div>
-                                            <input 
-                                                type="range" 
-                                                min={slider.min} max={slider.max} step={slider.step} 
-                                                value={slider.v} 
-                                                onChange={e => slider.s(parseFloat(e.target.value))}
-                                                className="w-full h-1 bg-black/10 rounded-full appearance-none cursor-pointer accent-ink"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* PAPER TAB */}
-                        {activePanel === 'paper' && (
-                            <div className="space-y-8">
-                                <div className="grid grid-cols-2 gap-3">
-                                    {PAPER_TYPES.map(p => (
-                                        <button 
-                                            key={p.id}
-                                            onClick={() => setPaperMaterial(p.id as PaperMaterial)}
-                                            className={`p-3 rounded-xl border text-left transition-all ${paperMaterial === p.id ? 'bg-ink text-white border-ink shadow-lg' : 'bg-white border-black/5 hover:border-black/20'}`}
-                                        >
-                                            <div className={`w-full h-12 mb-2 rounded border bg-gray-50/50 ${paperMaterial === p.id ? 'border-white/20' : 'border-black/5'}`} style={{ background: p.bg }} />
-                                            <span className="text-[9px] font-black uppercase tracking-widest block truncate">{p.name}</span>
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <div className="space-y-3 pt-6 border-t border-black/5">
-                                    <SectionLabel icon={<Sparkles size={14}/>} title="Realism" />
-                                    {[
-                                        { label: 'Paper Shadow', active: paperShadow, toggle: () => setPaperShadow(!paperShadow) },
-                                        { label: 'Texture Grain', active: paperTexture, toggle: () => setPaperTexture(!paperTexture) },
-                                        { label: 'Human Tilt', active: paperTilt, toggle: () => setPaperTilt(!paperTilt) },
-                                    ].map(opt => (
-                                        <button 
-                                            key={opt.label}
-                                            onClick={opt.toggle}
-                                            className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${opt.active ? 'bg-accent/10 border-accent text-accent' : 'bg-white border-black/5 text-ink/40'}`}
-                                        >
-                                            <span className="text-xs font-bold">{opt.label}</span>
-                                            <div className={`w-8 h-4 rounded-full relative ${opt.active ? 'bg-accent' : 'bg-gray-200'}`}>
-                                                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${opt.active ? 'left-[18px]' : 'left-0.5'}`} />
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* EXPORT TAB */}
-                        {activePanel === 'export' && (
-                            <div className="space-y-8">
-                                <div className="space-y-4">
-                                     <SectionLabel icon={<Settings2 size={14}/>} title="Format" />
-                                     <div className="flex bg-black/5 p-1 rounded-xl">
-                                         {['image/png', 'image/jpeg'].map(f => (
-                                             <button 
-                                                key={f}
-                                                onClick={() => setExportFormat(f as 'image/png' | 'image/jpeg')}
-                                                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${exportFormat === f ? 'bg-white shadow-sm text-ink' : 'text-ink/40 hover:text-ink'}`}
-                                             >
-                                                {f.split('/')[1]}
-                                             </button>
-                                         ))}
-                                     </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                     <SectionLabel icon={<Minimize2 size={14}/>} title="Quality" />
-                                     <div className="grid grid-cols-3 gap-2">
-                                         {[0.7, 0.9, 1.0].map(q => (
-                                             <button 
-                                                key={q}
-                                                onClick={() => setExportQuality(q)}
-                                                className={`py-2 border rounded-lg text-xs font-bold transition-all ${exportQuality === q ? 'bg-accent text-white border-accent' : 'bg-white border-black/5 hover:border-black/20'}`}
-                                             >
-                                                {q === 1 ? 'Ultra' : q === 0.9 ? 'High' : 'Med'}
-                                             </button>
-                                         ))}
-                                     </div>
-                                </div>
-
-                                <div className="pt-6 space-y-3">
-                                    <button onClick={handleExportPNG} disabled={isExporting} className="w-full py-4 bg-ink text-white rounded-xl shadow-xl shadow-ink/20 hover:-translate-y-1 transition-all font-bold flex items-center justify-center gap-2">
-                                        <FileImage size={18}/> Download Image
-                                    </button>
-                                    <button onClick={handleExportZIP} disabled={isExporting} className="w-full py-4 bg-white border border-black/5 text-ink rounded-xl hover:bg-gray-50 transition-all font-bold flex items-center justify-center gap-2">
-                                        <Layers size={18}/> Export ZIP (All)
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    </motion.div>
                 </div>
 
             </div>
-
-             {/* HELP MODAL */}
-             <AnimatePresence>
-                {isHelpOpen && (
-                    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-ink/20 backdrop-blur-sm">
-                        <motion.div initial={{scale:0.9, opacity:0}} animate={{scale:1, opacity:1}} exit={{scale:0.9, opacity:0}} className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl">
-                             <div className="flex justify-between items-center mb-6">
-                                 <h2 className="text-2xl font-display font-bold">Help & Guide</h2>
-                                 <button onClick={() => setIsHelpOpen(false)} className="p-2 hover:bg-gray-100 rounded-full"><Trash2 className="rotate-45" size={20}/></button>
-                             </div>
-                             {/* ... content ... */}
-                             <button onClick={() => setIsHelpOpen(false)} className="w-full btn-premium py-3 rounded-xl mt-6">Got it</button>
-                        </motion.div>
-                    </div>
-                )}
-             </AnimatePresence>
 
              <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".txt,.docx,.pdf" />
              <input type="file" ref={imageInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
