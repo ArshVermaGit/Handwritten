@@ -1,136 +1,164 @@
-import { motion } from 'framer-motion';
-import { Mail, Github, Linkedin, Twitter, ArrowRight } from 'lucide-react';
+import { motion, useMotionValue, useTransform } from 'framer-motion';
+import { Mail, Github, Linkedin, Twitter, ArrowRight, Sparkles } from 'lucide-react';
 import photo from '../assets/arsh.jpg';
+import React from 'react';
 
 export default function AboutPage() {
     return (
-        <div className="relative paper-texture overflow-hidden min-h-screen bg-[#F2F0E9]">
-            {/* Background Texture Overlay */}
-            <div className="absolute inset-0 opacity-40 bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] pointer-events-none mix-blend-multiply" />
+        <div className="bg-[#FAF9F6] min-h-screen overflow-x-hidden selection:bg-accent/30">
+            {/* Ambient Background - Exact match to Landing Page */}
+            <div className="absolute inset-0 bg-[#FBFBFB]">
+                <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-rose-100/30 rounded-full blur-[100px]" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-indigo-100/30 rounded-full blur-[100px]" />
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] bg-size-[64px_64px]" />
+            </div>
+
+            <AboutHero />
             
-             {/* Ambient Background Blobs */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-orange-200/10 rounded-full blur-[100px]" />
-                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-amber-200/10 rounded-full blur-[100px]" />
-            </div>
-
-            <div className="max-w-7xl mx-auto px-6 md:px-12 py-40 relative z-10">
-                <div className="flex flex-col md:flex-row gap-20 items-start">
-
-                    {/* Left Column: Photo Area - Polaroid Style */}
-                    <motion.div
-                        initial={{ opacity: 0, rotate: -5, x: -20 }}
-                        animate={{ opacity: 1, rotate: -2, x: 0 }}
-                        transition={{ duration: 0.8, ease: "easeOut" }}
-                        className="w-full md:w-1/3 relative"
-                    >
-                        {/* Washi Tape */}
-                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-24 h-6 bg-yellow-200/80 rotate-2 z-20 shadow-sm backdrop-blur-sm" />
-
-                        <div className="bg-white p-4 pb-12 shadow-2xl shadow-ink/10 rotate-2 hover:rotate-0 transition-transform duration-500 ease-out">
-                            <div className="aspect-3/4 bg-gray-100 overflow-hidden relative grayscale hover:grayscale-0 transition-all duration-700">
-                                <img
-                                    src={photo}
-                                    alt="Arsh Verma"
-                                    className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-linear-to-t from-ink/20 to-transparent mix-blend-overlay" />
-                            </div>
-                            <div className="mt-4 text-center font-handwriting text-2xl text-ink/80">
-                                Arsh Verma
-                            </div>
-                        </div>
-
-                         {/* Decorative Doodle */}
-                         <svg className="absolute -bottom-12 -right-12 w-32 h-32 text-accent/20 rotate-12" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M10 50 Q 50 10 90 50 T 50 90" />
-                        </svg>
-                    </motion.div>
-
-                    {/* Right Column: Bio - Paper Note Style */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                        className="w-full md:w-2/3"
-                    >
-                        <div className="mb-12 relative">
-                            <span className="inline-block py-1 px-3 bg-accent/10 border border-accent/20 rounded-full text-[10px] font-black uppercase tracking-[0.3em] text-accent mb-6 transform -rotate-1">
-                                The Developer
-                            </span>
-                            <h1 className="text-6xl md:text-8xl font-display font-black text-ink mb-6 tracking-tighter leading-[0.9]">
-                                Hello, <br />
-                                <span className="font-serif italic text-accent">I'm Arsh.</span>
-                            </h1>
-                            {/* Underline Scribble */}
-                            <svg className="w-48 h-4 text-ink/20 ml-2" viewBox="0 0 200 10" preserveAspectRatio="none">
-                                <path d="M0 5 Q 100 10 200 5" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" />
-                            </svg>
-                        </div>
-
-                        <div className="bg-white p-8 md:p-12 shadow-xl shadow-ink/5 border border-black/5 rounded-sm relative">
-                            {/* "Paper" lines background */}
-                            <div className="absolute inset-0 bg-[linear-gradient(transparent_29px,#00000005_30px)] bg-size-[100%_30px] pointer-events-none" />
-                            
-                            <div className="relative z-10 space-y-8 text-lg md:text-xl font-medium text-ink/70 leading-relaxed font-serif">
-                                <p>
-                                    <span className="font-sans font-bold text-ink uppercase tracking-wider text-xs block mb-2 opacity-40">About Me</span>
-                                    I'm a student at VIT Bhopal with a passion for building digital experiences. 
-                                    Whether it's developing games in Unity or creating tools like InkPad, I love the challenge of 
-                                    turning a simple idea into something people can actually use and enjoy.
-                                </p>
-                                <p>
-                                    I focus on making things that look great and work even better. 
-                                    For me, coding isn't just about logic—it's about creating something that feels 
-                                    <span className="font-handwriting text-2xl mx-2 text-accent">human</span> 
-                                    on the other side of the screen.
-                                </p>
-                                <p className="text-ink font-bold font-sans text-base">
-                                    Have a look around, and feel free to reach out if you'd like to collaborate!
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="mt-12 flex flex-wrap gap-4">
-                            <SocialLink href="https://github.com/ArshVermaGit" icon={Github} label="GitHub" />
-                            <SocialLink href="https://linkedin.com/in/arshverma" icon={Linkedin} label="LinkedIn" />
-                            <SocialLink href="https://twitter.com/arshverma" icon={Twitter} label="Twitter" />
-                            <SocialLink href="mailto:Arshverma.dev@gmail.com" icon={Mail} label="Email Me" />
-                        </div>
-
-                        <div className="mt-12 pt-8 border-t border-black/5">
-                            <a
-                                href="https://www.arshcreates.com"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="group inline-flex items-center gap-3 text-ink font-black uppercase tracking-widest text-xs hover:text-accent transition-colors"
-                            >
-                                View Portfolio <ArrowRight size={14} className="group-hover:translate-x-2 transition-transform" />
-                            </a>
-                        </div>
-                    </motion.div>
-                </div>
-            </div>
+            {/* Minimal footer spacing if needed, but the page content handles height */}
         </div>
     );
 }
 
-interface SocialLinkProps {
-    href: string;
-    icon: React.ComponentType<{ size?: number; className?: string }>;
-    label: string;
+function AboutHero() {
+    const mouseX = useMotionValue(0);
+    const mouseY = useMotionValue(0);
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        const { clientX, clientY, currentTarget } = e;
+        const { width, height, left, top } = currentTarget.getBoundingClientRect();
+        mouseX.set((clientX - left) / width - 0.5);
+        mouseY.set((clientY - top) / height - 0.5);
+    };
+
+    const rotateX = useTransform(mouseY, [-0.5, 0.5], [5, -5]);
+    const rotateY = useTransform(mouseX, [-0.5, 0.5], [-5, 5]);
+
+    return (
+        <section 
+            onMouseMove={handleMouseMove}
+            className="relative min-h-[110vh] flex flex-col items-center justify-center pt-32 pb-20 px-4 perspective-1000 overflow-hidden"
+        >
+             <div className="relative z-10 text-center max-w-5xl mx-auto mb-20">
+                <div className="animate-fade-in-up">
+                    <div className="flex items-center justify-center gap-2 mb-8">
+                        <span className="px-3 py-1 rounded-full bg-white border border-black/5 shadow-sm text-[10px] font-black uppercase tracking-widest text-ink/40 flex items-center gap-2">
+                             <Sparkles size={12} className="text-accent" /> THE CREATOR
+                        </span>
+                    </div>
+
+                    <h1 className="text-7xl md:text-9xl font-display font-bold text-ink tracking-tighter leading-[0.85] mb-8">
+                        Hello, <br className="hidden md:block"/>
+                        <span className="relative inline-block">
+                             <span className="relative z-10 italic font-serif text-transparent bg-clip-text bg-linear-to-r from-ink to-ink/70">I'm Arsh.</span>
+                             <svg className="absolute w-[110%] h-[20%] -bottom-2 -left-[5%] text-accent opacity-60 z-0" viewBox="0 0 100 10" preserveAspectRatio="none">
+                                <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="4" fill="none" />
+                             </svg>
+                        </span>
+                    </h1>
+
+                    <p className="text-xl md:text-2xl text-ink/50 max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
+                        Crafting digital experiences with soul. From messy ideas to polished pixels.
+                    </p>
+                </div>
+            </div>
+
+            {/* 3D Content Container - Matching Landing Page Structure */}
+            <motion.div 
+                style={{ rotateX, rotateY }}
+                className="relative w-full max-w-6xl mx-auto perspective-1000"
+            >
+                <div className="relative bg-white rounded-xl shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border border-black/5 p-2 md:p-4 transition-transform duration-200 ease-out">
+                     {/* Window Controls */}
+                     <div className="absolute top-6 left-6 flex gap-2 z-20">
+                        <div className="w-3 h-3 rounded-full bg-red-400" />
+                        <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                        <div className="w-3 h-3 rounded-full bg-green-400" />
+                     </div>
+
+                     {/* Content Area */}
+                     <div className="w-full bg-[#FAFAFA] rounded-md overflow-hidden relative min-h-[600px] flex flex-col md:flex-row">
+                        
+                        {/* Sidebar / Left Column (Photo) */}
+                        <div className="w-full md:w-1/3 bg-white border-r border-black/5 p-8 flex flex-col items-center pt-20">
+                            <div className="relative w-48 h-48 md:w-56 md:h-56 mb-8">
+                                <div className="absolute inset-0 bg-accent/10 rounded-full blur-2xl transform translate-y-4" />
+                                <img 
+                                    src={photo} 
+                                    alt="Arsh Verma" 
+                                    className="w-full h-full object-cover rounded-full border-4 border-white shadow-xl relative z-10"
+                                />
+                                <div className="absolute bottom-4 right-4 z-20 bg-white p-2 rounded-full shadow-md">
+                                    <span className="text-2xl">👋</span>
+                                </div>
+                            </div>
+                            
+                            <h3 className="font-display font-bold text-2xl text-ink mb-1">Arsh Verma</h3>
+                            <p className="text-xs font-black tracking-widest uppercase text-ink/40 mb-8">Developer & Designer</p>
+
+                            <div className="flex gap-4">
+                                <SocialLink href="https://github.com/ArshVermaGit" icon={Github} />
+                                <SocialLink href="https://linkedin.com/in/arshverma" icon={Linkedin} />
+                                <SocialLink href="https://twitter.com/arshverma" icon={Twitter} />
+                                <SocialLink href="mailto:Arshverma.dev@gmail.com" icon={Mail} />
+                            </div>
+                        </div>
+
+                        {/* Main Content Area */}
+                        <div className="flex-1 p-8 md:p-16 bg-[radial-gradient(#00000005_1px,transparent_1px)] bg-size-[16px_16px]">
+                             <div className="max-w-2xl mx-auto space-y-8">
+                                <div className="bg-white p-8 rounded-2xl shadow-sm border border-black/5 rotate-1 hover:rotate-0 transition-transform duration-300">
+                                    <h4 className="font-bold text-ink mb-4 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-accent" /> About Me
+                                    </h4>
+                                    <p className="text-ink/70 leading-relaxed font-serif text-lg">
+                                        I'm a student at <span className="font-bold text-ink">VIT Bhopal</span> with a passion for building digital experiences. 
+                                        Whether it's developing games in Unity or creating tools like InkPad, I love the challenge of 
+                                        turning a simple idea into something people can actually use and enjoy.
+                                    </p>
+                                </div>
+
+                                <div className="bg-white p-8 rounded-2xl shadow-sm border border-black/5 -rotate-1 hover:rotate-0 transition-transform duration-300">
+                                    <h4 className="font-bold text-ink mb-4 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-rose-400" /> Philosophy
+                                    </h4>
+                                    <p className="text-ink/70 leading-relaxed font-serif text-lg">
+                                        I focus on making things that look great and work even better. 
+                                        For me, coding isn't just about logic—it's about creating something that feels 
+                                        <span className="font-handwriting text-2xl mx-2 text-accent">human</span> 
+                                        on the other side of the screen.
+                                    </p>
+                                </div>
+
+                                <div className="pt-8">
+                                    <a
+                                        href="https://www.arshcreates.com"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="group inline-flex items-center gap-3 px-8 py-4 bg-ink text-white rounded-full font-bold hover:shadow-xl hover:shadow-ink/20 transition-all"
+                                    >
+                                        View Portfolio <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                                    </a>
+                                </div>
+                             </div>
+                        </div>
+
+                     </div>
+                </div>
+            </motion.div>
+        </section>
+    );    
 }
 
-function SocialLink({ href, icon: Icon, label }: SocialLinkProps) {
+function SocialLink({ href, icon: Icon }: { href: string, icon: any }) {
     return (
-        <a
-            href={href}
+        <a 
+            href={href} 
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 px-6 py-4 bg-white border border-black/5 shadow-sm rounded-xl hover:shadow-md hover:-translate-y-1 transition-all group"
+            className="w-10 h-10 bg-white border border-black/5 rounded-full flex items-center justify-center text-ink/60 hover:text-ink hover:bg-gray-50 hover:scale-110 transition-all shadow-sm"
         >
-            <Icon size={18} className="text-ink/40 group-hover:text-ink transition-colors" />
-            <span className="text-xs font-bold uppercase tracking-widest text-ink/60 group-hover:text-ink transition-colors">{label}</span>
+            <Icon size={18} />
         </a>
-    );
+    )
 }
