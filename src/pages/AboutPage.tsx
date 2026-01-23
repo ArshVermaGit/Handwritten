@@ -28,7 +28,7 @@ export default function AboutPage() {
                         <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-24 h-6 bg-yellow-200/80 rotate-2 z-20 shadow-sm backdrop-blur-sm" />
 
                         <div className="bg-white p-4 pb-12 shadow-2xl shadow-ink/10 rotate-2 hover:rotate-0 transition-transform duration-500 ease-out">
-                            <div className="aspect-[3/4] bg-gray-100 overflow-hidden relative grayscale hover:grayscale-0 transition-all duration-700">
+                            <div className="aspect-3/4 bg-gray-100 overflow-hidden relative grayscale hover:grayscale-0 transition-all duration-700">
                                 <img
                                     src={photo}
                                     alt="Arsh Verma"
