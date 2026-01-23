@@ -12,6 +12,7 @@ import type { HandwritingCanvasHandle } from '../components/HandwritingCanvas';
 import type { PaperMaterial } from '../types';
 import { useDebounce } from '../hooks/useDebounce';
 import { useToast } from '../hooks/useToast';
+import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.png';
 
 // --- CONSTANTS & CONFIG ---
@@ -88,7 +89,7 @@ export default function EditorPage() {
         fontSize, setFontSize, letterSpacing, setLetterSpacing, lineHeight, setLineHeight,
         wordSpacing, setWordSpacing, inkColor, setInkColor, paperMaterial, setPaperMaterial,
         paperShadow, setPaperShadow, paperTexture, setPaperTexture, paperTilt, setPaperTilt,
-        isRendering, setIsRendering, applyPreset
+        isRendering, setIsRendering, applyPreset, addToHistory
     } = useStore();
 
     const [fontSearch, setFontSearch] = useState('');
@@ -114,6 +115,7 @@ export default function EditorPage() {
     const [exportQuality, setExportQuality] = useState(1.0);
     const canvasRef = useRef<HandwritingCanvasHandle>(null);
     const { addToast } = useToast();
+    const { user } = useAuth();
 
     // Derived
     const wordCount = useMemo(() => text.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length, [text]);
@@ -135,9 +137,20 @@ export default function EditorPage() {
     }, [text, debouncedText, handwritingStyle, debouncedFontFamily, paperMaterial, debouncedPaperMaterial, setIsRendering]);
 
     useEffect(() => {
-        const i = setInterval(() => setLastSaved(new Date()), 10000);
+        const i = setInterval(() => {
+            const now = new Date();
+            setLastSaved(now);
+            // Save to history if logged in and text exists
+            if (user && text && text.trim().length > 0) {
+                addToHistory({
+                    id: crypto.randomUUID(),
+                    timestamp: now.getTime(),
+                    text: text
+                });
+            }
+        }, 30000); // Changed to 30s to avoid spamming history
         return () => clearInterval(i);
-    }, [setLastSaved]);
+    }, [setLastSaved, user, text, addToHistory]);
 
     // --- HANDLERS ---
 
