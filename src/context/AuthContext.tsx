@@ -34,13 +34,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Show modal on first entry if not logged in
     // Show modal on first entry if not logged in
     useEffect(() => {
-        const hasSeenWelcome = localStorage.getItem('handwritten_welcome_seen');
-        if (!user && !hasSeenWelcome) {
-            // Push to next tick to avoid synchronous state update warning
+        if (!user) {
             const timer = setTimeout(() => {
                 setAuthModalOpen(true);
-                localStorage.setItem('handwritten_welcome_seen', 'true');
-            }, 100);
+            }, 1500); // Small delay for better UX
             return () => clearTimeout(timer);
         }
     }, [user, setAuthModalOpen]);
