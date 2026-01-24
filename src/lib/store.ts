@@ -16,7 +16,7 @@ export interface HistoryItem {
     text: string;
 }
 
-const initialState: Omit<AppState, 'reset' | 'setText' | 'setLastSaved' | 'setZoom' | 'setEditorMode' | 'setUploadedFileName' | 'setHandwritingStyle' | 'setFontSize' | 'setLetterSpacing' | 'setLineHeight' | 'setWordSpacing' | 'setPaperMaterial' | 'setPaperSize' | 'setPaperOrientation' | 'setInkColor' | 'addCustomFont' | 'removeCustomFont' | 'resetTypography' | 'setCustomPaperImage' | 'completeOnboarding' | 'completeTour' | 'setSidebarCollapsed' | 'setSettingsOpen' | 'setPaperShadow' | 'setInkBlur' | 'setResolutionQuality' | 'setPaperTilt' | 'setPaperTexture' | 'setExpandedPanels' | 'togglePanel' | 'applyPreset' | 'setIsRendering' | 'setRenderingProgress' | 'addToHistory' | 'setJitter' | 'setPressure' | 'setSmudge' | 'setBaseline' | 'setTextAlign' | 'setMargins' | 'setPageOptions'> = {
+const initialState: Omit<AppState, 'reset' | 'setText' | 'setLastSaved' | 'setZoom' | 'setEditorMode' | 'setUploadedFileName' | 'setHandwritingStyle' | 'setFontSize' | 'setLetterSpacing' | 'setLineHeight' | 'setWordSpacing' | 'setPaperMaterial' | 'setPaperSize' | 'setPaperOrientation' | 'setInkColor' | 'addCustomFont' | 'removeCustomFont' | 'resetTypography' | 'setCustomPaperImage' | 'completeOnboarding' | 'completeTour' | 'setSidebarCollapsed' | 'setSettingsOpen' | 'setPaperShadow' | 'setInkBlur' | 'setResolutionQuality' | 'setPaperTilt' | 'setPaperTexture' | 'setExpandedPanels' | 'togglePanel' | 'applyPreset' | 'setIsRendering' | 'setRenderingProgress' | 'setNavbarVisible' | 'addToHistory' | 'setJitter' | 'setPressure' | 'setSmudge' | 'setBaseline' | 'setTextAlign' | 'setMargins' | 'setPageOptions'> = {
     text: '',
     lastSaved: null,
     zoom: 1,
@@ -28,7 +28,7 @@ const initialState: Omit<AppState, 'reset' | 'setText' | 'setLastSaved' | 'setZo
     lineHeight: DEFAULT_TYPOGRAPHY.lineHeight,
     wordSpacing: DEFAULT_TYPOGRAPHY.wordSpacing,
     inkColor: '#1e40af',
-    paperMaterial: 'white',
+    paperMaterial: 'ruled',
     paperSize: 'a4',
     paperOrientation: 'portrait',
     customFonts: [],
@@ -46,13 +46,14 @@ const initialState: Omit<AppState, 'reset' | 'setText' | 'setLastSaved' | 'setZo
     isRendering: false,
     renderingProgress: 0,
     expandedPanels: ['handwriting', 'typography', 'paper', 'effects'],
+    isNavbarVisible: true,
     history: [],
     
     // Editor Refinements
-    jitter: 1,
+    jitter: 0,
     pressure: 0,
-    smudge: 0.1,
-    baseline: 12,
+    smudge: 0,
+    baseline: 11,
     textAlign: 'left',
     marginTop: 60,
     marginBottom: 60,
@@ -108,6 +109,7 @@ export const useStore = create<AppState>()(
             })),
             setIsRendering: (isRendering) => set({ isRendering }),
             setRenderingProgress: (renderingProgress) => set({ renderingProgress }),
+            setNavbarVisible: (isNavbarVisible) => set({ isNavbarVisible }),
             applyPreset: (settings) => set((state) => ({ ...state, ...settings })),
             addToHistory: (item) => set((state) => ({ 
                 history: [item, ...state.history].slice(0, 50) // Keep last 50 items
