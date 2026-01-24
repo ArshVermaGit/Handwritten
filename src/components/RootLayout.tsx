@@ -11,7 +11,7 @@ export default function RootLayout() {
         <div className="min-h-screen flex flex-col bg-white overflow-hidden">
             {!isEditor && <Navbar />}
             <div className={`${isEditor ? 'h-screen' : 'pt-24 pb-20 md:pb-0'} flex-1 flex flex-col`}>
-                {!isEditor && <Breadcrumbs />}
+                {/* Breadcrumbs removed as requested */}
                 <main className="flex-1 relative">
                     <Outlet />
                 </main>
