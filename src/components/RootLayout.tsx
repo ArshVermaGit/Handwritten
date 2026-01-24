@@ -1,22 +1,17 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
-import Breadcrumbs from './Breadcrumbs';
 import Footer from './Footer';
 
 export default function RootLayout() {
-    const location = useLocation();
-    const isEditor = location.pathname === '/editor';
-
     return (
-        <div className="min-h-screen flex flex-col bg-white overflow-hidden">
-            {!isEditor && <Navbar />}
-            <div className={`${isEditor ? 'h-screen' : 'pt-24 pb-20 md:pb-0'} flex-1 flex flex-col`}>
-                {/* Breadcrumbs removed as requested */}
+        <div className="min-h-screen flex flex-col bg-white">
+            <Navbar />
+            <div className="pt-24 flex-1 flex flex-col">
                 <main className="flex-1 relative">
                     <Outlet />
                 </main>
             </div>
-            {!isEditor && <Footer />}
+            <Footer />
         </div>
     );
 }
