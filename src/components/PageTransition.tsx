@@ -8,25 +8,22 @@ interface PageTransitionProps {
 const pageVariants: Variants = {
     initial: {
         opacity: 0,
-        y: 20,
-        filter: 'blur(10px)'
+        y: 10, // Reduced from 20 for subtle entrance
     },
     animate: {
         opacity: 1,
         y: 0,
-        filter: 'blur(0px)',
         transition: {
-            duration: 0.4,
-            ease: [0.22, 1, 0.36, 1]
+            duration: 0.3, // Snappier response
+            ease: "easeOut"
         }
     },
     exit: {
         opacity: 0,
-        y: -20,
-        filter: 'blur(10px)',
+        y: -10, // Reduced from -20
         transition: {
-            duration: 0.3,
-            ease: 'easeIn'
+            duration: 0.2, // Quick exit to unblock next page
+            ease: "easeIn"
         }
     }
 };
