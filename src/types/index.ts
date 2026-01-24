@@ -12,7 +12,7 @@ export type PaperMaterial = 'white' | 'ruled' | 'graph' | 'dotted' | 'vintage' |
 export type PaperSize = 'a4' | 'letter' | 'a5' | 'a6' | 'legal' | 'tabloid';
 export type PaperOrientation = 'portrait' | 'landscape';
 
-export type ToastType = 'success' | 'error' | 'info';
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 export interface Token {
     type: 'tag' | 'text';
