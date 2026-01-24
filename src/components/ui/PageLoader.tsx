@@ -5,7 +5,7 @@ interface PageLoaderProps {
     message?: string;
 }
 
-export default function PageLoader({ message = 'Initializing InkPad...' }: PageLoaderProps) {
+export default function PageLoader({ message = 'Initializing Handwritten...' }: PageLoaderProps) {
     return (
         <div className="fixed inset-0 bg-white z-9999 flex flex-col items-center justify-center">
             <motion.div
