@@ -1,59 +1,805 @@
+import { useState, useMemo, useDeferredValue, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { PenTool, Sparkles, ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { 
+    Settings2, FileText, RefreshCw, Type, 
+    AlignLeft, AlignCenter, AlignRight, AlignJustify, 
+    Sparkles, Ruler, Zap, Download, Wand2
+} from 'lucide-react';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import JSZip from 'jszip';
+import { useToast } from '../hooks/useToast';
+import ExportModal from '../components/ExportModal';
+
+// --- PIPELINE TYPES ---
+interface LineData {
+    text: string;
+    type: 'text' | 'bullet' | 'number' | 'empty';
+    indent: number;
+    dir?: 'ltr' | 'rtl';
+    charIndex: number; // For reverse lookup
+}
+
+interface PageData {
+    lines: LineData[];
+    index: number;
+}
+
+interface PageConfig {
+    marginTop: number;
+    marginBottom: number;
+    marginLeft: number;
+    marginRight: number;
+    showPageNumbers: boolean;
+    showHeader: boolean;
+    headerText: string;
+}
+
+// --- PIPELINE STAGE 1 & 2: TOKENIZE & BUILD LINES ---
+function buildDocumentLines(text: string, charsPerLine: number): LineData[] {
+    const lines: LineData[] = [];
+    const paragraphs = text.split('\n');
+    let currentTotalIndex = 0;
+
+    paragraphs.forEach((para) => {
+        if (para.trim().length === 0) {
+            lines.push({ text: "", type: 'empty', indent: 0, charIndex: currentTotalIndex });
+            currentTotalIndex += para.length + 1; // +1 for the \n
+            return;
+        }
+
+        // Direction Detection
+        const dir: 'ltr' | 'rtl' = /[\u0590-\u083F]|[\u08A0-\u08FF]|[\uFB1D-\uFDFF]|[\uFE70-\uFEFF]/.test(para) ? 'rtl' : 'ltr';
+
+        // List Detection
+        const bulletMatch = para.match(/^([*\-+])\s+/);
+        const numberMatch = para.match(/^(\d+[.)])\s+/);
+        let listIndent = 0;
+        let type: LineData['type'] = 'text';
+
+        if (bulletMatch) {
+            listIndent = 2;
+            type = 'bullet';
+        } else if (numberMatch) {
+            listIndent = numberMatch[0].length;
+            type = 'number';
+        }
+
+        // Greedy Wrap + Long Word Splitting
+        const words = para.split(' ');
+        let currentLine = "";
+        let isFirstInPara = true;
+        let pCharOffset = 0;
+
+        const pushLine = (txt: string, isFirst: boolean, indent: number) => {
+            lines.push({ 
+                text: txt, 
+                type: isFirst ? type : 'text', 
+                indent: isFirst ? 0 : indent,
+                dir,
+                charIndex: currentTotalIndex + pCharOffset
+            });
+        };
+
+        words.forEach((word) => {
+            const limit = isFirstInPara ? charsPerLine : (charsPerLine - listIndent);
+            
+            if (word.length > limit) {
+                if (currentLine.length > 0) {
+                    pushLine(currentLine, isFirstInPara, listIndent);
+                    pCharOffset += currentLine.length + 1;
+                    currentLine = "";
+                    isFirstInPara = false;
+                }
+                
+                let wordPart = word;
+                while (wordPart.length > limit) {
+                    pushLine(wordPart.substring(0, limit), isFirstInPara, listIndent);
+                    pCharOffset += limit;
+                    wordPart = wordPart.substring(limit);
+                    isFirstInPara = false;
+                }
+                currentLine = wordPart;
+            } else if ((currentLine.length + word.length + 1) <= limit) {
+                currentLine += (currentLine.length > 0 ? " " : "") + word;
+            } else {
+                pushLine(currentLine, isFirstInPara, listIndent);
+                pCharOffset += currentLine.length + 1;
+                currentLine = word;
+                isFirstInPara = false;
+            }
+        });
+
+        if (currentLine.length > 0) {
+            pushLine(currentLine, isFirstInPara, listIndent);
+        }
+
+        currentTotalIndex += para.length + 1; 
+    });
+
+    return lines;
+}
+
+// --- PIPELINE STAGE 3: PAGINATION ENGINE (WIDOW/ORPHAN) ---
+function paginateLines(lines: LineData[], linesPerPage: number, firstPageLines?: number): PageData[] {
+    const pages: PageData[] = [];
+    let currentLines: LineData[] = [];
+    const actualFirstPageLimit = firstPageLines ?? linesPerPage;
+
+    lines.forEach((line, idx) => {
+        const pageLimit = pages.length === 0 ? actualFirstPageLimit : linesPerPage;
+        const isFirstOfPara = line.type !== 'text' || (idx > 0 && lines[idx-1].type === 'empty');
+        const nextLine = lines[idx + 1];
+        const isLastOfPara = !nextLine || nextLine.type === 'empty' || nextLine.type !== 'text';
+
+        // ORPHAN PROTECTION
+        if (isFirstOfPara && currentLines.length === pageLimit - 1 && !isLastOfPara) {
+            pages.push({ lines: currentLines, index: pages.length });
+            currentLines = [];
+        }
+
+        currentLines.push(line);
+
+        // WIDOW PROTECTION
+        if (currentLines.length === pageLimit) {
+            const nextIdx = idx + 1;
+            const nextIsWidow = lines[nextIdx] && (lines[nextIdx].type === 'text' && (!lines[nextIdx+1] || lines[nextIdx+1].type === 'empty'));
+            
+            if (nextIsWidow) {
+                const tempLine = currentLines.pop()!;
+                pages.push({ lines: currentLines, index: pages.length });
+                currentLines = [tempLine];
+            } else {
+                pages.push({ lines: currentLines, index: pages.length });
+                currentLines = [];
+            }
+        }
+    });
+
+    if (currentLines.length > 0) {
+        pages.push({ lines: currentLines, index: pages.length });
+    }
+
+    return pages.length > 0 ? pages : [{ lines: [{ text: "", type: 'empty', indent: 0, charIndex: 0 }], index: 0 }];
+}
+
+// --- PIPELINE STAGE 4: SIMULATION SEEDING ---
+function getDeterminRandom(seed: string) {
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+        hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+        hash |= 0;
+    }
+    const x = Math.sin(hash++) * 10000;
+    return x - Math.floor(x);
+}
+
+// --- DATA CONSTANTS ---
+const FONTS = [
+    { name: 'Caveat', label: 'Real Handwriting' },
+    { name: 'Homemade Apple', label: 'Messy Apple' },
+    { name: 'Indie Flower', label: 'Indie Flower' },
+    { name: 'Gloria Hallelujah', label: 'Gloria' },
+    { name: 'Reenie Beanie', label: 'Beanie' },
+    { name: 'Shadows Into Light', label: 'Shadows' },
+    { name: 'Patrick Hand', label: 'Patrick' },
+    { name: 'Kalam', label: 'Kalam' },
+];
+
+const COLORS = [
+    { name: 'Blue Ink', value: '#1e3a8a' },
+    { name: 'Black Ink', value: '#171717' },
+    { name: 'Red Ink', value: '#991b1b' },
+    { name: 'Pencil', value: '#4b5563' },
+];
+
+const PAPERS = [
+    { id: 'plain', name: 'Plain White', css: 'bg-white', lineHeight: 32 },
+    { id: 'lined', name: 'Lined Paper', css: 'bg-white', lineHeight: 32, style: { backgroundImage: 'linear-gradient(#e5e7eb 1px, transparent 1px)', backgroundSize: '100% 32px' } },
+];
 
 export default function EditorPage() {
-    return (
-        <div className="min-h-screen bg-[#FAF9F6] flex flex-col items-center justify-center relative overflow-hidden selection:bg-indigo-500/30">
-            {/* Ambient Background */}
-            <div className="absolute inset-0 pointer-events-none">
-                 <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-indigo-500/10 rounded-full blur-[100px]" />
-                 <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-rose-500/10 rounded-full blur-[100px]" />
-                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] opacity-40 mix-blend-multiply" />
-            </div>
+    const { addToast } = useToast();
+    const sourceRef = useRef<HTMLTextAreaElement>(null);
+    
+    // Core Logic
+    const [text, setText] = useState("Intuitive Sync & History\n\nInkPad now feels like a pro tool. \n\n*   Click any word on the paper to jump to it in the editor.\n*   Standard Cmd+Z/Redo works across the whole session.\n*   The interface stays smooth while you type, thanks to performance debouncing.\n\nTry it out!");
+    const [history, setHistory] = useState<string[]>([text]);
+    const [historyIndex, setHistoryIndex] = useState(0);
 
-            <div className="relative z-10 max-w-2xl px-6 text-center">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8 }}
-                >
-                    <div className="flex justify-center mb-8">
-                        <div className="w-20 h-20 bg-white rounded-3xl shadow-xl shadow-neutral-900/5 flex items-center justify-center border border-black/5 rotate-3">
-                            <PenTool size={32} className="text-indigo-500" />
+    const deferredText = useDeferredValue(text);
+
+    // History Snapshots
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            const currentHistoryText = history[historyIndex];
+            if (text !== currentHistoryText) {
+                const newHist = history.slice(0, historyIndex + 1);
+                newHist.push(text);
+                if (newHist.length > 50) newHist.shift();
+                setHistory(newHist);
+                setHistoryIndex(newHist.length - 1);
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [text, history, historyIndex]);
+
+    const normalizeInput = (val: string) => {
+        // Simple normalization: Smart bullets and quotes
+        return val
+            .replace(/-- /g, '— ') // Em-dash
+            .replace(/\.\.\./g, '…'); // Ellipsis
+    };
+
+    const handleUndo = useCallback(() => {
+        if (historyIndex > 0) {
+            setHistoryIndex(prev => prev - 1);
+            setText(history[historyIndex - 1]);
+        }
+    }, [history, historyIndex]);
+
+    const handleRedo = useCallback(() => {
+        if (historyIndex < history.length - 1) {
+            setHistoryIndex(prev => prev + 1);
+            setText(history[historyIndex + 1]);
+        }
+    }, [history, historyIndex]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+                e.preventDefault();
+                if (e.shiftKey) handleRedo(); else handleUndo();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [handleUndo, handleRedo]);
+
+    const [font, setFont] = useState(FONTS[0].name);
+    const [fontSize, setFontSize] = useState(24);
+    const [color, setColor] = useState(COLORS[0].value);
+    const [paper, setPaper] = useState(PAPERS[1]); 
+    const [pageConfig, setPageConfig] = useState<PageConfig>({
+        marginTop: 60, marginBottom: 60, marginLeft: 70, marginRight: 40,
+        showPageNumbers: false, showHeader: false, headerText: ""
+    });
+
+    const [jitter, setJitter] = useState(1);
+    const [pressure, setPressure] = useState(0);
+    const [smudge, setSmudge] = useState(0);
+    const [baseline, setBaseline] = useState(11);
+    const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right' | 'justify'>('left');
+
+    const [progress, setProgress] = useState(0);
+    const [randomSeed, setRandomSeed] = useState(0);
+
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [exportFormat, setExportFormat] = useState<'pdf' | 'zip'>('pdf');
+    const [exportStatus, setExportStatus] = useState<'idle' | 'processing' | 'complete' | 'error'>('idle');
+    const [isHumanizing, setIsHumanizing] = useState(false);
+
+    // Extras & Realism
+    const [marginNote, setMarginNote] = useState("");
+    const [showCoffeeStain, setShowCoffeeStain] = useState(false);
+    const [showStickyNote, setShowStickyNote] = useState(false);
+    const [stickyNoteText, setStickyNoteText] = useState("Don't forget!");
+
+    // --- PIPELINE EXECUTION ---
+    const pages = useMemo(() => {
+        const bodyHeight = 1123 - pageConfig.marginTop - pageConfig.marginBottom;
+        const linesPerPage = Math.floor(bodyHeight / paper.lineHeight);
+        const charsPerLine = Math.floor((800 - pageConfig.marginLeft - pageConfig.marginRight) / (fontSize * 0.45));
+        
+        // Calculate header lines to reduce page 1 capacity
+        const headerLineCount = pageConfig.showHeader ? pageConfig.headerText.split('\n').length : 0;
+        const page1Lines = Math.max(1, linesPerPage - headerLineCount + 1); // +1 because we are shifting the starting point up
+
+        const rawLines = buildDocumentLines(deferredText, charsPerLine);
+        return paginateLines(rawLines, linesPerPage, page1Lines);
+    }, [deferredText, fontSize, paper.lineHeight, pageConfig]);
+
+    const handleHumanize = async () => {
+        const googleKey = import.meta.env.VITE_GOOGLE_API_KEY;
+        
+        if (!googleKey) {
+            addToast('Google API Key missing. Please check your .env file.', 'error');
+            return;
+        }
+
+        setIsHumanizing(true);
+        try {
+            const genAI = new GoogleGenerativeAI(googleKey);
+            const model = genAI.getGenerativeModel({ 
+                model: "gemini-1.5-flash",
+                generationConfig: {
+                    temperature: 0.8,
+                    maxOutputTokens: 1000,
+                },
+                safetySettings: [
+                    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+                    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+                    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+                    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+                ]
+            });
+
+            const prompt = `Convert the following text into organic, natural human prose. 
+            Output strictly the rewritten text. 
+            Input Text: ${text}`;
+            
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const rewrittenText = response.text();
+
+            if (rewrittenText) {
+                setText(normalizeInput(rewrittenText.trim()));
+                addToast('Text Humanized!', 'success');
+            }
+        } catch (e: unknown) {
+            const err = e as { message?: string };
+            console.error('Humanize Detailed Error:', err);
+            let errorMsg = 'AI Error';
+            
+            const message = err.message || '';
+            
+            if (message.includes('429')) errorMsg = 'Rate Limit Reached (Free Tier)';
+            else if (message.includes('SAFETY')) errorMsg = 'Content Filtered';
+            else if (message.includes('API key')) errorMsg = 'Invalid API Key';
+            else if (message.includes('fetch')) errorMsg = 'Check your connection';
+            else errorMsg = `Error: ${message.substring(0, 30)}...`;
+            
+            addToast(errorMsg, 'error');
+        } finally {
+            setIsHumanizing(false);
+        }
+    };
+
+    const handleWordClick = (charIndex: number) => {
+        if (sourceRef.current) {
+            sourceRef.current.focus();
+            sourceRef.current.setSelectionRange(charIndex, charIndex);
+            sourceRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    };
+
+    const handleExport = async (format: 'pdf' | 'zip') => {
+        setExportFormat(format);
+        setExportStatus('processing');
+        setIsExportModalOpen(true);
+        setProgress(0);
+        
+        try {
+            const elements = document.querySelectorAll('.inkpad-export-target');
+            if (elements.length === 0) throw new Error('No pages found');
+
+            const timestamp = Date.now();
+            const baseFileName = `inkpad-${timestamp}`;
+
+            if (format === 'pdf') {
+                const pdf = new jsPDF({
+                    orientation: 'p',
+                    unit: 'mm',
+                    format: 'a4',
+                    putOnlyUsedFonts: true
+                });
+
+                pdf.setProperties({
+                    title: `InkPad - ${pageConfig.headerText || 'Handwritten Document'}`,
+                    subject: 'Handwritten Document created with InkPad',
+                    author: 'InkPad Rendering Engine',
+                    creator: 'InkPad'
+                });
+
+                for (let i = 0; i < elements.length; i++) {
+                    if (i > 0) pdf.addPage();
+                    const canvas = await html2canvas(elements[i] as HTMLElement, { 
+                        scale: 3, 
+                        useCORS: true,
+                        logging: false,
+                        backgroundColor: null,
+                        scrollX: 0,
+                        scrollY: 0,
+                        windowWidth: 800,
+                        windowHeight: 1131
+                    });
+                    const imgData = canvas.toDataURL('image/png', 1.0);
+                    pdf.addImage(imgData, 'PNG', 0, 0, 210, 297, undefined, 'SLOW');
+                    setProgress(Math.round(((i + 1) / elements.length) * 100));
+                }
+                pdf.save(`${baseFileName}.pdf`);
+            } else {
+                // ZIP EXPORT
+                const zip = new JSZip();
+                for (let i = 0; i < elements.length; i++) {
+                    const canvas = await html2canvas(elements[i] as HTMLElement, { 
+                        scale: 3, 
+                        useCORS: true, 
+                        logging: false,
+                        backgroundColor: null,
+                        scrollX: 0,
+                        scrollY: 0,
+                        windowWidth: 800,
+                        windowHeight: 1131
+                    });
+                    const imgData = canvas.toDataURL('image/png', 1.0).split(',')[1];
+                    zip.file(`page-${i + 1}.png`, imgData, { base64: true });
+                    setProgress(Math.round(((i + 1) / elements.length) * 100));
+                }
+                const content = await zip.generateAsync({ type: 'blob' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = `${baseFileName}.zip`;
+                link.click();
+            }
+
+            setExportStatus('complete');
+            addToast(`${format.toUpperCase()} Export Complete!`, 'success');
+        } catch (e) { 
+            console.error(e);
+            setExportStatus('error');
+            addToast('Export Failed', 'error'); 
+        }
+    };
+
+    return (
+        <div className="flex-1 bg-[#F9FAFB] relative overflow-hidden flex items-center justify-center p-4 md:p-12 selection:bg-indigo-500/30 font-sans">
+            {/* WORKSPACE BACKGROUND */}
+            <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[24px_24px] pointer-events-none" />
+            
+            {/* MAIN WINDOW CONTAINER */}
+            <div className="w-full max-w-[1600px] h-[85vh] bg-white rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.12)] border border-black/5 flex overflow-hidden relative z-10 transition-all">
+                
+                {/* SIDEBAR */}
+                <aside className="w-80 bg-[#F9F9F9] border-r border-black/5 flex flex-col p-8 overflow-y-auto custom-scrollbar shrink-0">
+                    {/* MACOS DOTS */}
+                    <div className="flex gap-2 mb-10">
+                        <div className="w-3 h-3 rounded-full bg-[#FF5F57] shadow-inner" />
+                        <div className="w-3 h-3 rounded-full bg-[#FFBD2E] shadow-inner" />
+                        <div className="w-3 h-3 rounded-full bg-[#28C840] shadow-inner" />
+                    </div>
+
+                    <div className="flex flex-col gap-6">
+                        <div>
+                            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3"><Type size={12}/> The Source</label>
+                            <textarea 
+                                ref={sourceRef}
+                                value={text} 
+                                onChange={(e) => setText(normalizeInput(e.target.value))} 
+                                className="w-full h-48 p-4 bg-white border border-black/5 rounded-2xl text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500/20 resize-none font-sans shadow-xs transition-all" 
+                                placeholder="Start writing..."
+                            />
+                        </div>
+
+                        {/* HIGH-FIDELITY AI TOGGLE */}
+                        <div className="relative">
+                             <button 
+                                onClick={handleHumanize}
+                                disabled={isHumanizing || !text.trim()}
+                                className="w-full py-4 px-6 rounded-2xl bg-white border border-black/5 shadow-xs hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:translate-y-0 transition-all group overflow-hidden"
+                             >
+                                <div className="absolute inset-0 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-size-[200%_100%] animate-shimmer opacity-0 group-hover:opacity-5 transition-opacity" />
+                                <div className="flex items-center justify-between relative z-10">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-neutral-900 rounded-xl text-white">
+                                            <Wand2 size={16} className={isHumanizing ? 'animate-spin' : ''}/>
+                                        </div>
+                                        <div className="text-left leading-tight">
+                                            <div className="text-[11px] font-black uppercase tracking-widest text-neutral-900 flex items-center gap-1.5">
+                                                AI Humanizer
+                                                <Sparkles size={10} className="text-amber-500 animate-pulse" />
+                                            </div>
+                                            <div className="text-[9px] font-bold text-neutral-400 uppercase tracking-tight">One-Click Organic Rewriting</div>
+                                        </div>
+                                    </div>
+                                    {isHumanizing && <RefreshCw size={14} className="animate-spin text-neutral-300" />}
+                                </div>
+                             </button>
+                        </div>
+
+                        <div className="h-px bg-black/5 w-full my-2" />
+
+                        <div>
+                            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4"><Ruler size={12}/> Paper & Setup</label>
+                            <div className="grid grid-cols-1 gap-2">
+                                <div className="flex p-1 bg-white border border-black/5 rounded-xl shadow-xs">
+                                     {PAPERS.map(p=>(
+                                        <button 
+                                            key={p.id} 
+                                            onClick={()=>setPaper(p)} 
+                                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${paper.id===p.id?'bg-neutral-900 text-white shadow-lg':'text-neutral-400 hover:text-neutral-900'}`}
+                                        >
+                                            {p.name}
+                                        </button>
+                                     ))}
+                                </div>
+                                <div className="space-y-3 mt-4">
+                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                        <input type="checkbox" checked={pageConfig.showHeader} onChange={e=>setPageConfig({...pageConfig, showHeader:e.target.checked})} className="w-4 h-4 rounded border-black/10 text-neutral-900 focus:ring-0 transition-all"/><span className="text-[11px] font-bold text-neutral-600 group-hover:text-neutral-900 transition-colors uppercase tracking-tight">Add Heading</span>
+                                    </label>
+                                    {pageConfig.showHeader && (
+                                        <textarea 
+                                            value={pageConfig.headerText} 
+                                            onChange={(e) => setPageConfig({...pageConfig, headerText: e.target.value})}
+                                            className="w-full h-20 p-3 bg-white border border-black/5 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500/20 resize-none font-sans shadow-xs transition-all"
+                                            placeholder="Document Title..."
+                                        />
+                                    )}
+                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                        <input type="checkbox" checked={pageConfig.showPageNumbers} onChange={e=>setPageConfig({...pageConfig, showPageNumbers:e.target.checked})} className="w-4 h-4 rounded border-black/10 text-neutral-900 focus:ring-0 transition-all"/><span className="text-[11px] font-bold text-neutral-600 group-hover:text-neutral-900 transition-colors uppercase tracking-tight">Show Page Numbers</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="h-px bg-black/5 w-full my-2" />
+
+                        <div>
+                            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4"><Settings2 size={12}/> Typography</label>
+                            <div className="space-y-4">
+                                <div className="flex bg-white border border-black/5 p-1 rounded-xl shadow-xs">
+                                    {[{id:'left', icon:AlignLeft},{id:'center', icon:AlignCenter},{id:'right', icon:AlignRight},{id:'justify', icon:AlignJustify}].map(opt=>(
+                                        <button key={opt.id} onClick={()=>setTextAlign(opt.id as 'left' | 'center' | 'right' | 'justify')} className={`flex-1 p-2 flex justify-center rounded-lg transition-all ${textAlign===opt.id?'bg-neutral-900 text-white shadow-lg':'text-neutral-400 hover:text-neutral-900'}`}><opt.icon size={14}/></button>
+                                    ))}
+                                </div>
+                                <select value={font} onChange={e=>setFont(e.target.value)} className="w-full p-3 bg-white border border-black/5 rounded-xl text-[11px] font-bold text-neutral-700 shadow-xs focus:outline-none">{FONTS.map(f=><option key={f.name} value={f.name}>{f.label}</option>)}</select>
+                                <div className="space-y-4">
+                                    <div><span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter mb-2 flex justify-between">Font Size <span>{fontSize}px</span></span><input type="range" min="14" max="64" value={fontSize} onChange={e=>setFontSize(Number(e.target.value))} className="w-full h-1 bg-black/5 rounded-full appearance-none accent-neutral-900 cursor-pointer"/></div>
+                                    <div><span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter mb-2 flex justify-between">Line Nudge <span>{baseline}</span></span><input type="range" min="-10" max="30" value={baseline} onChange={e=>setBaseline(Number(e.target.value))} className="w-full h-1 bg-black/5 rounded-full appearance-none accent-neutral-900 cursor-pointer"/></div>
+                                </div>
+                                <div className="flex gap-2 pt-2">{COLORS.map(c=>(<button key={c.name} onClick={()=>setColor(c.value)} className={`w-5 h-5 rounded-full border-2 ${color===c.value?'border-neutral-900 scale-110':'border-transparent'} shadow-xs transition-all`} style={{backgroundColor:c.value}}/>))}</div>
+                            </div>
+                        </div>
+
+                        <div className="h-px bg-black/5 w-full my-2" />
+
+                        <div>
+                            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4"><Sparkles size={12}/> Rendering</label>
+                            <div className="space-y-4">
+                                <button 
+                                    onClick={() => setRandomSeed(prev => prev + 1)}
+                                    className="w-full py-3 bg-white border border-black/5 text-[10px] font-bold uppercase tracking-widest text-neutral-600 rounded-xl hover:bg-neutral-900 hover:text-white transition-all flex items-center justify-center gap-2 shadow-xs group"
+                                >
+                                    <RefreshCw size={12} className={`group-hover:rotate-180 transition-transform duration-500 ${exportStatus === 'processing' ? 'animate-spin' : ''}`}/> Re-Randomize
+                                </button>
+                                <div className="space-y-4">
+                                    <div><span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter mb-2 flex justify-between">Jitter <span>{jitter}</span></span><input type="range" min="0" max="6" step="0.5" value={jitter} onChange={(e) => setJitter(Number(e.target.value))} className="w-full h-1 bg-black/5 rounded-full appearance-none accent-neutral-900 cursor-pointer" /></div>
+                                    <div><span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter mb-2 flex justify-between">Pressure <span>{Math.round(pressure*100)}%</span></span><input type="range" min="0" max="1" step="0.1" value={pressure} onChange={(e) => setPressure(Number(e.target.value))} className="w-full h-1 bg-black/5 rounded-full appearance-none accent-neutral-900 cursor-pointer" /></div>
+                                    <div><span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter mb-2 flex justify-between">Smudge <span>{smudge}</span></span><input type="range" min="0" max="2" step="0.1" value={smudge} onChange={(e) => setSmudge(Number(e.target.value))} className="w-full h-1 bg-black/5 rounded-full appearance-none accent-neutral-900 cursor-pointer" /></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="h-px bg-black/5 w-full my-2" />
+
+                        <div>
+                            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4"><Zap size={12}/> Effects</label>
+                            <div className="space-y-4">
+                                <input 
+                                    type="text" 
+                                    value={marginNote} 
+                                    onChange={(e) => setMarginNote(e.target.value)}
+                                    className="w-full p-3 bg-white border border-black/5 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500/20 shadow-xs transition-all"
+                                    placeholder="Margin Note..."
+                                />
+                                <div className="space-y-3">
+                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                        <input type="checkbox" checked={showCoffeeStain} onChange={(e) => setShowCoffeeStain(e.target.checked)} className="w-4 h-4 rounded border-black/10 text-neutral-900 focus:ring-0 transition-all"/><span className="text-[11px] font-bold text-neutral-600 group-hover:text-neutral-900 transition-colors uppercase">Coffee Stain</span>
+                                    </label>
+                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                        <input type="checkbox" checked={showStickyNote} onChange={(e) => setShowStickyNote(e.target.checked)} className="w-4 h-4 rounded border-black/10 text-neutral-900 focus:ring-0 transition-all"/><span className="text-[11px] font-bold text-neutral-600 group-hover:text-neutral-900 transition-colors uppercase">Sticky Note</span>
+                                    </label>
+                                    {showStickyNote && (
+                                        <textarea 
+                                            value={stickyNoteText} 
+                                            onChange={(e) => setStickyNoteText(e.target.value)}
+                                            className="w-full h-16 p-3 bg-yellow-50/50 border border-yellow-200/50 rounded-xl text-xs font-medium focus:outline-none resize-none shadow-xs transition-all"
+                                            placeholder="Note text..."
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 space-y-3">
+                            <button 
+                                onClick={() => handleExport('pdf')} 
+                                disabled={exportStatus === 'processing'} 
+                                className="w-full py-4 rounded-2xl bg-neutral-900 text-white font-bold text-sm shadow-[0_10px_20px_-5px_rgba(0,0,0,0.2)] hover:shadow-2xl hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Download size={16} />
+                                Export PDF
+                            </button>
+                            <button 
+                                onClick={() => handleExport('zip')} 
+                                disabled={exportStatus === 'processing'} 
+                                className="w-full py-3 rounded-2xl bg-white border border-black/5 text-neutral-600 font-bold text-[11px] uppercase tracking-widest hover:bg-neutral-50 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Sparkles size={14} />
+                                Export Images (ZIP)
+                            </button>
+                        </div>
+                    </div>
+                </aside>
+
+                {/* MAIN VISUAL PREVIEW AREA */}
+                <main className="flex-1 bg-[#FAFAFA] flex flex-col relative overflow-hidden group/canvas">
+                    {/* TOP BAR / BREADCRUMB STYLE */}
+                    <div className="h-14 border-b border-black/5 flex items-center px-12 justify-between bg-white/50 backdrop-blur-sm relative z-30">
+                        <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">
+                            <FileText size={12} className="text-neutral-300"/> / Documents / {pageConfig.headerText || 'Untitled'}
+                        </div>
+                        <div className="flex items-center gap-2">
+                             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                             <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 opacity-60">Engine Active</span>
                         </div>
                     </div>
 
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-600 font-bold text-xs uppercase tracking-widest mb-6 border border-indigo-100">
-                        <Sparkles size={12} /> Work in Progress
+                    <div className="flex-1 overflow-y-auto p-12 md:p-24 flex flex-col items-center gap-24 custom-scrollbar relative">
+                        {/* THE "DESK" TEXTURE */}
+                        <div className="absolute inset-0 bg-[radial-gradient(#00000003_1px,transparent_1px)] bg-size-[32px_32px] pointer-events-none" />
+
+                        {pages.map((page, pIdx) => (
+                             <motion.div 
+                                key={pIdx} 
+                                initial={{opacity:0, y: 20, rotate: 0}} 
+                                animate={{opacity:1, y: 0, rotate: 0}} 
+                                className={`inkpad-page-render relative w-full max-w-[800px] aspect-[1/1.414] ${pIdx === 0 ? 'paper-stack' : 'shadow-2xl'} overflow-hidden shrink-0 transition-transform duration-700 ease-out ring-1 ring-black/5 rounded-0`} 
+                                style={{ transformOrigin: 'center center' }}
+                             >
+                                {/* CLEAN EXPORT CONTAINER */}
+                                <div className={`inkpad-export-target w-full h-full relative ${paper.css}`} style={paper.style}>
+                                    {/* MARGIN ANNOTATION */}
+                                    {marginNote && pIdx === 0 && (
+                                        <div 
+                                            className="absolute left-4 top-1/3 -rotate-90 origin-left z-20"
+                                            style={{ fontFamily: font, color: color, opacity: 0.5, fontSize: fontSize * 0.6 }}
+                                        >
+                                            {marginNote}
+                                        </div>
+                                    )}
+
+                                    {/* COFFEE STAIN */}
+                                    {showCoffeeStain && pIdx === 0 && (
+                                        <div 
+                                            className="absolute -top-10 -right-10 pointer-events-none opacity-[0.08] blur-sm z-30"
+                                            style={{ transform: `rotate(${getDeterminRandom('stain'+randomSeed)*360}deg) scale(${0.8 + getDeterminRandom('scale'+randomSeed) * 0.5})` }}
+                                        >
+                                            <svg width="300" height="300" viewBox="0 0 200 200">
+                                                <path fill="#78350f" d="M100 20C55.8 20 20 55.8 20 100s35.8 80 80 80 80-35.8 80-80S144.2 20 100 20zm0 145c-35.9 0-65-29.1-65-65s29.1-65 65-65 65 29.1 65 65-29.1 65-65 65z"/>
+                                                <circle cx="100" cy="100" r="55" fill="#78350f" opacity="0.3"/>
+                                            </svg>
+                                        </div>
+                                    )}
+
+                                    {/* STICKY NOTE */}
+                                    {showStickyNote && pIdx === 0 && (
+                                        <motion.div 
+                                            initial={{ x: 100, y: 100, rotate: 5 }}
+                                            className="absolute bottom-20 right-10 w-40 h-40 bg-yellow-200 shadow-lg p-4 z-40 flex flex-col font-handwriting"
+                                            style={{ 
+                                                fontFamily: 'Caveat', 
+                                                color: '#854d0e',
+                                                transform: `rotate(${getDeterminRandom('sticky'+randomSeed)*10 - 5}deg)`,
+                                                boxShadow: '2px 5px 15px rgba(0,0,0,0.1)'
+                                            }}
+                                        >
+                                            <div className="text-xs uppercase font-black opacity-20 mb-2">Note:</div>
+                                            <div className="text-lg leading-tight">{stickyNoteText}</div>
+                                            <div className="absolute top-0 left-0 right-0 h-4 bg-yellow-300/30" />
+                                        </motion.div>
+                                    )}
+
+                                    {pageConfig.showHeader && pIdx === 0 && (
+                                        <div 
+                                            className="absolute left-0 right-0 z-10 flex flex-col items-center"
+                                            style={{ 
+                                                top: pageConfig.marginTop - paper.lineHeight,
+                                                textAlign: 'center',
+                                                paddingLeft: pageConfig.marginLeft,
+                                                paddingRight: pageConfig.marginRight,
+                                                width: '100%'
+                                            }}
+                                        >
+                                            {pageConfig.headerText.split('\n').map((hLine, hlIdx) => (
+                                                <div 
+                                                    key={hlIdx} 
+                                                    style={{
+                                                        fontFamily: font, 
+                                                        fontSize, 
+                                                        color, 
+                                                        height: paper.lineHeight, 
+                                                        lineHeight: `${paper.lineHeight}px`,
+                                                        transform: `translateY(${baseline}px)`
+                                                    }} 
+                                                    className="w-full whitespace-nowrap overflow-hidden"
+                                                >
+                                                    {hLine.split(' ').map((word, wIdx) => {
+                                                        const seed = `header-${hlIdx}-${wIdx}-${word}-${randomSeed}`;
+                                                        const y = (getDeterminRandom(seed+'y')-0.5)*jitter*3;
+                                                        const r = (getDeterminRandom(seed+'r')-0.5)*jitter*1.5;
+                                                        const op = 1-(getDeterminRandom(seed+'o')*pressure*0.2);
+                                                        const bl = smudge > 0 ? getDeterminRandom(seed+'b')*smudge*0.4 : 0;
+                                                        return <span key={wIdx} className="inline-block" style={{transform:`translateY(${y}px) rotate(${r}deg)`, opacity:op, filter:bl?`blur(${bl}px)`:'none', marginRight:'0.25em'}}>{word}</span>;
+                                                    })}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <div 
+                                        className="w-full h-full relative" 
+                                        style={{
+                                            paddingTop: (pIdx === 0 ? pageConfig.marginTop - paper.lineHeight : pageConfig.marginTop) + (pIdx === 0 && pageConfig.showHeader ? (pageConfig.headerText.split('\n').length) * paper.lineHeight : 0), 
+                                            paddingBottom:pageConfig.marginBottom, 
+                                            paddingLeft:pageConfig.marginLeft, 
+                                            paddingRight:pageConfig.marginRight
+                                        }}
+                                    >   
+                                        {page.lines.map((line, lIdx) => (
+                                            <div 
+                                                key={lIdx} 
+                                                dir={line.dir}
+                                                style={{
+                                                    fontFamily:font, 
+                                                    fontSize, 
+                                                    color, 
+                                                    height:paper.lineHeight, 
+                                                    lineHeight:`${paper.lineHeight}px`, 
+                                                    transform:`translateY(${baseline}px)`, 
+                                                    textAlign: line.dir === 'rtl' ? (textAlign === 'left' ? 'right' : textAlign === 'right' ? 'left' : textAlign) : textAlign, 
+                                                    paddingLeft: line.indent ? line.indent * (fontSize * 0.4) : 0,
+                                                    paddingRight: line.dir === 'rtl' && line.indent ? line.indent * (fontSize * 0.4) : 0
+                                                }} 
+                                                className="w-full whitespace-nowrap overflow-hidden"
+                                            >
+                                                {line.text.split(' ').map((word, wIdx) => {
+                                                    const seed = `${pIdx}-${lIdx}-${wIdx}-${word}-${randomSeed}`;
+                                                    const y = (getDeterminRandom(seed+'y')-0.5)*jitter*3;
+                                                    const r = (getDeterminRandom(seed+'r')-0.5)*jitter*1.5;
+                                                    const op = 1-(getDeterminRandom(seed+'o')*pressure*0.2);
+                                                    const bl = smudge > 0 ? getDeterminRandom(seed+'b')*smudge*0.4 : 0;
+                                                    
+                                                    const wordInLineOffset = line.text.split(' ').slice(0, wIdx).join(' ').length + (wIdx > 0 ? 1 : 0);
+
+                                                    return (
+                                                        <span 
+                                                            key={wIdx} 
+                                                            onClick={() => handleWordClick(line.charIndex + wordInLineOffset)}
+                                                            className="inline-block cursor-pointer transition-opacity hover:opacity-50" 
+                                                            style={{transform:`translateY(${y}px) rotate(${r}deg)`, opacity:op, filter:bl?`blur(${bl}px)`:'none', marginRight:'0.25em'}}
+                                                        >
+                                                            {word}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {pageConfig.showPageNumbers && (
+                                        <div className="absolute bottom-6 left-0 right-0 text-center text-[10px] font-black text-gray-300 tracking-widest uppercase">Page {pIdx+1} of {pages.length}</div>
+                                    )}
+                                    <div className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-5 bg-[url('https://www.transparenttextures.com/patterns/cardboard.png')]"/>
+                                    <div className="absolute top-0 bottom-0 left-[50px] w-px bg-red-300 opacity-20"/>
+                                </div>
+                             </motion.div>
+                        ))}
                     </div>
-
-                    <h1 className="text-5xl md:text-7xl font-display font-bold text-neutral-900 mb-6 tracking-tight leading-[1.1]">
-                        The Canvas is <br/>
-                        <span className="italic font-serif text-indigo-500">Drying.</span>
-                    </h1>
-
-                    <p className="text-xl text-neutral-500 mb-10 leading-relaxed font-medium">
-                        We are crafting the ultimate distraction-free writing experience. 
-                        Polishing the pixels, refining the ink, and ensuring it meets your soul's standards.
-                    </p>
-
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <Link 
-                            to="/"
-                            className="px-8 py-4 bg-white border border-black/5 text-neutral-900 rounded-full font-bold hover:bg-gray-50 transition-colors flex items-center gap-2 group"
-                        >
-                            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back to Home
-                        </Link>
-                        <button className="px-8 py-4 bg-neutral-900 text-white rounded-full font-bold shadow-xl shadow-neutral-900/20 hover:scale-105 active:scale-95 transition-all">
-                            Notify When Ready
-                        </button>
-                    </div>
-                </motion.div>
+                </main>
             </div>
 
-            {/* Decorative Elements */}
-            <div className="absolute bottom-0 left-0 w-full h-px bg-linear-to-r from-transparent via-black/5 to-transparent" />
+            <ExportModal 
+                isOpen={isExportModalOpen}
+                onClose={() => {
+                    setIsExportModalOpen(false);
+                    setExportStatus('idle');
+                }}
+                format={exportFormat}
+                progress={progress}
+                status={exportStatus}
+                fileName={`${pageConfig.headerText || 'Handwritten'}-${Date.now()}.${exportFormat}`}
+            />
         </div>
     );
 }
+
