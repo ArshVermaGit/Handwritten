@@ -72,6 +72,59 @@ h1, h2, h3, h4, h5, h6 {
   100% { transform: translate3d(-50%, 0, 0); }
 }
 
+
+/* Page Stack Depth Effect */
+.paper-stack {
+  position: relative;
+  box-shadow: 
+    0 1px 1px rgba(0,0,0,0.11), 
+    0 2px 2px rgba(0,0,0,0.11), 
+    0 4px 4px rgba(0,0,0,0.11), 
+    0 8px 8px rgba(0,0,0,0.11), 
+    0 16px 16px rgba(0,0,0,0.11);
+}
+
+.paper-stack::after, .paper-stack::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  background: inherit;
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: inherit;
+  transition: transform 0.3s ease;
+}
+
+.paper-stack::before {
+  transform: translate(4px, 4px);
+}
+
+.paper-stack::after {
+  transform: translate(8px, 8px);
+  opacity: 0.5;
+}
+
+/* Custom Indigo Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6366f1;
+}
+
 .animate-fade-in-up {
   animation: fadeInUp 0.8s ease-out forwards;
 }
