@@ -296,12 +296,6 @@ function HeroSection({ onStartClick }: { onStartClick: () => void }) {
                             <span>Start Writing</span>
                             <ArrowRight size={24} />
                         </motion.button>
-                        <motion.p 
-                           style={{ transform: "translateZ(30px)" }}
-                           className="mt-6 text-sm font-bold text-neutral-400 uppercase tracking-widest"
-                        >
-                            No Sign Up Required
-                        </motion.p>
                     </motion.div>
                 </div>
             </motion.div>
