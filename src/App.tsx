@@ -11,7 +11,7 @@ const LandingPage = lazy(() => import('./pages/LandingPage'));
 
 // Loading Fallback
 const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6]">
+  <div className="min-h-screen flex items-center justify-center bg-paper">
     <div className="w-8 h-8 border-4 border-neutral-900 border-t-transparent rounded-full animate-spin"></div>
   </div>
 );
