@@ -351,11 +351,11 @@ export default function EditorPage() {
         setProgress(0);
         
         try {
-            const elements = document.querySelectorAll('.inkpad-export-target');
+            const elements = document.querySelectorAll('.handwritten-export-target');
             if (elements.length === 0) throw new Error('No pages found');
 
             const timestamp = Date.now();
-            const baseFileName = `inkpad-${timestamp}`;
+            const baseFileName = `handwritten-${timestamp}`;
 
             if (format === 'pdf') {
                 const pdf = new jsPDF({
@@ -366,10 +366,10 @@ export default function EditorPage() {
                 });
 
                 pdf.setProperties({
-                    title: `InkPad - ${headerText || 'Handwritten Document'}`,
-                    subject: 'Handwritten Document created with InkPad',
-                    author: 'InkPad Rendering Engine',
-                    creator: 'InkPad'
+                    title: `Handwritten - ${headerText || 'Handwritten Document'}`,
+                    subject: 'Handwritten Document created with Handwritten',
+                    author: 'Handwritten Rendering Engine',
+                    creator: 'Handwritten'
                 });
 
                 for (let i = 0; i < elements.length; i++) {
@@ -425,10 +425,7 @@ export default function EditorPage() {
     };
 
     return (
-        <div className="flex-1 bg-[#F9FAFB] relative overflow-hidden flex items-center justify-center p-4 md:p-12 selection:bg-indigo-500/30 font-sans">
-            {/* WORKSPACE BACKGROUND */}
-            <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[24px_24px] pointer-events-none" />
-            
+        <div className="relative selection:bg-indigo-500/30 font-sans">
             {/* MAIN WINDOW CONTAINER */}
             <div className="w-full max-w-[1600px] h-[85vh] bg-white rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.12)] border border-black/5 flex overflow-hidden relative z-10 transition-all">
                 
@@ -635,11 +632,11 @@ export default function EditorPage() {
                                 key={pIdx} 
                                 initial={{opacity:0, y: 20, rotate: 0}} 
                                 animate={{opacity:1, y: 0, rotate: 0}} 
-                                className={`inkpad-page-render relative w-full max-w-[800px] aspect-[1/1.414] ${pIdx === 0 ? 'paper-stack' : 'shadow-2xl'} overflow-hidden shrink-0 transition-transform duration-700 ease-out ring-1 ring-black/5 rounded-0`} 
+                                className={`handwritten-page-render relative w-full max-w-[800px] aspect-[1/1.414] ${pIdx === 0 ? 'paper-stack' : 'shadow-2xl'} overflow-hidden shrink-0 transition-transform duration-700 ease-out ring-1 ring-black/5 rounded-0`} 
                                 style={{ transformOrigin: 'center center' }}
                              >
                                 {/* CLEAN EXPORT CONTAINER */}
-                                <div className={`inkpad-export-target w-full h-full relative ${paper.css}`} style={paper.style}>
+                                <div className={`handwritten-export-target w-full h-full relative ${paper.css}`} style={paper.style}>
                                     {/* MARGIN ANNOTATION */}
                                     {marginNote && pIdx === 0 && (
                                         <div 
