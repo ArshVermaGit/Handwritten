@@ -134,7 +134,7 @@ export const useStore = create<AppState>()(
             reset: () => set(() => initialState),
         }),
         {
-            name: 'inkpad-core-storage',
+            name: 'handwritten-core-storage',
             storage: {
                 getItem: (name) => {
                     const str = localStorage.getItem(name);
