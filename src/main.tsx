@@ -5,9 +5,9 @@ import './styles/index.css'
 import App from './App.tsx'
 
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'missing-client-id';
 
-if (!GOOGLE_CLIENT_ID) {
+if (GOOGLE_CLIENT_ID === 'missing-client-id') {
   console.warn('VITE_GOOGLE_CLIENT_ID is missing from .env file. Google Auth will not work.');
 }
 
