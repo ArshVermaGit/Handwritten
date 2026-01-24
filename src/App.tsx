@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import RootLayout from './components/RootLayout';
 import LandingPage from './pages/LandingPage';
-import EditorPage from './pages/EditorPage';
+
 import AboutPage from './pages/AboutPage';
 import { ToastProvider } from './components/ui/Toast';
 import PageTransition from './components/PageTransition';
@@ -15,7 +15,7 @@ function InnerApp() {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<RootLayout />}>
           <Route index element={<PageTransition><LandingPage /></PageTransition>} />
-          <Route path="editor" element={<PageTransition><EditorPage /></PageTransition>} />
+
           <Route path="about" element={<PageTransition><AboutPage /></PageTransition>} />
         </Route>
       </Routes>
