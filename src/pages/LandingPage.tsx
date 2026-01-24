@@ -3,11 +3,10 @@ import {
     PenTool, Download, Type, ArrowRight,
     Mail, Github, Linkedin, Twitter
 } from 'lucide-react';
-import React, { useRef, useEffect, Suspense, lazy } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useStore } from '../lib/store';
+import EditorPage from './EditorPage';
 import photo from '../assets/arsh.jpg';
-
-const EditorPage = lazy(() => import('./EditorPage'));
 
 export default function LandingPage() {
     const editorRef = useRef<HTMLDivElement>(null);
@@ -45,16 +44,7 @@ export default function LandingPage() {
                         viewport={{ once: false, amount: 0.2 }}
                         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                      >
-                        <Suspense fallback={
-                            <div className="w-full h-[85vh] bg-white/50 backdrop-blur-sm rounded-[2.5rem] flex items-center justify-center border border-black/5">
-                                <div className="flex flex-col items-center gap-4">
-                                    <div className="w-10 h-10 border-4 border-neutral-900 border-t-transparent rounded-full animate-spin"></div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Loading Workspace...</span>
-                                </div>
-                            </div>
-                        }>
-                            <EditorPage />
-                        </Suspense>
+                        <EditorPage />
                      </motion.div>
                 </div>
             </section>
