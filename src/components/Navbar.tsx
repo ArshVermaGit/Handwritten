@@ -3,16 +3,19 @@ import { motion } from 'framer-motion';
 import logo from '../assets/logo.png';
 import UserMenu from './UserMenu';
 import { useAuth } from '../context/AuthContext';
+import { useStore } from '../lib/store';
 import AuthModal from './AuthModal';
 
 export default function Navbar() {
     const { user, setAuthModalOpen } = useAuth();
+    const { isNavbarVisible } = useStore();
 
     return (
         <>
             <motion.nav
                 initial={{ y: -100 }}
-                animate={{ y: 0 }}
+                animate={{ y: isNavbarVisible ? 0 : -150 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
                 className="fixed top-6 left-0 right-0 z-50 px-6 flex justify-center pointer-events-none"
             >
                 <div className="w-full max-w-2xl bg-white/40 backdrop-blur-2xl border border-white/40 shadow-[0_4px_24px_rgba(0,0,0,0.04)] rounded-4xl px-6 py-3 flex justify-between items-center pointer-events-auto">
