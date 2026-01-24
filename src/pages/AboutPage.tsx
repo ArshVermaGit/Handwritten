@@ -1,5 +1,5 @@
 import { motion, useMotionValue, useTransform } from 'framer-motion';
-import { Mail, Github, Linkedin, Twitter, ArrowRight, Sparkles } from 'lucide-react';
+import { Mail, Github, Linkedin, Twitter, ArrowRight } from 'lucide-react';
 import photo from '../assets/arsh.jpg';
 import React from 'react';
 
@@ -37,30 +37,10 @@ function AboutHero() {
     return (
         <section 
             onMouseMove={handleMouseMove}
-            className="relative min-h-[110vh] flex flex-col items-center justify-center pt-32 pb-20 px-4 perspective-1000 overflow-hidden"
+            className="relative min-h-screen flex flex-col items-center justify-center pt-10 pb-20 px-4 perspective-1000 overflow-hidden"
         >
-             <div className="relative z-10 text-center max-w-5xl mx-auto mb-20">
-                <div className="animate-fade-in-up">
-                    <div className="flex items-center justify-center gap-2 mb-8">
-                        <span className="px-3 py-1 rounded-full bg-white border border-black/5 shadow-sm text-[10px] font-black uppercase tracking-widest text-ink/40 flex items-center gap-2">
-                             <Sparkles size={12} className="text-accent" /> THE CREATOR
-                        </span>
-                    </div>
-
-                    <h1 className="text-7xl md:text-9xl font-display font-bold text-ink tracking-tighter leading-[0.85] mb-8">
-                        Hello, <br className="hidden md:block"/>
-                        <span className="relative inline-block">
-                             <span className="relative z-10 italic font-serif text-transparent bg-clip-text bg-linear-to-r from-ink to-ink/70">I'm Arsh.</span>
-                             <svg className="absolute w-[110%] h-[20%] -bottom-2 -left-[5%] text-accent opacity-60 z-0" viewBox="0 0 100 10" preserveAspectRatio="none">
-                                <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="4" fill="none" />
-                             </svg>
-                        </span>
-                    </h1>
-
-                    <p className="text-xl md:text-2xl text-ink/50 max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
-                        Crafting digital experiences with soul. From messy ideas to polished pixels.
-                    </p>
-                </div>
+             <div className="relative z-10 text-center max-w-5xl mx-auto mb-10">
+                 {/* Header removed as requested */}
             </div>
 
             {/* 3D Content Container - Matching Landing Page Structure */}
@@ -135,7 +115,7 @@ function AboutHero() {
                                         href="https://www.arshcreates.com"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="group inline-flex items-center gap-3 px-8 py-4 bg-ink text-white rounded-full font-bold hover:shadow-xl hover:shadow-ink/20 transition-all"
+                                        className="group inline-flex items-center gap-3 px-8 py-4 bg-neutral-900 text-white rounded-full font-bold hover:shadow-xl hover:shadow-neutral-900/20 transition-all"
                                     >
                                         View Portfolio <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                     </a>
@@ -150,7 +130,7 @@ function AboutHero() {
     );    
 }
 
-function SocialLink({ href, icon: Icon }: { href: string, icon: any }) {
+function SocialLink({ href, icon: Icon }: { href: string, icon: React.ElementType }) {
     return (
         <a 
             href={href} 
