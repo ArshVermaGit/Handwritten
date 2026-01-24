@@ -54,7 +54,10 @@ export default function AuthModal() {
                                 Sign in to save your documents, custom fonts, and preferences across devices.
                             </p>
 
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 17 }}
                                 onClick={() => login()}
                                 className="w-full py-3 px-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all flex items-center justify-center gap-3 group relative overflow-hidden shadow-sm"
                             >
@@ -67,7 +70,7 @@ export default function AuthModal() {
                                 
                                 {/* Hover Effect */}
                                 <div className="absolute inset-0 bg-ink/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </button>
+                            </motion.button>
 
                             <div className="mt-8 pt-6 border-t border-gray-100 w-full">
                                 <div className="flex items-center justify-center gap-2 text-[10px] text-ink/40 font-bold uppercase tracking-widest">
