@@ -341,19 +341,19 @@ export default function EditorPage() {
             const err = e as { message?: string; status?: number };
             console.error('Humanize Full Error Object:', err);
             
-            let errorMsg = 'AI Error';
+            let displayMsg = 'AI Error';
             const message = err.message || 'Unknown network error';
             
-            if (message.includes('429')) errorMsg = 'Rate Limit Reached (Free Tier)';
-            else if (message.includes('SAFETY')) errorMsg = 'Content Filtered';
-            else if (message.includes('API key')) errorMsg = 'Invalid API Key';
+            if (message.includes('429')) displayMsg = 'Rate Limit Reached (Free Tier)';
+            else if (message.includes('SAFETY')) displayMsg = 'Content Filtered';
+            else if (message.includes('API key')) displayMsg = 'Invalid API Key';
             else if (message.toLowerCase().includes('fetch') || message.toLowerCase().includes('network')) {
-                errorMsg = 'Connection Blocked - Check Ad-blockers or Region';
+                displayMsg = `Network Blocked: ${message.substring(0, 40)}`;
             } else {
-                errorMsg = message.length > 50 ? message.substring(0, 50) + '...' : message;
+                displayMsg = message.length > 60 ? message.substring(0, 60) + '...' : message;
             }
             
-            addToast(errorMsg, 'error');
+            addToast(displayMsg, 'error');
         } finally {
             setIsHumanizing(false);
         }
