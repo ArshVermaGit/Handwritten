@@ -20,6 +20,7 @@ interface AuthContextType {
     logout: () => void;
     isAuthModalOpen: boolean;
     setAuthModalOpen: (open: boolean) => void;
+    isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,14 +31,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return storedUser ? JSON.parse(storedUser) : null;
     });
     const [isAuthModalOpen, setAuthModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
-    // Show modal on first entry if not logged in
     // Show modal on first entry if not logged in
     useEffect(() => {
         if (!user) {
             const timer = setTimeout(() => {
                 setAuthModalOpen(true);
-            }, 1500); // Small delay for better UX
+            }, 1500);
             return () => clearTimeout(timer);
         }
     }, [user, setAuthModalOpen]);
@@ -46,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const login = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
+            setIsLoading(true);
             try {
                 // Fetch user info using the access token
                 const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
@@ -60,11 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             } catch (error) {
                 console.error('Login Failed', error);
                 addToast('Failed to sign in. Please try again.', 'error');
+            } finally {
+                setIsLoading(false);
             }
         },
         onError: (error) => {
             console.log('Login Failed:', error);
             addToast('Login failed or was cancelled.', 'error');
+            setIsLoading(false);
         }
     });
 
@@ -82,7 +87,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             login, 
             logout,
             isAuthModalOpen,
-            setAuthModalOpen
+            setAuthModalOpen,
+            isLoading
         }}>
             {children}
         </AuthContext.Provider>
