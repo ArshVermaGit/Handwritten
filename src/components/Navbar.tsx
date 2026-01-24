@@ -33,7 +33,7 @@ export default function Navbar() {
                 className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
                     isScrolled 
                         ? 'py-4' 
-                        : 'py-6'
+                        : 'py-4'
                 }`}
             >
                 <div className={`max-w-7xl mx-auto px-6 md:px-12 transition-all duration-500 ${
