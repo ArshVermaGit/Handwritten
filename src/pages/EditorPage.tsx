@@ -12,6 +12,7 @@ import JSZip from 'jszip';
 import { useStore } from '../lib/store';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
+import { saveExportedFile } from '../lib/fileStorage';
 import HistoryModal from '../components/HistoryModal';
 import ExportModal from '../components/ExportModal';
 
@@ -443,6 +444,9 @@ export default function EditorPage() {
                     setProgress(Math.round(((i + 1) / elements.length) * 100));
                 }
                 pdf.save(`${baseFileName}.pdf`);
+                // Save to local history
+                const pdfBlob = pdf.output('blob');
+                await saveExportedFile(pdfBlob, `${baseFileName}.pdf`, 'pdf');
             } else {
                 const zip = new JSZip();
                 for (let i = 0; i < elements.length; i++) {
@@ -465,6 +469,8 @@ export default function EditorPage() {
                 link.href = URL.createObjectURL(content);
                 link.download = `${baseFileName}.zip`;
                 link.click();
+                // Save to local history
+                await saveExportedFile(content, `${baseFileName}.zip`, 'zip');
             }
 
             setExportStatus('complete');
