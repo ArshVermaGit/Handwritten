@@ -18,13 +18,6 @@
   --font-serif: 'Merriweather', serif;
 }
 
-/* 
-   We define the variables again in :root for backward compatibility 
-   if the code accesses them directly, though @theme handles utilities.
-   However, our tailwind.config.js (if used) maps to var(--color-ink).
-   In v4, @theme can replace tailwind.config.js. 
-   To be safe and ensure 'bg-ink' works whether via config or theme:
-*/
 :root {
   --color-paper: #FAF9F6;
   --color-paper-dark: #F2F0E9;
@@ -46,6 +39,12 @@
   .paper-card {
     @apply bg-white rounded-2xl shadow-xl shadow-ink/5 border border-black/5 p-6;
   }
+  
+  /* Smooth Marquee Animation */
+  .animate-marquee {
+    animation: marquee 30s linear infinite;
+    will-change: transform;
+  }
 }
 
 body {
@@ -57,7 +56,6 @@ h1, h2, h3, h4, h5, h6 {
   @apply font-display tracking-tight text-ink;
 }
 
-/* Animations */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -67,6 +65,11 @@ h1, h2, h3, h4, h5, h6 {
     opacity: 1;
     transform: translate3d(0, 0, 0);
   }
+}
+
+@keyframes marquee {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
 }
 
 .animate-fade-in-up {
