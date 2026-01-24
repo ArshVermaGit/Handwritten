@@ -10,8 +10,8 @@ export default function Footer() {
                     {/* Brand Column */}
                     <div className="md:col-span-12 lg:col-span-5">
                         <Link to="/" className="flex items-center gap-3 mb-6 group">
-                             <img src={logo} alt="InkPad" className="w-10 h-10 object-contain group-hover:rotate-12 transition-transform duration-500" />
-                             <span className="font-display font-bold text-2xl tracking-tight text-neutral-900">InkPad.</span>
+                             <img src={logo} alt="Handwritten" className="w-10 h-10 object-contain group-hover:rotate-12 transition-transform duration-500" />
+                             <span className="font-display font-bold text-2xl tracking-tight text-neutral-900">Handwritten.</span>
                         </Link>
                         <p className="text-neutral-500 leading-relaxed max-w-sm text-sm font-medium">
                             A digital sanctuary for your thoughts. We blend the nostalgia of analog writing with the power of modern technology.
@@ -23,8 +23,7 @@ export default function Footer() {
                         <h4 className="font-black text-xs uppercase tracking-[0.2em] text-neutral-400 mb-6">Product</h4>
                         <ul className="space-y-3">
                             <li><Link to="/" className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold">Home</Link></li>
-                            <li><Link to="/editor" className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold">Editor</Link></li>
-                            <li><Link to="/about" className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold">About</Link></li>
+                            <li><a href="#about" onClick={(e) => { e.preventDefault(); document.querySelector('#about')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold">About</a></li>
                         </ul>
                     </div>
 
@@ -41,7 +40,7 @@ export default function Footer() {
                 {/* Bottom Bar */}
                 <div className="border-t border-black/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
                     <p className="text-xs text-neutral-400 font-bold">
-                        &copy; {new Date().getFullYear()} InkPad Inc. All rights reserved.
+                        &copy; {new Date().getFullYear()} Handwritten Inc. All rights reserved.
                     </p>
                     <p className="text-xs text-neutral-400 font-bold flex items-center gap-2">
                         Built with <Heart size={12} className="text-rose-500 fill-current" /> by <a href="https://www.arshcreates.com" className="text-neutral-900 hover:underline underline-offset-4">Arsh Verma</a>
