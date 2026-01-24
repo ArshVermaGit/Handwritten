@@ -26,7 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(() => {
-        const storedUser = localStorage.getItem('inkpad_user');
+        const storedUser = localStorage.getItem('handwritten_user');
         return storedUser ? JSON.parse(storedUser) : null;
     });
     const [isAuthModalOpen, setAuthModalOpen] = useState(false);
@@ -34,12 +34,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Show modal on first entry if not logged in
     // Show modal on first entry if not logged in
     useEffect(() => {
-        const hasSeenWelcome = localStorage.getItem('inkpad_welcome_seen');
+        const hasSeenWelcome = localStorage.getItem('handwritten_welcome_seen');
         if (!user && !hasSeenWelcome) {
             // Push to next tick to avoid synchronous state update warning
             const timer = setTimeout(() => {
                 setAuthModalOpen(true);
-                localStorage.setItem('inkpad_welcome_seen', 'true');
+                localStorage.setItem('handwritten_welcome_seen', 'true');
             }, 100);
             return () => clearTimeout(timer);
         }
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const userInfo = await userInfoResponse.json();
                 
                 setUser(userInfo);
-                localStorage.setItem('inkpad_user', JSON.stringify(userInfo));
+                localStorage.setItem('handwritten_user', JSON.stringify(userInfo));
                 setAuthModalOpen(false);
                 addToast(`Welcome back, ${userInfo.given_name}!`, 'success');
             } catch (error) {
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const logout = () => {
         googleLogout();
         setUser(null);
-        localStorage.removeItem('inkpad_user');
+        localStorage.removeItem('handwritten_user');
         addToast('Successfully signed out.', 'info');
     };
 
