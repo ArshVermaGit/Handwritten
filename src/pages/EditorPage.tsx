@@ -305,11 +305,13 @@ export default function EditorPage() {
         // Debug: Check if key is even loaded
         console.log('Gemini API Key loaded:', googleKey ? 'Yes (starting with ' + googleKey.substring(0, 8) + '...)' : 'No');
 
-        // Strategy: Model Fallback Waterfall
+        // Strategy: Intensive Model Fallback Waterfall
         const modelsToTry = [
             "gemini-1.5-flash", 
+            "gemini-1.5-flash-latest",
+            "gemini-1.5-flash-8b", 
             "gemini-1.5-pro", 
-            "gemini-2.0-flash-exp", 
+            "gemini-1.5-pro-latest",
             "gemini-pro"
         ];
         let lastError: Error | null = null;
@@ -320,7 +322,7 @@ export default function EditorPage() {
                 model: modelName,
                 generationConfig: {
                     temperature: 0.9,
-                    maxOutputTokens: 2048, // Reduced for stability
+                    maxOutputTokens: 2048,
                 },
                 safetySettings: [
                     { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -351,11 +353,9 @@ export default function EditorPage() {
                     const err = e as Error;
                     console.warn(`Model ${modelName} fail:`, err.message);
                     lastError = err;
-                    // If it's a key/auth error, we shouldn't keep trying other models
-                    if (err.message.includes('API_KEY_INVALID') || err.message.includes('403')) {
-                        break;
-                    }
-                    continue; 
+                    // If it's a key/auth error, stop immediately
+                    if (err.message.includes('API_KEY_INVALID') || err.message.includes('403')) break;
+                    // If it's a model not found (404), try the next one in the list
                 }
             }
 
@@ -371,10 +371,15 @@ export default function EditorPage() {
             const err = e as { message?: string };
             const msg = err.message || '';
             
-            if (msg.includes('429')) addToast('Rate limit. Wait 1 min.', 'warning');
-            else if (msg.includes('403') || msg.includes('API key')) addToast('Invalid Key. check your .env', 'error');
-            else if (msg.includes('404')) addToast('Model 404. Key may be restricted.', 'error');
-            else addToast('AI unavailable. Check connection.', 'error');
+            if (msg.includes('429')) {
+                addToast('Rate limit. Please wait 1 minute.', 'warning');
+            } else if (msg.includes('403') || msg.includes('API key')) {
+                addToast('Invalid API Key. Use Google AI Studio, not GCP.', 'error');
+            } else if (msg.includes('404')) {
+                addToast('Key is working, but models are restricted in your region.', 'error');
+            } else {
+                addToast('AI unavailable. Check connection or key settings.', 'error');
+            }
         } finally {
             setIsHumanizing(false);
         }
