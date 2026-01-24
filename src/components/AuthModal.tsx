@@ -27,7 +27,7 @@ export default function AuthModal() {
     return (
         <AnimatePresence>
             {isAuthModalOpen && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-ink/20 backdrop-blur-sm">
+                <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-ink/20 backdrop-blur-sm">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -46,7 +46,7 @@ export default function AuthModal() {
 
                         <div className="p-8 flex flex-col items-center text-center">
                             <div className="w-16 h-16 mb-4 bg-gray-50 rounded-2xl flex items-center justify-center shadow-sm">
-                                <img src={logo} alt="InkPad" className="w-10 h-10 object-contain" />
+                                <img src={logo} alt="Handwritten" className="w-10 h-10 object-contain" />
                             </div>
                             
                             <h2 className="text-2xl font-display font-bold text-ink mb-2">Welcome Back</h2>
