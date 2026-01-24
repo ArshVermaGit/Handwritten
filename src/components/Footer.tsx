@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 export default function Footer() {
     return (
-        <footer className="bg-[#FAF9F6] pt-16 pb-8 border-t border-black/5 relative overflow-hidden">
+        <footer className="bg-paper pt-16 pb-8 border-t border-black/5 relative overflow-hidden">
             <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-8 mb-16">
                     {/* Brand Column */}
