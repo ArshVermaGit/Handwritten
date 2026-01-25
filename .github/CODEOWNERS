@@ -1,0 +1,10 @@
+# Every change will require review from @ArshVermaGit
+* @ArshVermaGit
+
+# Docs updates
+/docs/ @ArshVermaGit
+*.md @ArshVermaGit
+
+# Core logic
+/src/lib/ @ArshVermaGit
+/src/pages/EditorPage.tsx @ArshVermaGit

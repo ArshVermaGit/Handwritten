@@ -24,12 +24,13 @@
 
 ## ⚡ Quick Navigation
 
-| Area            | Quick Links                                                                                                                                                                  |
-| :-------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Community**   | 🤝 [Contributing Guide](CONTRIBUTING.md) • 📜 [Code of Conduct](CODE_OF_CONDUCT.md) • 🛡️ [Security Policy](SECURITY.md)                                                      |
-| **Development** | 🏗️ [CI Pipeline](.github/workflows/ci.yml) • 🧪 [.env.example](.env.example) • 🖋️ [.editorconfig](.editorconfig)                                                             |
-| **Templates**   | 🐞 [Bug Report](.github/ISSUE_TEMPLATE/bug_report.md) • ✨ [Feature Request](.github/ISSUE_TEMPLATE/feature_request.md) • 🔄 [PR Template](.github/PULL_REQUEST_TEMPLATE.md) |
-| **Legal**       | ⚖️ [MIT License](LICENSE) • 🤖 [Sitemap](public/sitemap.xml) • 🏷️ [ads.txt](public/ads.txt)                                                                                  |
+| 📄 Community & Legal                        | ⚙️ Technical Assets                                | 🛠️ Issue Templates                                              |
+| :------------------------------------------ | :------------------------------------------------- | :-------------------------------------------------------------- |
+| 🤝 [Contribution Guide](CONTRIBUTING.md)    | 🧪 [.env.example](.env.example)                    | 🐞 [Bug Report](.github/ISSUE_TEMPLATE/bug_report.md)           |
+| 🛡️ [Security Policy](SECURITY.md)           | 🏗️ [CI Pipeline](.github/workflows/ci.yml)         | ✨ [Feature Request](.github/ISSUE_TEMPLATE/feature_request.md) |
+| 💰 [Support & Funding](.github/FUNDING.yml) | 🛡️ [CodeQL Analysis](.github/workflows/codeql.yml) | ❓ [Ask a Question](.github/ISSUE_TEMPLATE/question.md)         |
+| 📜 [Code of Conduct](CODE_OF_CONDUCT.md)    | 🤖 [Sitemap XML](public/sitemap.xml)               | 🔄 [PR Template](.github/PULL_REQUEST_TEMPLATE.md)              |
+| ⚖️ [MIT License](LICENSE)                   | 🏷️ [ads.txt](public/ads.txt)                       | 🖋️ [Editor Config](.editorconfig)                               |
 
 ---
 
