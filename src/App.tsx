@@ -1,10 +1,8 @@
 import { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import RootLayout from './components/RootLayout';
 import { ToastProvider } from './components/ui/Toast';
 import { AuthProvider } from './context/AuthContext';
-import PageTransition from './components/PageTransition';
 
 // Lazy Load Pages
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -17,18 +15,14 @@ const PageLoader = () => (
 );
 
 function InnerApp() {
-  const location = useLocation();
-
   return (
-    <AnimatePresence mode="wait">
-      <Suspense fallback={<PageLoader />}>
-        <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<RootLayout />}>
-            <Route index element={<PageTransition><LandingPage /></PageTransition>} />
-          </Route>
-        </Routes>
-      </Suspense>
-    </AnimatePresence>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/" element={<RootLayout />}>
+          <Route index element={<LandingPage />} />
+        </Route>
+      </Routes>
+    </Suspense>
   );
 }
 
