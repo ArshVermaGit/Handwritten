@@ -505,7 +505,14 @@ export default function EditorPage() {
                         scrollX: 0,
                         scrollY: 0,
                         windowWidth: 800,
-                        windowHeight: 1131
+                        windowHeight: 1131,
+                        onclone: (clonedDoc) => {
+                            const clonedElement = clonedDoc.querySelector('.handwritten-export-target');
+                            if (clonedElement) {
+                                (clonedElement as HTMLElement).style.background = '#ffffff';
+                                (clonedElement as HTMLElement).style.transform = 'none';
+                            }
+                        }
                     });
                     
                     // Keep PNG for ZIP as users might want lossless images for editing
