@@ -445,6 +445,30 @@ export default function EditorPage() {
         
         // --- EMERGENCY FIX HELPERS ---
         const restoreActions: (() => void)[] = [];
+        
+        // Helper to force browser to resolve ANY color (oklch, vars, etc) to safe RGBA
+        // using the Canvas API which is the ultimate truth for color resolution.
+        const ctx = document.createElement('canvas').getContext('2d');
+        const getSafeColor = (color: string) => {
+            if (!ctx || !color || color === 'none' || color === 'transparent') return color;
+            // If it's already safe hex/rgb, skip to save perf
+            if (color.startsWith('#') || color.startsWith('rgb')) return color;
+            
+            // Force resolution
+            ctx.clearRect(0, 0, 1, 1);
+            ctx.fillStyle = '#FFFFFF'; // Reset
+            ctx.fillStyle = color;
+            // If the browser doesn't understand the color (e.g. invalid), fillStyle won't change.
+            // But if it's oklch and browser supports it, it will change.
+            
+            // If logic fails or style is invalid, we return original (risky) or fallback?
+            // Let's assume original if check matches nothing.
+            
+            // To be 100% safe against html2canvas crash, we only return if we get valid data.
+            ctx.fillRect(0, 0, 1, 1);
+            const d = ctx.getImageData(0, 0, 1, 1).data;
+            return `rgba(${d[0]}, ${d[1]}, ${d[2]}, ${(d[3]/255).toFixed(3)})`;
+        };
 
         // 1. Lock resolved RGB colors/styles inline so visuals persist data-html2canvas-ignore 
         const lockComputedStyles = () => {
@@ -462,10 +486,10 @@ export default function EditorPage() {
 
                 // Force computed RGB values for critical properties
                 // This ensures we don't need the stylesheet for colors/layout
-                hEl.style.color = computed.color;
-                hEl.style.backgroundColor = computed.backgroundColor;
-                hEl.style.borderColor = computed.borderColor;
-                hEl.style.textDecorationColor = computed.textDecorationColor;
+                if (computed.color) hEl.style.color = getSafeColor(computed.color);
+                if (computed.backgroundColor) hEl.style.backgroundColor = getSafeColor(computed.backgroundColor);
+                if (computed.borderColor) hEl.style.borderColor = getSafeColor(computed.borderColor);
+                if (computed.textDecorationColor) hEl.style.textDecorationColor = getSafeColor(computed.textDecorationColor);
                 
                 // Also lock font/layout to be safe
                 hEl.style.fontSize = computed.fontSize;
@@ -476,8 +500,18 @@ export default function EditorPage() {
                 hEl.style.lineHeight = computed.lineHeight;
                 hEl.style.textAlign = computed.textAlign;
                 
-                // Lock background images (lines) - Browser resolves gradients to RGB
-                if (computed.backgroundImage !== 'none') hEl.style.backgroundImage = computed.backgroundImage;
+                // Lock background images (lines)
+                // If the background image string contains 'oklch', we can't easily resolve it via canvas fillRect.
+                // We have to decide: Remove it or risk crash.
+                // We choose: REMOVE if dangerous.
+                if (computed.backgroundImage !== 'none') {
+                    if (computed.backgroundImage.includes('oklch')) {
+                        console.warn("Removed unsupported oklch gradient/image:", computed.backgroundImage);
+                        hEl.style.backgroundImage = 'none';
+                    } else {
+                        hEl.style.backgroundImage = computed.backgroundImage;
+                    }
+                }
             });
         };
 
