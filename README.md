@@ -1,106 +1,88 @@
-# 🖋️ Handwritten: The Infinity Edition
+# 🖋️ Handwritten
 
-<div align="center">
-  <img src="public/favicon.png" alt="Handwritten Logo" width="120" />
-  <p align="center">
-    <strong>The world's most sophisticated digital-to-analog handwriting simulation engine.</strong>
-  </p>
-  
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-  [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-  [![Security Policy](https://img.shields.io/badge/Security-Policy-blue.svg)](SECURITY.md)
-  [![CI Build](https://github.com/ArshVermaGit/Handwritten/actions/workflows/ci.yml/badge.svg)](https://github.com/ArshVermaGit/Handwritten/actions)
-</div>
+**Transform digital text into organic, human-like handwriting.**
+
+Handwritten is a high-performance web application that leverages procedural rendering and AI to convert typed text into realistic handwriting. It is designed to be privacy-focused, scalable, and easy to contribute to.
 
 ---
 
-## 🚀 Vision
+## ⚡ Quick Navigation (Project Assets)
 
-**Handwritten** is not just a font switcher. It is a premium, high-fidelity workspace designed to bring the **soul of analog writing** into the digital age. Built with the **Infinity Design System**, it combines high-performance procedural rendering with generative AI to create documents that are indistinguishable from real ink on paper.
-
----
-
-## ⚡ Quick Navigation (Jump to Page)
-
-| 📄 Community & Legal                     | ⚙️ Technical Assets                        | 🛠️ Issue Templates                                              |
-| :--------------------------------------- | :----------------------------------------- | :-------------------------------------------------------------- |
-| 🤝 [Contribution Guide](CONTRIBUTING.md) | 🧪 [.env.example](.env.example)            | 🐞 [Bug Report](.github/ISSUE_TEMPLATE/bug_report.md)           |
-| ⚖️ [License (MIT)](LICENSE)              | 🏗️ [CI Pipeline](.github/workflows/ci.yml) | ✨ [Feature Request](.github/ISSUE_TEMPLATE/feature_request.md) |
-| 🛡️ [Security Policy](SECURITY.md)        | 🤖 [Sitemap XML](public/sitemap.xml)       | 🔄 [PR Template](.github/PULL_REQUEST_TEMPLATE.md)              |
-| 🤝 [Code of Conduct](CODE_OF_CONDUCT.md) | 🏷️ [ads.txt](public/ads.txt)               | 🖋️ [Editor Config](.editorconfig)                               |
+| Category      | Files                                                                                                                                                                        |
+| :------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Community** | 🤝 [Contributing Guide](CONTRIBUTING.md) • 📜 [Code of Conduct](CODE_OF_CONDUCT.md) • 🛡️ [Security Policy](SECURITY.md)                                                      |
+| **Dev Ops**   | 🏗️ [CI Pipeline](.github/workflows/ci.yml) • 🧪 [.env.example](.env.example) • 🖋️ [.editorconfig](.editorconfig)                                                             |
+| **Templates** | 🐞 [Bug Report](.github/ISSUE_TEMPLATE/bug_report.md) • ✨ [Feature Request](.github/ISSUE_TEMPLATE/feature_request.md) • 🔄 [PR Template](.github/PULL_REQUEST_TEMPLATE.md) |
+| **Legal**     | ⚖️ [MIT License](LICENSE) • 🤖 [Sitemap](public/sitemap.xml) • 🏷️ [ads.txt](public/ads.txt)                                                                                  |
 
 ---
 
-## ✨ Key Features
+## 🚀 Technical Overview
 
-### 🎨 The Infinity Rendering Engine
+### 🎨 Rendering Engine
 
-- **Organic Simulation**: Procedurally injects unique **Jitter**, **Pressure**, and **Smudge** variances so no two letters look identical.
-- **Dynamic Paper Physics**: Real-time rendering of lined, grid, and plain paper with variable ink-bleed simulation.
-- **Pixel-Perfect Export**: High-DPI PDF generation ensuring every micro-detail is preserved for printing.
+Unlike a simple font-replacer, Handwritten uses a **procedural simulation** to make text look real:
 
-### 🤖 AI-Humanized Prose
+- **Deterministic Randomness**: Uses a seed-based hash to ensure that jitter and pressure remain consistent for the same text across sessions.
+- **Organic Jitter**: Dynamically offsets characters slightly to mimic the natural micro-movements of a human hand.
+- **Variable Pressure**: Simulates ink flow changes based on writing speed and character complexity.
+- **Multipage Flow**: Automatically handles pagination, margins, and paper types (Plain vs Lined) in real-time.
 
-- **GPT-4o Integration**: Transform robotic, structured text into natural, flowing human prose with a single click.
-- **Contextual Stylization**: Automatically induces "human-like" imperfections in text structure.
+### 🤖 AI Humanizer
 
-### 🔒 Privacy-First Architecture
+Integrated with **OpenRouter (GPT-4o-mini)**, the Humanizer doesn't just rewrite text; it injects natural phrasing, fillers, and "human" errors to make the converted output indistinguishable from a handwritten note.
 
-- **Local-First Processing**: 100% of your document rendering happens in the browser. We don't store your words.
-- **Encrypted Local Vault**: Exported history is saved directly to your device's `indexedDB`.
+### 🔒 Privacy & Architecture
 
----
-
-## 🛠️ Technology Stack
-
-- **Framework**: React 18 + Vite (Ultra-fast build cycles)
-- **State**: Zustand + Persist Middleware (Persistent preferences)
-- **Styling**: TailwindCSS + Glassmorphism UI
-- **Animations**: Framer Motion (Fluid transitions)
-- **Export**: html2canvas + jsPDF (The "Bulletproof" pipeline)
+- **Client-Side Rendering**: 100% of the document processing happens in your browser. No document data is ever stored on a server.
+- **State Management**: Built with **Zustand** for lightweight, high-speed state synchronization across the editor and previews.
+- **Storage**: Uses `indexedDB` (via `lz-string` compression) to store a local history of your exports directly on your device.
 
 ---
 
 ## 🏗️ Getting Started
 
-Follow these steps to set up the workshop on your local machine:
-
-1. **Clone the repository**
+1. **Clone & Install**
 
     ```bash
     git clone https://github.com/ArshVermaGit/Handwritten.git
-    ```
-
-2. **Install dependencies**
-
-    ```bash
+    cd Handwritten
     npm install
     ```
 
-3. **Configure Environment**
+2. **Environment Setup**
+   Copy `.env.example` to `.env` and add your [OpenRouter](https://openrouter.ai/) API key.
 
-    ```bash
-    cp .env.example .env
-    # Add your OpenRouter API Key for AI features
-    ```
-
-4. **Launch Development Workshop**
+3. **Develop**
     ```bash
     npm run dev
     ```
 
 ---
 
-## 🤝 Community & Support
+## 📄 Project Structure
 
-We are officially **Open for Contributions!** Whether it's a new font, a layout refinement, or a bug fix, we'd love to have you.
-
-- **Developer**: [Arsh Verma](https://www.linkedin.com/in/arshvermadev/)
-- **Contact**: [arshverma.dev@gmail.com](mailto:arshverma.dev@gmail.com)
-- **Twitter / X**: [@TheArshVerma](https://x.com/TheArshVerma)
+- `src/components`: UI components (Glassmorphism design, Modals, Forms).
+- `src/lib/store.ts`: The central nervous system (Zustand state).
+- `src/pages/EditorPage.tsx`: The core rendering pipeline and simulation logic.
+- `src/pages/legal/`: AdSense-compliant mandatory pages.
+- `src/utils/`: Helper functions for PDF export, sharing, and formatting.
 
 ---
 
-## 📜 Credits & License
+## 🤝 Community & Support
 
-Handwritten is open-source software licensed under the **[MIT License](LICENSE)**. Created with ❤️ by Arsh Verma.
+We welcome contributors! Check our [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
+
+- **Developer**: [Arsh Verma](https://www.linkedin.com/in/arshvermadev/)
+- **GitHub**: [ArshVermaGit](https://github.com/ArshVermaGit)
+- **LinkedIn**: [Arsh Verma](https://www.linkedin.com/in/arshvermadev/)
+- **Twitter / X**: [@TheArshVerma](https://x.com/TheArshVerma)
+- **Website**: [handwritten-git.vercel.app](https://handwritten-git.vercel.app)
+- **Email**: [arshverma.dev@gmail.com](mailto:arshverma.dev@gmail.com)
+
+---
+
+## 📜 License
+
+Licensed under the **MIT License**. Created with ❤️ by Arsh Verma.
