@@ -216,6 +216,43 @@ function HeroSection() {
     const contentRotateX = useTransform(mouseY, [-0.5, 0.5], [8, -8]);
     const contentRotateY = useTransform(mouseX, [-0.5, 0.5], [-8, 8]);
 
+    // Floating elements data - positioned to avoid text overlap on all screen sizes
+    const floatingElements = [
+        // TOP LEFT CORNER - Large prominent elements
+        { icon: '✒️', x: 'left-[3%] md:left-[5%]', y: 'top-[12%]', size: 'text-4xl sm:text-5xl md:text-6xl lg:text-7xl', delay: 0, duration: 6, hideOnMobile: true },
+        { icon: '📝', x: 'left-[2%] md:left-[3%]', y: 'top-[30%] md:top-[35%]', size: 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl', delay: 1.2, duration: 7, hideOnMobile: true },
+        { icon: '✨', x: 'left-[12%] md:left-[15%]', y: 'top-[8%] md:top-[10%]', size: 'text-3xl sm:text-4xl md:text-5xl', delay: 2, duration: 5, hideOnMobile: true },
+        
+        // TOP RIGHT CORNER - Large prominent elements
+        { icon: '🖋️', x: 'right-[3%] md:right-[5%]', y: 'top-[10%]', size: 'text-4xl sm:text-5xl md:text-6xl lg:text-7xl', delay: 0.5, duration: 5.5, hideOnMobile: true },
+        { icon: '💫', x: 'right-[2%] md:right-[3%]', y: 'top-[28%] md:top-[32%]', size: 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl', delay: 1.8, duration: 8, hideOnMobile: true },
+        { icon: '🌟', x: 'right-[14%] md:right-[16%]', y: 'top-[6%] md:top-[8%]', size: 'text-2xl sm:text-3xl md:text-4xl', delay: 3, duration: 6, hideOnMobile: true },
+        
+        // LEFT SIDE - Middle area
+        { icon: '📄', x: 'left-[1%] md:left-[2%]', y: 'top-[50%]', size: 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl', delay: 1.5, duration: 6.5, hideOnMobile: true },
+        { icon: '🎯', x: 'left-[8%] md:left-[10%]', y: 'top-[60%] md:top-[58%]', size: 'text-2xl sm:text-3xl md:text-4xl', delay: 2.5, duration: 7, hideOnMobile: true, hideOnTablet: true },
+        
+        // RIGHT SIDE - Middle area
+        { icon: '📖', x: 'right-[1%] md:right-[2%]', y: 'top-[48%]', size: 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl', delay: 2.2, duration: 7, hideOnMobile: true },
+        { icon: '🎨', x: 'right-[8%] md:right-[10%]', y: 'top-[62%] md:top-[60%]', size: 'text-2xl sm:text-3xl md:text-4xl', delay: 0.8, duration: 6, hideOnMobile: true, hideOnTablet: true },
+        
+        // BOTTOM LEFT CORNER - Large prominent elements
+        { icon: '🖊️', x: 'left-[3%] md:left-[5%]', y: 'bottom-[8%] md:bottom-[10%]', size: 'text-4xl sm:text-5xl md:text-6xl lg:text-7xl', delay: 1, duration: 6, hideOnMobile: false },
+        { icon: '✏️', x: 'left-[2%] md:left-[3%]', y: 'bottom-[22%] md:bottom-[28%]', size: 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl', delay: 2.8, duration: 7.5, hideOnMobile: true },
+        { icon: '⭐', x: 'left-[14%] md:left-[16%]', y: 'bottom-[5%] md:bottom-[6%]', size: 'text-2xl sm:text-3xl md:text-4xl', delay: 0.5, duration: 5.5, hideOnMobile: true },
+        
+        // BOTTOM RIGHT CORNER - Large prominent elements
+        { icon: '🎭', x: 'right-[3%] md:right-[5%]', y: 'bottom-[8%] md:bottom-[10%]', size: 'text-4xl sm:text-5xl md:text-6xl lg:text-7xl', delay: 2, duration: 5.5, hideOnMobile: false },
+        { icon: '💡', x: 'right-[2%] md:right-[3%]', y: 'bottom-[24%] md:bottom-[30%]', size: 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl', delay: 1.5, duration: 6.5, hideOnMobile: true },
+        { icon: '🔮', x: 'right-[14%] md:right-[16%]', y: 'bottom-[4%] md:bottom-[5%]', size: 'text-2xl sm:text-3xl md:text-4xl', delay: 3.5, duration: 7, hideOnMobile: true },
+        
+        // Extra decorative sparkles - positioned in gaps
+        { icon: '·', x: 'left-[20%]', y: 'top-[18%]', size: 'text-6xl md:text-7xl text-indigo-300/60', delay: 0, duration: 4, hideOnMobile: true, isSparkle: true },
+        { icon: '·', x: 'right-[20%]', y: 'top-[20%]', size: 'text-6xl md:text-7xl text-purple-300/60', delay: 1, duration: 4.5, hideOnMobile: true, isSparkle: true },
+        { icon: '·', x: 'left-[22%]', y: 'bottom-[15%]', size: 'text-6xl md:text-7xl text-rose-300/60', delay: 2, duration: 5, hideOnMobile: true, isSparkle: true },
+        { icon: '·', x: 'right-[22%]', y: 'bottom-[18%]', size: 'text-6xl md:text-7xl text-indigo-300/60', delay: 1.5, duration: 4.2, hideOnMobile: true, isSparkle: true },
+    ];
+
     return (
         <section 
             onMouseMove={handleMouseMove}
@@ -230,6 +267,35 @@ function HeroSection() {
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-100/40 rounded-full blur-[140px] mix-blend-multiply transition-opacity duration-1000" />
                 </div>
             </motion.div>
+
+            {/* Floating Decorative Elements */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                {floatingElements.map((el, index) => (
+                    <motion.div
+                        key={index}
+                        className={`absolute ${el.x} ${el.y} ${el.size} ${el.hideOnMobile ? 'hidden sm:block' : ''} ${el.hideOnTablet ? 'sm:hidden md:block' : ''}`}
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ 
+                            opacity: el.isSparkle ? [0.3, 0.8, 0.3] : [0.6, 1, 0.6],
+                            scale: el.isSparkle ? [0.8, 1.2, 0.8] : 1,
+                            y: el.isSparkle ? [0, -5, 0] : [0, -15, 0],
+                            rotate: el.isSparkle ? 0 : [-5, 5, -5]
+                        }}
+                        transition={{
+                            opacity: { duration: el.duration, repeat: Infinity, delay: el.delay, ease: "easeInOut" },
+                            scale: { duration: el.duration, repeat: Infinity, delay: el.delay, ease: "easeInOut" },
+                            y: { duration: el.duration, repeat: Infinity, delay: el.delay, ease: "easeInOut" },
+                            rotate: { duration: el.duration * 1.5, repeat: Infinity, delay: el.delay, ease: "easeInOut" }
+                        }}
+                        style={{ 
+                            filter: el.isSparkle ? 'blur(1px)' : 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))',
+                            transformOrigin: 'center center'
+                        }}
+                    >
+                        {el.icon}
+                    </motion.div>
+                ))}
+            </div>
 
             {/* Main 3D Container with Parallax Layers */}
             <motion.div 
