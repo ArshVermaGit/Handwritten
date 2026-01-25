@@ -411,303 +411,172 @@ export default function EditorPage() {
     };
 
     const executeExport = async (customName: string, explicitFormat?: 'pdf' | 'zip') => {
-        // Use explicit format if provided, otherwise fallback to state
         const currentFormat = explicitFormat || exportFormat;
-        
         setExportStatus('processing');
         setProgress(0);
-        console.log("Starting export process...");
+        console.log("Starting Bulletproof Export...");
         
-        // --- EMERGENCY FIX HELPERS ---
         const restoreActions: (() => void)[] = [];
-        
-        // Helper to force browser to resolve ANY color (oklch, vars, etc) to safe RGBA
-        // using the Canvas API which is the ultimate truth for color resolution.
         const ctx = document.createElement('canvas').getContext('2d');
+        
         const getSafeColor = (color: string) => {
             if (!ctx || !color || color === 'none' || color === 'transparent') return color;
-            // If it's already safe hex/rgb, skip to save perf
             if (color.startsWith('#') || color.startsWith('rgb')) return color;
-            
-            // Force resolution
-            ctx.clearRect(0, 0, 1, 1);
-            ctx.fillStyle = '#FFFFFF'; // Reset
-            ctx.fillStyle = color;
-            // If the browser doesn't understand the color (e.g. invalid), fillStyle won't change.
-            // But if it's oklch and browser supports it, it will change.
-            
-            // If logic fails or style is invalid, we return original (risky) or fallback?
-            // Let's assume original if check matches nothing.
-            
-            // To be 100% safe against html2canvas crash, we only return if we get valid data.
-            ctx.fillRect(0, 0, 1, 1);
-            const d = ctx.getImageData(0, 0, 1, 1).data;
-            return `rgba(${d[0]}, ${d[1]}, ${d[2]}, ${(d[3]/255).toFixed(3)})`;
+            try {
+                ctx.clearRect(0, 0, 1, 1);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillStyle = color;
+                ctx.fillRect(0, 0, 1, 1);
+                const d = ctx.getImageData(0, 0, 1, 1).data;
+                return `rgba(${d[0]}, ${d[1]}, ${d[2]}, ${(d[3]/255).toFixed(3)})`;
+            } catch { return color; }
         };
 
-        // 1. Lock resolved RGB colors/styles inline so visuals persist data-html2canvas-ignore 
         const lockComputedStyles = () => {
-            console.log("Locking computed styles...");
             const targets = document.querySelectorAll('.handwritten-export-target, .handwritten-export-target *');
-            console.log(`Locking styles for ${targets.length} elements`);
             targets.forEach((el) => {
                 const hEl = el as HTMLElement;
                 const computed = window.getComputedStyle(hEl);
                 const originalStyle = hEl.getAttribute('style') || '';
-                
-                restoreActions.push(() => {
-                    try { hEl.setAttribute('style', originalStyle); } catch(e) { console.warn("Restore failed for el", e); }
-                });
+                restoreActions.push(() => hEl.setAttribute('style', originalStyle));
 
-                // --- 1. SAFE COLORS (Force RGB) ---
+                // 1. COLORS
                 if (computed.color) hEl.style.color = getSafeColor(computed.color);
                 if (computed.backgroundColor) hEl.style.backgroundColor = getSafeColor(computed.backgroundColor);
                 if (computed.borderColor) hEl.style.borderColor = getSafeColor(computed.borderColor);
-                if (computed.textDecorationColor) hEl.style.textDecorationColor = getSafeColor(computed.textDecorationColor);
                 
-                // --- 2. LAYOUT & POSITION (Critical for "Nuclear Mode") ---
+                // 2. LAYOUT & TEXT (Ensure visibility)
                 hEl.style.display = computed.display;
                 hEl.style.position = computed.position;
-                hEl.style.top = computed.top;
-                hEl.style.left = computed.left;
-                hEl.style.right = computed.right;
-                hEl.style.bottom = computed.bottom;
                 hEl.style.width = computed.width;
                 hEl.style.height = computed.height;
-                hEl.style.margin = computed.margin;
-                hEl.style.padding = computed.padding;
                 hEl.style.opacity = computed.opacity;
-                hEl.style.zIndex = computed.zIndex;
-                
-                // --- 3. FLEX/GRID ---
-                hEl.style.flexDirection = computed.flexDirection;
-                hEl.style.justifyContent = computed.justifyContent;
-                hEl.style.alignItems = computed.alignItems;
-                hEl.style.gap = computed.gap;
-
-                // --- 4. BORDERS & SHAPE ---
-                hEl.style.borderWidth = computed.borderWidth;
-                hEl.style.borderStyle = computed.borderStyle;
-                hEl.style.borderRadius = computed.borderRadius;
-
-                // --- 5. TYPOGRAPHY ---
                 hEl.style.fontSize = computed.fontSize;
-                hEl.style.fontWeight = computed.fontWeight;
                 hEl.style.fontFamily = computed.fontFamily;
-                hEl.style.fontStyle = computed.fontStyle;
-                hEl.style.letterSpacing = computed.letterSpacing;
+                hEl.style.fontWeight = computed.fontWeight;
                 hEl.style.lineHeight = computed.lineHeight;
                 hEl.style.textAlign = computed.textAlign;
-                hEl.style.whiteSpace = computed.whiteSpace;
-                hEl.style.overflow = computed.overflow;
-                
-                // --- 6. BACKGROUND IMAGES (Lines/Textures) ---
-                // We keep them if safe, remove if oklch
-                if (computed.backgroundImage !== 'none') {
-                    if (computed.backgroundImage.includes('oklch')) {
-                        console.warn("Removed unsupported oklch gradient/image:", computed.backgroundImage);
-                        hEl.style.backgroundImage = 'none';
-                    } else {
-                        hEl.style.backgroundImage = computed.backgroundImage;
-                        hEl.style.backgroundSize = computed.backgroundSize;
-                        hEl.style.backgroundPosition = computed.backgroundPosition;
-                        hEl.style.backgroundRepeat = computed.backgroundRepeat;
-                    }
-                }
+                hEl.style.zIndex = computed.zIndex;
             });
         };
 
-        // 2. IGNORE the main stylesheet to prevent html2canvas parser crash on 'oklch'
-        const ignoreTailwindStyles = () => {
-            console.log("Ignoring tailwind styles...");
-            const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'));
-            let ignoredCount = 0;
+        const ignoreNonFontStyles = () => {
+            const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
             styles.forEach(tag => {
-                // Ignore ALL style tags (likely Tailwind in dev) and stylesheets that aren't fonts
                 const isGoogleFont = tag.tagName === 'LINK' && (tag as HTMLLinkElement).href.includes('fonts.googleapis');
-                
                 if (!isGoogleFont) {
                     tag.setAttribute('data-html2canvas-ignore', 'true');
-                    restoreActions.push(() => {
-                         try { tag.removeAttribute('data-html2canvas-ignore'); } catch(e) { console.warn("Restore attribute failed", e); }
-                    });
-                    ignoredCount++;
+                    restoreActions.push(() => tag.removeAttribute('data-html2canvas-ignore'));
                 }
             });
-            console.log(`Ignored ${ignoredCount} style tags`);
         };
 
         try {
-            // Font loading safety race
-            console.log("Waiting for fonts...");
-            await Promise.race([
-                document.fonts.ready,
-                new Promise(resolve => setTimeout(resolve, 5000))
-            ]).catch(e => console.warn("Font loading timeout", e));
-            console.log("Fonts ready (or timed out)");
+            await Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 3000))]);
+            
+            const rawElements = document.querySelectorAll('.handwritten-export-target');
+            if (rawElements.length === 0) throw new Error('No content found to export');
 
-            const elements = document.querySelectorAll('.handwritten-export-target');
-            if (elements.length === 0) throw new Error('No pages found');
-            console.log(`Found ${elements.length} pages to export`);
-
-            // Apply FIX: Lock visual state inline, then hide the broken CSS from the parser
-            console.log("Applying style fixes...");
             lockComputedStyles();
-            ignoreTailwindStyles();
-            console.log("Style fixes applied. Waiting for rendering...");
-            
-            // Give browser a moment
-            await new Promise(resolve => setTimeout(resolve, 100));
+            ignoreNonFontStyles();
+            await new Promise(resolve => setTimeout(resolve, 200));
 
-            // FIXED: Proper filename sanitization
-            // 1. Clean the input name by removing any file extension
-            // 2. If no valid name provided, use a default
-            // 3. Ensure the final filename has the correct extension
-            
+            // FILENAME LOGIC
             let cleanName = customName || `handwritten-${Date.now()}`;
-            
-            // Remove any existing file extensions
-            const lastDotIndex = cleanName.lastIndexOf('.');
-            if (lastDotIndex !== -1) {
-                // Check if the part after the dot looks like a file extension (3-4 chars, no spaces)
-                const potentialExt = cleanName.substring(lastDotIndex + 1);
-                const hasSpaces = potentialExt.includes(' ');
-                const extLength = potentialExt.length;
-                
-                // If it looks like a file extension (no spaces, reasonable length), remove it
-                if (!hasSpaces && extLength >= 1 && extLength <= 5) {
-                    cleanName = cleanName.substring(0, lastDotIndex);
-                }
-            }
-            
-            // Sanitize the filename: remove invalid characters
-            cleanName = cleanName
-                .replace(/[<>:"/\\|?*]/g, '') // Remove invalid filename characters
-                .replace(/\s+/g, ' ')         // Collapse multiple spaces
-                .trim();                       // Trim whitespace
-            
-            // If after cleaning the name is empty, use a default
-            if (!cleanName) {
-                cleanName = `handwritten-${Date.now()}`;
-            }
-            
-            // Create final filename with correct extension
+            cleanName = cleanName.replace(/\.[^/.]+$/, "").replace(/[<>:"/\\|?*]/g, '').trim() || `handwritten-${Date.now()}`;
             const finalFileName = `${cleanName}.${currentFormat}`;
 
-            console.log(`[Export Debug] Input: "${customName}"`);
-            console.log(`[Export Debug] Cleaned: "${cleanName}"`);
-            console.log(`[Export Debug] Final: "${finalFileName}"`);
-
             if (currentFormat === 'pdf') {
-                const pdf = new jsPDF({
-                    orientation: 'p',
-                    unit: 'mm',
-                    format: 'a4',
-                    putOnlyUsedFonts: true,
-                    compress: true
-                });
+                const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
 
-                for (let i = 0; i < elements.length; i++) {
-                    console.log(`Capturing page ${i + 1}/${elements.length}...`);
+                for (let i = 0; i < rawElements.length; i++) {
                     if (i > 0) pdf.addPage();
                     
-                    const canvas = await html2canvas(elements[i] as HTMLElement, { 
+                    const canvas = await html2canvas(rawElements[i] as HTMLElement, { 
                         scale: 3, 
                         useCORS: true, 
-                        logging: true, // Enable logging for debugging
                         backgroundColor: '#ffffff',
-                        scrollX: 0, 
-                        scrollY: 0,
-                        windowWidth: 800, 
-                        windowHeight: 1131,
+                        logging: false,
                         onclone: (doc) => {
-                            const el = doc.querySelector('.handwritten-export-target') as HTMLElement;
-                            if (el) {
-                                el.style.transform = 'none';
-                                el.style.margin = '0';
-                            }
+                            // IMPORTANT: Fix ALL pages in the clone, but specifically the one we are capturing
+                            const clonedPages = doc.querySelectorAll('.handwritten-export-target');
+                            clonedPages.forEach((p) => {
+                                const pageEl = p as HTMLElement;
+                                // Remove layout/visual constraints for the engine
+                                pageEl.style.transform = 'none';
+                                pageEl.style.margin = '0';
+                                pageEl.style.position = 'relative';
+                                pageEl.style.top = '0';
+                                pageEl.style.left = '0';
+                                if (pageEl.parentElement) {
+                                    pageEl.parentElement.style.transform = 'none';
+                                    pageEl.parentElement.style.margin = '0';
+                                }
+
+                                // FIX: html2canvas hates mix-blend-mode and complex filters. 
+                                // They often cause content to disappear or render opaque black/white.
+                                const problemNodes = pageEl.querySelectorAll('*');
+                                problemNodes.forEach(n => {
+                                    const node = n as HTMLElement;
+                                    node.style.mixBlendMode = 'normal';
+                                    node.style.filter = 'none';
+                                });
+                            });
                         }
                     });
 
-                    const imgData = canvas.toDataURL('image/jpeg', 0.9);
-                    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'SLOW');
-                    setProgress(Math.round(((i + 1) / elements.length) * 100));
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+                    setProgress(Math.round(((i + 1) / rawElements.length) * 100));
                 }
                 
-                console.log(`Saving PDF as "${finalFileName}"...`);
-                // FIX: Use explicit Blob download to bypass jspdf quirks
                 const pdfBlob = pdf.output('blob');
+                const url = URL.createObjectURL(pdfBlob);
                 const link = document.createElement('a');
-                link.href = URL.createObjectURL(pdfBlob);
+                link.href = url;
                 link.download = finalFileName;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                URL.revokeObjectURL(link.href);
-                
-                try {
-                    await saveExportedFile(pdfBlob, finalFileName, 'pdf');
-                } catch(err) {
-                     console.warn("Using local save only - History save failed", err);
-                }
+                URL.revokeObjectURL(url);
+                try { await saveExportedFile(pdfBlob, finalFileName, 'pdf'); } catch { /* Ignore local save failure */ }
 
             } else {
                 const zip = new JSZip();
-                for (let i = 0; i < elements.length; i++) {
-                    console.log(`Capturing ZIP page ${i + 1}/${elements.length}...`);
-                    const canvas = await html2canvas(elements[i] as HTMLElement, { 
-                        scale: 3, 
-                        useCORS: true, 
-                        logging: true,
-                        backgroundColor: '#ffffff',
-                        scrollX: 0, 
-                        scrollY: 0, 
-                        windowWidth: 800, 
-                        windowHeight: 1131,
+                for (let i = 0; i < rawElements.length; i++) {
+                    const canvas = await html2canvas(rawElements[i] as HTMLElement, { 
+                        scale: 3, useCORS: true, backgroundColor: '#ffffff',
                         onclone: (doc) => {
-                            const el = doc.querySelector('.handwritten-export-target') as HTMLElement;
-                            if (el) {
-                                el.style.transform = 'none';
-                                el.style.margin = '0';
-                            }
+                            const clonedPages = doc.querySelectorAll('.handwritten-export-target');
+                            clonedPages.forEach((p) => {
+                                const pageEl = p as HTMLElement;
+                                pageEl.style.transform = 'none';
+                                pageEl.style.margin = '0';
+                            });
                         }
                     });
-                    
-                    const imgData = canvas.toDataURL('image/png', 1.0).split(',')[1];
+                    const imgData = canvas.toDataURL('image/png').split(',')[1];
                     zip.file(`page-${i + 1}.png`, imgData, { base64: true });
-                    setProgress(Math.round(((i + 1) / elements.length) * 100));
+                    setProgress(Math.round(((i + 1) / rawElements.length) * 100));
                 }
-                console.log("Generating ZIP...");
                 const content = await zip.generateAsync({ type: 'blob' });
+                const url = URL.createObjectURL(content);
                 const link = document.createElement('a');
-                link.href = URL.createObjectURL(content);
+                link.href = url;
                 link.download = finalFileName;
-                document.body.appendChild(link);
                 link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(link.href);
-                
-                try {
-                    await saveExportedFile(content, finalFileName, 'zip');
-                } catch(err) {
-                    console.warn("Using local save only - History save failed", err);
-                }
+                URL.revokeObjectURL(url);
+                try { await saveExportedFile(content, finalFileName, 'zip'); } catch { /* Ignore local save failure */ }
             }
             
-            console.log("Export complete!");
             setExportStatus('complete');
-            addToast(`${exportFormat.toUpperCase()} Export Complete!`, 'success');
-
-        } catch (e: unknown) { 
-            const err = e as { message?: string, stack?: string };
-            console.error('Export Critical Failure:', err);
-            if (err.stack) console.error(err.stack);
-            
+            addToast('Export Successful! ✨', 'success');
+        } catch (err: unknown) {
+            const error = err as Error;
+            console.error('Export Error:', error);
             setExportStatus('error');
-            addToast(`Export Failed: ${err.message || 'Unknown Error'}`, 'error'); 
+            addToast(`Export Failed: ${error.message}`, 'error');
         } finally {
-            // Restore everything
-            console.log("Restoring styles...");
             restoreActions.forEach(undo => undo());
         }
     };
