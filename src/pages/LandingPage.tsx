@@ -248,9 +248,9 @@ function AboutSection() {
                                 <p className="text-xs font-black tracking-widest uppercase text-ink/40 mb-8">Developer & Designer</p>
                                 <div className="flex gap-4">
                                     <SocialLink href="https://github.com/ArshVermaGit" icon={Github} />
-                                    <SocialLink href="https://linkedin.com/in/arshverma" icon={Linkedin} />
-                                    <SocialLink href="https://twitter.com/arshverma" icon={Twitter} />
-                                    <SocialLink href="mailto:Arshverma.dev@gmail.com" icon={Mail} />
+                                    <SocialLink href="https://www.linkedin.com/in/arshvermadev/" icon={Linkedin} />
+                                    <SocialLink href="https://x.com/TheArshVerma" icon={Twitter} />
+                                    <SocialLink href="mailto:arshverma.dev@gmail.com" icon={Mail} />
                                 </div>
                             </div>
 
