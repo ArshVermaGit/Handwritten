@@ -1,5 +1,6 @@
 import PageLayout from '../components/PageLayout';
 import { Mail, Twitter } from 'lucide-react';
+import { ScrollReveal } from '../components/ui/ScrollReveal';
 
 export default function ContactPage() {
     return (
@@ -7,7 +8,8 @@ export default function ContactPage() {
             title="Contact Support" 
             subtitle="We're here to help you get the most out of Handwritten."
         >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 not-prose">
+            <ScrollReveal>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 not-prose">
                 <div className="bg-white p-8 rounded-2xl border border-neutral-100 shadow-sm text-center">
                     <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center mx-auto mb-4">
                         <Mail size={24} />
@@ -29,8 +31,8 @@ export default function ContactPage() {
                         @TheArshVerma
                     </a>
                 </div>
-            </div>
-
+                </div>
+            </ScrollReveal>
             <h3>Frequently Asked Questions</h3>
             <p>
                 Before reaching out, check our <a href="/faq">FAQ page</a> for answers to common questions about exports, fonts, and privacy.

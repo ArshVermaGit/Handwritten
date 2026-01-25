@@ -1,4 +1,5 @@
 import PageLayout from '../components/PageLayout';
+import { ScrollReveal } from '../components/ui/ScrollReveal';
 
 export default function FAQPage() {
     return (
@@ -6,7 +7,8 @@ export default function FAQPage() {
             title="Help Center" 
             subtitle="Frequently asked questions about Handwritten."
         >
-            <div className="space-y-8">
+            <ScrollReveal>
+                <div className="space-y-8">
                 <div>
                     <h3 className="text-xl font-bold text-neutral-900 mb-2">Is Handwritten free to use?</h3>
                     <p>Yes! The core text-to-handwriting features are completely free. We may offer premium features in the future, but the essential tools will remain accessible.</p>
@@ -27,6 +29,7 @@ export default function FAQPage() {
                     <p>Absolutely. We use a "Local-First" architecture. All document processing happens directly in your browser. We don't store your documents on our servers.</p>
                 </div>
             </div>
+            </ScrollReveal>
         </PageLayout>
     );
 }

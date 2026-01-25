@@ -1,73 +1,50 @@
-import React from 'react';
 import { motion } from 'framer-motion';
+import type { ReactNode } from 'react';
 
 interface ScrollRevealProps {
-    children: React.ReactNode;
-    animation?: 'fade-up' | 'fade-in' | 'slide-left' | 'slide-right' | 'scale';
+    children: ReactNode;
+    width?: "fit-content" | "100%";
     delay?: number;
-    duration?: number;
+    direction?: "up" | "down" | "left" | "right";
     className?: string;
-    viewportAmount?: number;
 }
 
-export default function ScrollReveal({
-    children,
-    animation = 'fade-up',
-    delay = 0,
-    duration = 0.5,
-    className = '',
-    viewportAmount = 0.3
-}: ScrollRevealProps) {
-
-    const getVariants = () => {
-        switch (animation) {
-            case 'fade-up':
-                return {
-                    hidden: { opacity: 0, y: 40 },
-                    visible: { opacity: 1, y: 0 }
-                };
-            case 'fade-in':
-                return {
-                    hidden: { opacity: 0 },
-                    visible: { opacity: 1 }
-                };
-            case 'slide-left':
-                return {
-                    hidden: { opacity: 0, x: -50 },
-                    visible: { opacity: 1, x: 0 }
-                };
-            case 'slide-right':
-                return {
-                    hidden: { opacity: 0, x: 50 },
-                    visible: { opacity: 1, x: 0 }
-                };
-            case 'scale':
-                return {
-                    hidden: { opacity: 0, scale: 0.8 },
-                    visible: { opacity: 1, scale: 1 }
-                };
-            default:
-                return {
-                    hidden: { opacity: 0, y: 40 },
-                    visible: { opacity: 1, y: 0 }
-                };
+export const ScrollReveal = ({ 
+    children, 
+    width = "100%", 
+    delay = 0.1, 
+    direction = "up",
+    className = ""
+}: ScrollRevealProps) => {
+    
+    const getInitialProps = () => {
+        switch (direction) {
+            case "up": return { opacity: 0, y: 30 };
+            case "down": return { opacity: 0, y: -30 };
+            case "left": return { opacity: 0, x: 30 };
+            case "right": return { opacity: 0, x: -30 };
+            default: return { opacity: 0, y: 30 };
         }
     };
 
     return (
-        <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: viewportAmount }}
-            variants={getVariants()}
-            transition={{
-                duration: duration,
-                delay: delay,
-                ease: [0.22, 1, 0.36, 1] // Custom quint-like easing
-            }}
-            className={className}
-        >
-            {children}
-        </motion.div>
+        <div style={{ position: "relative", width, overflow: "visible" }} className={className}>
+            <motion.div
+                variants={{
+                    hidden: getInitialProps(),
+                    visible: { opacity: 1, x: 0, y: 0 },
+                }}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ 
+                    duration: 0.8, 
+                    delay, 
+                    ease: [0.21, 0.47, 0.32, 0.98] 
+                }}
+            >
+                {children}
+            </motion.div>
+        </div>
     );
-}
+};

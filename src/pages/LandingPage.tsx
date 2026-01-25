@@ -3,8 +3,10 @@ import {
     Mail, Github, Linkedin, Twitter
 } from 'lucide-react';
 import React, { useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useStore } from '../lib/store';
 import EditorPage from './EditorPage';
+import { ScrollReveal } from '../components/ui/ScrollReveal';
 import photo from '../assets/arsh.jpg';
 
 export default function LandingPage() {
@@ -49,127 +51,172 @@ export default function LandingPage() {
             <HeroSection />
 
             {/* --- REAL EDITOR SECTION --- */}
-            <section ref={editorRef} id="editor" className="relative z-20 py-12 sm:py-16 md:py-28">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                    <div className="mb-8 sm:mb-12 md:mb-16 text-center">
-                        <span className="text-indigo-500 font-black tracking-[0.3em] uppercase text-[10px] mb-4 block">The Workshop</span>
-                        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold text-neutral-900">Your Digital Canvas</h2>
+            <ScrollReveal>
+                <section ref={editorRef} id="editor" className="relative z-20 py-12 sm:py-16 md:py-28">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                        <div className="mb-8 sm:mb-12 md:mb-16 text-center">
+                            <span className="text-indigo-500 font-black tracking-[0.3em] uppercase text-[10px] mb-4 block">The Workshop</span>
+                            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold text-neutral-900">Your Digital Canvas</h2>
+                        </div>
+                        <div>
+                            <EditorPage />
+                        </div>
                     </div>
-                    <div>
-                        <EditorPage />
-                    </div>
-                </div>
-            </section>
+                </section>
+            </ScrollReveal>
 
 
             {/* --- BENTO GRID FEATURES --- */}
             <section className="py-12 sm:py-16 md:py-28 px-4 sm:px-6 relative">
-                    <div className="mb-10 sm:mb-16 md:mb-20 text-center max-w-2xl mx-auto">
-                        <span className="text-indigo-500 font-bold tracking-widest uppercase text-xs mb-4 block">
-                            Why Handwritten?
-                        </span>
-                        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold text-neutral-900 mb-6">
-                            More than just <br className="hidden sm:block"/>
-                            <span className="italic font-serif text-neutral-600">pixels on a screen.</span>
-                        </h2>
-                    </div>
+                    <ScrollReveal direction="down">
+                        <div className="mb-10 sm:mb-16 md:mb-20 text-center max-w-2xl mx-auto">
+                            <span className="text-indigo-500 font-bold tracking-widest uppercase text-xs mb-4 block">
+                                Why Handwritten?
+                            </span>
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold text-neutral-900 mb-6">
+                                More than just <br className="hidden sm:block"/>
+                                <span className="italic font-serif text-neutral-600">pixels on a screen.</span>
+                            </h2>
+                        </div>
+                    </ScrollReveal>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 md:grid-rows-2 h-auto">
                         {/* Large Card */}
-                        <div className="md:col-span-2 md:row-span-2 paper-card relative overflow-hidden group p-0!">
-                            <div className="relative z-10 p-8 sm:p-12">
-                                <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-                                    <PenTool className="text-indigo-500" size={24} />
-                                </div>
-                                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-neutral-900 tracking-tight">Advanced Simulation Engine</h3>
-                                <p className="text-neutral-500 text-base sm:text-lg max-w-md leading-relaxed">
-                                    Total control over your handwriting's soul. Fine-tune organic <b className="text-neutral-900">Jitter</b>, <b className="text-neutral-900">Pressure</b>, and <b className="text-neutral-900">Smudge</b> levels to create a document that looks indistinguishable from paper.
-                                </p>
-                            </div>
-                            
-                            {/* Visual Decoration - Refined */}
-                            <div className="absolute right-0 bottom-0 w-2/3 h-2/3 translate-x-12 translate-y-12 hidden sm:block pointer-events-none">
-                                <div className="w-full h-full bg-white rounded-tl-[3rem] shadow-2xl p-6 border border-black/5 -rotate-6">
-                                    <div className="w-full h-full bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[16px_16px] p-8 font-handwriting text-3xl text-neutral-900 leading-loose flex items-center justify-center text-center">
-                                        "The details are not the details. <br/> They make the design."
+                        <ScrollReveal className="md:col-span-2 md:row-span-2" direction="right">
+                            <motion.div 
+                                whileHover={{ y: -5 }}
+                                className="h-full paper-card relative overflow-hidden group p-0!"
+                            >
+                                <div className="relative z-10 p-8 sm:p-12">
+                                    <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+                                        <PenTool className="text-indigo-500" size={24} />
                                     </div>
+                                    <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-neutral-900 tracking-tight">Advanced Simulation Engine</h3>
+                                    <p className="text-neutral-500 text-base sm:text-lg max-w-md leading-relaxed">
+                                        Total control over your handwriting's soul. Fine-tune organic <b className="text-neutral-900">Jitter</b>, <b className="text-neutral-900">Pressure</b>, and <b className="text-neutral-900">Smudge</b> levels to create a document that looks indistinguishable from paper.
+                                    </p>
                                 </div>
-                            </div>
-                        </div>
+                                
+                                {/* Visual Decoration - Refined */}
+                                <div className="absolute right-0 bottom-0 w-2/3 h-2/3 translate-x-12 translate-y-12 hidden sm:block pointer-events-none">
+                                    <motion.div 
+                                        initial={{ rotate: 0, y: 20 }}
+                                        whileInView={{ rotate: -6, y: 0 }}
+                                        transition={{ delay: 0.5, duration: 1 }}
+                                        className="w-full h-full bg-white rounded-tl-[3rem] shadow-2xl p-6 border border-black/5"
+                                    >
+                                        <div className="w-full h-full bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[16px_16px] p-8 font-handwriting text-3xl text-neutral-900 leading-loose flex items-center justify-center text-center">
+                                            "The details are not the details. <br/> They make the design."
+                                        </div>
+                                    </motion.div>
+                                </div>
+                            </motion.div>
+                        </ScrollReveal>
 
                         {/* Top Right Card */}
-                        <div className="bg-[#1A1F2C] text-white rounded-4xl p-8 relative overflow-hidden group shadow-2xl flex flex-col justify-between">
-                             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
-                             <div className="relative z-10">
-                                <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6">
-                                    <Download className="text-indigo-300" />
+                        <ScrollReveal direction="left" delay={0.2}>
+                            <motion.div 
+                                whileHover={{ y: -5 }}
+                                className="h-full bg-[#1A1F2C] text-white rounded-4xl p-8 relative overflow-hidden group shadow-2xl flex flex-col justify-between"
+                            >
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
+                                <div className="relative z-10">
+                                    <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6">
+                                        <Download className="text-indigo-300" />
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-2">Export Anywhere</h3>
+                                    <p className="text-white/60 text-sm leading-relaxed">Convert your handwritten work into high-fidelity PDF documents or individual PNGs in a single ZIP archive.</p>
                                 </div>
-                                <h3 className="text-xl font-bold mb-2">Export Anywhere</h3>
-                                <p className="text-white/60 text-sm leading-relaxed">Convert your handwritten work into high-fidelity PDF documents or individual PNGs in a single ZIP archive.</p>
-                             </div>
-                        </div>
+                            </motion.div>
+                        </ScrollReveal>
 
                         {/* Bottom Right Card */}
-                        <div className="paper-card group flex flex-col justify-between">
-                            <div className="relative z-10">
-                                 <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center mb-6">
-                                    <Type className="text-indigo-500" />
+                        <ScrollReveal direction="left" delay={0.4}>
+                            <motion.div 
+                                whileHover={{ y: -5 }}
+                                className="h-full paper-card group flex flex-col justify-between"
+                            >
+                                <div className="relative z-10">
+                                    <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center mb-6">
+                                        <Type className="text-indigo-500" />
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-2 text-neutral-900">AI Humanizer</h3>
+                                    <p className="text-neutral-500 text-sm leading-relaxed">Tap into the power of Gemini to rewrite your notes into organic, natural human prose with one click.</p>
                                 </div>
-                                <h3 className="text-xl font-bold mb-2 text-neutral-900">AI Humanizer</h3>
-                                <p className="text-neutral-500 text-sm leading-relaxed">Tap into the power of Gemini to rewrite your notes into organic, natural human prose with one click.</p>
-                            </div>
-                        </div>
+                            </motion.div>
+                        </ScrollReveal>
                     </div>
             </section>
 
             {/* --- ABOUT SECTION --- */}
-            <AboutSection />
+            <ScrollReveal>
+                <AboutSection />
+            </ScrollReveal>
 
             {/* --- CALL TO ACTION --- */}
-            <section className="py-12 pb-28 sm:py-16 md:py-24 px-4 sm:px-6 relative overflow-hidden">
-                <div className="max-w-4xl mx-auto text-center relative z-10">
-                    <div className="bg-neutral-900 text-white rounded-[3rem] p-8 sm:p-12 md:p-24 shadow-2xl relative overflow-hidden">
-                         {/* Abstract BG */}
-                         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
-                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/30 rounded-full blur-[120px]" />
+            <ScrollReveal direction="up" delay={0.2}>
+                <section className="py-12 pb-28 sm:py-16 md:py-24 px-4 sm:px-6 relative overflow-hidden">
+                    <div className="max-w-4xl mx-auto text-center relative z-10">
+                        <motion.div 
+                            whileHover={{ scale: 1.01 }}
+                            className="bg-neutral-900 text-white rounded-[3rem] p-8 sm:p-12 md:p-24 shadow-2xl relative overflow-hidden"
+                        >
+                            {/* Abstract BG */}
+                            <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
+                            <motion.div 
+                                animate={{ 
+                                    scale: [1, 1.2, 1],
+                                    opacity: [0.2, 0.4, 0.2]
+                                }}
+                                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/30 rounded-full blur-[120px]" 
+                            />
 
-                         <div className="relative z-10">
-                            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-display font-bold mb-6 sm:mb-8 tracking-tight leading-none">
-                                Start your <br className="hidden sm:block"/>
-                                <span className="font-serif italic text-indigo-400">masterpiece.</span>
-                            </h2>
-                            <p className="text-lg md:text-xl text-white/60 mb-10 max-w-xl mx-auto font-medium">
-                                No signup required for basic use. Jump right in and feel the difference.
-                            </p>
-                            <button
-                                onClick={scrollToEditor}
-                                className="px-10 py-5 bg-white text-neutral-900 rounded-full font-bold text-lg hover:shadow-[0_0_40px_-5px_rgba(255,255,255,0.3)] transition-all flex items-center gap-3 mx-auto group"
-                            >
-                                <span>Launch Editor</span>
-                                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                            </button>
-                         </div>
+                            <div className="relative z-10">
+                                <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-display font-bold mb-6 sm:mb-8 tracking-tight leading-none">
+                                    Start your <br className="hidden sm:block"/>
+                                    <motion.span 
+                                        initial={{ opacity: 0 }}
+                                        whileInView={{ opacity: 1 }}
+                                        transition={{ delay: 0.5, duration: 1 }}
+                                        className="font-serif italic text-indigo-400"
+                                    >masterpiece.</motion.span>
+                                </h2>
+                                <p className="text-lg md:text-xl text-white/60 mb-10 max-w-xl mx-auto font-medium">
+                                    No signup required for basic use. Jump right in and feel the difference.
+                                </p>
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={scrollToEditor}
+                                    className="px-10 py-5 bg-white text-neutral-900 rounded-full font-bold text-lg hover:shadow-[0_0_40px_-5px_rgba(255,255,255,0.3)] transition-all flex items-center gap-3 mx-auto group"
+                                >
+                                    <span>Launch Editor</span>
+                                    <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                </motion.button>
+                            </div>
+                        </motion.div>
                     </div>
-                </div>
-            </section>
+                </section>
+            </ScrollReveal>
 
         </div>
     );
 }
 
 function HeroSection() {
-    // Static floating elements - no animation
+    // Floating elements with animations
     const floatingElements = [
-        { icon: '✒️', x: 'left-[5%]', y: 'top-[12%]', size: 'text-6xl lg:text-7xl', hideOnMobile: true },
-        { icon: '📝', x: 'left-[3%]', y: 'top-[35%]', size: 'text-5xl lg:text-6xl', hideOnMobile: true },
-        { icon: '🖋️', x: 'right-[5%]', y: 'top-[10%]', size: 'text-6xl lg:text-7xl', hideOnMobile: true },
-        { icon: '💫', x: 'right-[3%]', y: 'top-[32%]', size: 'text-5xl lg:text-6xl', hideOnMobile: true },
-        { icon: '📄', x: 'left-[2%]', y: 'top-[50%]', size: 'text-5xl lg:text-6xl', hideOnMobile: true },
-        { icon: '📖', x: 'right-[2%]', y: 'top-[48%]', size: 'text-5xl lg:text-6xl', hideOnMobile: true },
-        { icon: '🖊️', x: 'left-[5%]', y: 'bottom-[10%]', size: 'text-6xl lg:text-7xl', hideOnMobile: false },
-        { icon: '✏️', x: 'left-[3%]', y: 'bottom-[28%]', size: 'text-5xl lg:text-6xl', hideOnMobile: true },
-        { icon: '🎭', x: 'right-[5%]', y: 'bottom-[10%]', size: 'text-6xl lg:text-7xl', hideOnMobile: false },
-        { icon: '💡', x: 'right-[3%]', y: 'bottom-[30%]', size: 'text-5xl lg:text-6xl', hideOnMobile: true },
+        { icon: '✒️', x: 'left-[5%]', y: 'top-[12%]', size: 'text-6xl lg:text-7xl', hideOnMobile: true, duration: 20, delay: 0 },
+        { icon: '📝', x: 'left-[3%]', y: 'top-[35%]', size: 'text-5xl lg:text-6xl', hideOnMobile: true, duration: 15, delay: 2 },
+        { icon: '🖋️', x: 'right-[5%]', y: 'top-[10%]', size: 'text-6xl lg:text-7xl', hideOnMobile: true, duration: 25, delay: 1 },
+        { icon: '💫', x: 'right-[3%]', y: 'top-[32%]', size: 'text-5xl lg:text-6xl', hideOnMobile: true, duration: 18, delay: 3 },
+        { icon: '📄', x: 'left-[2%]', y: 'top-[50%]', size: 'text-5xl lg:text-6xl', hideOnMobile: true, duration: 22, delay: 4 },
+        { icon: '📖', x: 'right-[2%]', y: 'top-[48%]', size: 'text-5xl lg:text-6xl', hideOnMobile: true, duration: 19, delay: 2 },
+        { icon: '🖊️', x: 'left-[5%]', y: 'bottom-[10%]', size: 'text-6xl lg:text-7xl', hideOnMobile: false, duration: 21, delay: 5 },
+        { icon: '✏️', x: 'left-[3%]', y: 'bottom-[28%]', size: 'text-5xl lg:text-6xl', hideOnMobile: true, duration: 17, delay: 0 },
+        { icon: '🎭', x: 'right-[5%]', y: 'bottom-[10%]', size: 'text-6xl lg:text-7xl', hideOnMobile: false, duration: 23, delay: 1 },
+        { icon: '💡', x: 'right-[3%]', y: 'bottom-[30%]', size: 'text-5xl lg:text-6xl', hideOnMobile: true, duration: 20, delay: 3 },
     ];
 
     return (
@@ -177,22 +224,38 @@ function HeroSection() {
             {/* Background Glow */}
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                 <div className="w-full max-w-7xl h-full relative">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-100/40 rounded-full blur-[140px] mix-blend-multiply" />
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 2, ease: "easeOut" }}
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-100/40 rounded-full blur-[140px] mix-blend-multiply" 
+                    />
                 </div>
             </div>
 
-            {/* Static Floating Decorative Elements */}
+            {/* Floating Decorative Elements */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 {floatingElements.map((el, index) => (
-                    <div
+                    <motion.div
                         key={index}
+                        initial={{ y: 0 }}
+                        animate={{ 
+                            y: [0, -20, 0],
+                            rotate: [0, index % 2 === 0 ? 10 : -10, 0]
+                        }}
+                        transition={{
+                            duration: el.duration,
+                            repeat: Infinity,
+                            delay: el.delay,
+                            ease: "easeInOut"
+                        }}
                         className={`absolute ${el.x} ${el.y} ${el.size} ${el.hideOnMobile ? 'hidden sm:block' : ''} opacity-70`}
                         style={{ 
-                            filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))'
+                            filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.05))'
                         }}
                     >
                         {el.icon}
-                    </div>
+                    </motion.div>
                 ))}
             </div>
 
@@ -204,12 +267,22 @@ function HeroSection() {
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[120%] bg-indigo-500/5 blur-[100px] rounded-full pointer-events-none" />
 
                     <div className="flex flex-col items-center">
-                        <h1 className="text-5xl sm:text-9xl lg:text-[11rem] font-display font-bold leading-none tracking-tighter text-neutral-900 mb-4">
+                        <motion.h1 
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+                            className="text-5xl sm:text-9xl lg:text-[11rem] font-display font-bold leading-none tracking-tighter text-neutral-900 mb-4"
+                        >
                             Handwritten.
-                        </h1>
-                        <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-serif italic text-neutral-500 leading-tight">
+                        </motion.h1>
+                        <motion.h2 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 1, delay: 0.5 }}
+                            className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-serif italic text-neutral-500 leading-tight"
+                        >
                             Text to Handwriting Converter
-                        </h2>
+                        </motion.h2>
                     </div>
                 </div>
             </div>
