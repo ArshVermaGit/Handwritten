@@ -1,11 +1,12 @@
 import { useState, useMemo, useDeferredValue, useEffect, useRef } from 'react';
 
+
 import { 
     Settings2, FileText, RefreshCw, Type, 
     AlignLeft, AlignCenter, AlignRight, AlignJustify, 
     Sparkles, Ruler, Zap, Download, Wand2, Clock, X
 } from 'lucide-react';
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import JSZip from 'jszip';
@@ -326,93 +327,62 @@ export default function EditorPage() {
     }, [deferredText, fontSize, paper.lineHeight, marginTop, marginBottom, marginLeft, marginRight, showHeader, headerText]);
 
     const handleHumanize = async () => {
-        const googleKey = import.meta.env.VITE_GOOGLE_API_KEY;
-        
-        if (!googleKey) {
-            addToast('AI Configuration Missing. Please connect API Key.', 'error');
+        if (!text.trim()) {
+            addToast('Please enter some text first.', 'warning');
+            return;
+        }
+
+        const openAiKey = import.meta.env.VITE_OPENAI_API_KEY;
+        if (!openAiKey) {
+            addToast('OpenAI Key Missing. Please add VITE_OPENAI_API_KEY to .env', 'error');
             return;
         }
 
         setIsHumanizing(true);
         
-        // Debug: Check if key is even loaded
-        console.log('Gemini API Key loaded:', googleKey ? 'Yes (starting with ' + googleKey.substring(0, 8) + '...)' : 'No');
-
-        // Strategy: Intensive Model Fallback Waterfall
-        const modelsToTry = [
-            "gemini-1.5-flash", 
-            "gemini-1.5-flash-latest",
-            "gemini-1.5-flash-8b", 
-            "gemini-1.5-pro", 
-            "gemini-1.5-pro-latest",
-            "gemini-pro"
-        ];
-        let lastError: Error | null = null;
-
-        const attemptWithModel = async (modelName: string): Promise<string> => {
-             const genAI = new GoogleGenerativeAI(googleKey);
-             const model = genAI.getGenerativeModel({ 
-                model: modelName,
-                generationConfig: {
-                    temperature: 0.9,
-                    maxOutputTokens: 2048,
-                },
-                safetySettings: [
-                    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-                    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                ]
-            });
-
-            const systemInstruction = `Rewrite the input text to sound like natural human prose for a handwriting simulator. 
-            Keep it casual, use contractions, and vary sentence length. 
-            Output ONLY the rewritten text.`;
-
-            const result = await model.generateContent(`${systemInstruction}\n\nInput Text:\n${text}`);
-            const response = await result.response;
-            return response.text();
-        }
+        const systemPrompt = `You are a text humanizer. Your task is to rewrite the input text to sound like natural, organic human prose for a handwriting simulator. 
+        - Use a casual, friendly tone.
+        - Use common contractions (e.g., "I'm" instead of "I am").
+        - Vary sentence structure and length to make it feel spontaneous.
+        - Maintain the original meaning and core facts.
+        - Output ONLY the rewritten text, without any conversational filler or markdown formatting.`;
 
         try {
-            let rewrittenText: string | null = null;
-            
-            for (const modelName of modelsToTry) {
-                try {
-                    console.log(`Trying model: ${modelName}`);
-                    rewrittenText = await attemptWithModel(modelName);
-                    if (rewrittenText) break;
-                } catch (e: unknown) {
-                    const err = e as Error;
-                    console.warn(`Model ${modelName} fail:`, err.message);
-                    lastError = err;
-                    // If it's a key/auth error, stop immediately
-                    if (err.message.includes('API_KEY_INVALID') || err.message.includes('403')) break;
-                    // If it's a model not found (404), try the next one in the list
-                }
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${openAiKey}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-4o-mini",
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: text }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 2048
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || `HTTP ${response.status}`);
             }
 
-            if (rewrittenText) {
-                setText(normalizeInput(rewrittenText.trim()));
-                addToast('Text Humanized!', 'success');
-            } else {
-                throw lastError || new Error('All models unavailable');
-            }
+            const data = await response.json();
+            const rewritten = data.choices?.[0]?.message?.content;
 
-        } catch (e: unknown) {
-            console.error('AI Error:', e);
-            const err = e as { message?: string };
-            const msg = err.message || '';
-            
-            if (msg.includes('429')) {
-                addToast('Rate limit. Please wait 1 minute.', 'warning');
-            } else if (msg.includes('403') || msg.includes('API key')) {
-                addToast('Invalid API Key. Use Google AI Studio, not GCP.', 'error');
-            } else if (msg.includes('404')) {
-                addToast('Key is working, but models are restricted in your region.', 'error');
+            if (rewritten?.trim()) {
+                setText(normalizeInput(rewritten.trim()));
+                addToast('Text Humanized! ✨', 'success');
             } else {
-                addToast('AI unavailable. Check connection or key settings.', 'error');
+                throw new Error("Empty response from AI service");
             }
+        } catch (err: unknown) {
+            const error = err as Error;
+            console.error('OpenAI Humanizer error:', error);
+            addToast(`AI Error: ${error.message}`, 'error');
         } finally {
             setIsHumanizing(false);
         }
