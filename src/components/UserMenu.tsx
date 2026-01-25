@@ -61,34 +61,44 @@ export default function UserMenu() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden py-1 z-50"
+                        className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-neutral-100 overflow-hidden z-50"
                     >
-                        <div className="px-4 py-3 border-b border-gray-50">
-                            <p className="text-sm font-bold text-ink truncate">{user.name}</p>
-                            <p className="text-[10px] font-medium text-ink/40 truncate">{user.email}</p>
+                        {/* User Info Header */}
+                        <div className="px-5 py-4 bg-[#FAFAFA] border-b border-neutral-100 relative">
+                            <div className="absolute inset-0 bg-[radial-gradient(#00000005_1px,transparent_1px)] bg-size-[16px_16px] pointer-events-none" />
+                            <div className="relative z-10">
+                                <p className="text-sm font-bold text-neutral-900 truncate">{user.name}</p>
+                                <p className="text-[10px] font-medium text-neutral-400 truncate">{user.email}</p>
+                            </div>
                         </div>
                         
-                        <div className="p-1">
+                        <div className="p-2">
                             <button 
                                 onClick={() => {
                                     setIsHistoryOpen(true);
                                     setIsOpen(false);
                                 }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-ink/70 hover:text-ink hover:bg-gray-50 rounded-lg transition-colors text-left"
+                                className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 rounded-xl transition-all text-left"
                             >
-                                <Clock size={14} /> History
+                                <div className="w-8 h-8 bg-neutral-100 rounded-lg flex items-center justify-center">
+                                    <Clock size={14} />
+                                </div>
+                                History Vault
                             </button>
                         </div>
 
-                        <div className="border-t border-gray-50 p-1 mt-1">
+                        <div className="border-t border-neutral-100 p-2">
                             <button 
                                 onClick={() => {
                                     logout();
                                     setIsOpen(false);
                                 }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors text-left"
+                                className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-xl transition-all text-left"
                             >
-                                <LogOut size={14} /> Sign Out
+                                <div className="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center">
+                                    <LogOut size={14} />
+                                </div>
+                                Sign Out
                             </button>
                         </div>
                     </motion.div>
