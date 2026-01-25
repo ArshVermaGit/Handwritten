@@ -39,7 +39,7 @@ export default function AuthModal() {
                         {/* Close Button */}
                         <button 
                             onClick={() => setAuthModalOpen(false)}
-                            className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 rounded-full transition-colors z-10"
+                            className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 rounded-full transition-colors z-10 touch-target"
                         >
                             <X size={20} />
                         </button>
