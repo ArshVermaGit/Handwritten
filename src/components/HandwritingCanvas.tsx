@@ -103,18 +103,15 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
 
     // Strip HTML tags for plain text rendering
     const stripHTML = useCallback((html: string): string => {
-        return html
+        // First convert breaks and block closures to newlines to preserve document structure
+        const structuredHtml = html
             .replace(/<br\s*\/?>/gi, '\n')
             .replace(/<\/p>/gi, '\n\n')
-            .replace(/<\/div>/gi, '\n')
-            .replace(/<\/li>/gi, '\n')
-            .replace(/<\/h[1-6]>/gi, '\n\n')
-            .replace(/<[^>]+>/g, '')
-            .replace(/&nbsp;/g, ' ')
-            .replace(/&amp;/g, '&')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&quot;/g, '"');
+            .replace(/<\/div>|<\/li>|<\/h[1-6]>/gi, '\n');
+
+        // Use DOMParser to safely extract text content and decode entities in one pass
+        const doc = new DOMParser().parseFromString(structuredHtml, 'text/html');
+        return doc.body.textContent || "";
     }, []);
 
     // Word wrap function
