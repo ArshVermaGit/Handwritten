@@ -584,11 +584,19 @@ export default function EditorPage() {
             // Give browser a moment
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            // fix: Strip any existing extension from customName to avoid double extensions (e.g. file.pdf.pdf)
-            const cleanName = customName ? customName.replace(/\.[^/.]+$/, "") : `handwritten-${Date.now()}`;
-            const finalFileName = `${cleanName}.${exportFormat}`; // e.g. "my-doc.pdf"
+            // FIX: Aggressively sanitize filename
+            // 1. Remove dangerous chars
+            // 2. Strip ANY extension or pseudo-extension at the end (e.g. .com, .pdf.pdf, .tar.gz)
+            const unsafeName = customName || `handwritten-${Date.now()}`;
+            // Remove extension if present (anything after the last dot)
+            const nameWithoutExt = unsafeName.replace(/\.[^/.]+$/, "");
+            
+            // Re-append the correct active format extension
+            const finalFileName = `${nameWithoutExt}.${exportFormat}`;
 
-            console.log(`Starting ${exportFormat.toUpperCase()} export as ${finalFileName}...`);
+            console.log(`[Export Debug] Raw Input: "${customName}"`);
+            console.log(`[Export Debug] Cleaned Base: "${nameWithoutExt}"`);
+            console.log(`[Export Debug] Final Output: "${finalFileName}"`);
 
             if (exportFormat === 'pdf') {
                 const pdf = new jsPDF({
@@ -626,7 +634,7 @@ export default function EditorPage() {
                     setProgress(Math.round(((i + 1) / elements.length) * 100));
                 }
                 
-                console.log("Saving PDF...");
+                console.log(`Saving PDF as "${finalFileName}"...`);
                 pdf.save(finalFileName);
                 try {
                     const pdfBlob = pdf.output('blob');
