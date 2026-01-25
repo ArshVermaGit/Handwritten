@@ -332,9 +332,9 @@ export default function EditorPage() {
             return;
         }
 
-        const openAiKey = import.meta.env.VITE_OPENAI_API_KEY;
-        if (!openAiKey) {
-            addToast('OpenAI Key Missing. Please add VITE_OPENAI_API_KEY to .env', 'error');
+        const openRouterKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+        if (!openRouterKey) {
+            addToast('OpenRouter Key Missing. Please add VITE_OPENROUTER_API_KEY to .env', 'error');
             return;
         }
 
@@ -348,14 +348,16 @@ export default function EditorPage() {
         - Output ONLY the rewritten text, without any conversational filler or markdown formatting.`;
 
         try {
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${openAiKey}`
+                    'Authorization': `Bearer ${openRouterKey}`,
+                    'HTTP-Referer': window.location.origin,
+                    'X-Title': 'Handwritten AI Humanizer'
                 },
                 body: JSON.stringify({
-                    model: "gpt-4o-mini",
+                    model: "openai/gpt-4o-mini",
                     messages: [
                         { role: "system", content: systemPrompt },
                         { role: "user", content: text }
@@ -375,13 +377,13 @@ export default function EditorPage() {
 
             if (rewritten?.trim()) {
                 setText(normalizeInput(rewritten.trim()));
-                addToast('Text Humanized! ✨', 'success');
+                addToast('Text Humanized via OpenRouter! ✨', 'success');
             } else {
                 throw new Error("Empty response from AI service");
             }
         } catch (err: unknown) {
             const error = err as Error;
-            console.error('OpenAI Humanizer error:', error);
+            console.error('OpenRouter Humanizer error:', error);
             addToast(`AI Error: ${error.message}`, 'error');
         } finally {
             setIsHumanizing(false);
