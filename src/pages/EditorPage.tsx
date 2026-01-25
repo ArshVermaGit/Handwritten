@@ -4,7 +4,7 @@ import {
     Settings2, FileText, RefreshCw, Type, 
     AlignLeft, AlignCenter, AlignRight, AlignJustify, 
     Sparkles, Ruler, Zap, Download, Wand2, Clock,
-    Menu, X, ChevronUp
+    Menu, X
 } from 'lucide-react';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import html2canvas from 'html2canvas';
@@ -227,7 +227,7 @@ export default function EditorPage() {
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [pendingAction, setPendingAction] = useState<{ type: 'export', format: 'pdf' | 'zip' } | null>(null);
     const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false);
-    const [activeMobileTab, setActiveMobileTab] = useState<'text' | 'style' | 'effects'>('text');
+    const [activeMobileTab, setActiveMobileTab] = useState<'write' | 'design' | 'paper' | 'effects'>('write');
     const [scale, setScale] = useState(1);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -955,105 +955,141 @@ export default function EditorPage() {
                 </main>
             </div>
 
-            {/* MOBILE BOTTOM SHEET PANEL */}
+            {/* MOBILE BOTTOM SHEET PANEL - Completely Redesigned */}
             <div 
                 className={`lg:hidden fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.15)] z-50 transition-transform duration-300 ease-out ${isMobilePanelOpen ? 'translate-y-0' : 'translate-y-full'}`}
-                style={{ maxHeight: '80vh' }}
+                style={{ maxHeight: '85vh' }}
             >
                 {/* Panel Handle */}
                 <div className="flex justify-center pt-3 pb-2">
-                    <div className="w-10 h-1 bg-neutral-200 rounded-full" />
+                    <div className="w-12 h-1.5 bg-neutral-200 rounded-full" />
                 </div>
                 
                 {/* Panel Header */}
-                <div className="flex items-center justify-between px-6 pb-4 border-b border-black/5">
-                    <h3 className="font-bold text-neutral-900">Editor Controls</h3>
+                <div className="flex items-center justify-between px-5 pb-4 border-b border-black/5">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-neutral-900 rounded-xl flex items-center justify-center">
+                            <Settings2 size={14} className="text-white" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-neutral-900 text-sm">Editor Controls</h3>
+                            <p className="text-[10px] text-neutral-400">Customize your handwriting</p>
+                        </div>
+                    </div>
                     <button 
                         onClick={() => setIsMobilePanelOpen(false)}
-                        className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
+                        className="w-10 h-10 hover:bg-neutral-100 rounded-full transition-colors flex items-center justify-center"
                     >
                         <X size={20} className="text-neutral-400" />
                     </button>
                 </div>
                 
-                {/* Tab Navigation */}
-                <div className="flex border-b border-black/5">
+                {/* Tab Navigation - 4 Tabs */}
+                <div className="flex border-b border-black/5 bg-neutral-50/50">
                     {[
-                        { id: 'text' as const, label: 'Text', icon: FileText },
-                        { id: 'style' as const, label: 'Style', icon: Settings2 },
+                        { id: 'write' as const, label: 'Write', icon: FileText },
+                        { id: 'design' as const, label: 'Design', icon: Type },
+                        { id: 'paper' as const, label: 'Paper', icon: Ruler },
                         { id: 'effects' as const, label: 'Effects', icon: Sparkles }
                     ].map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveMobileTab(tab.id)}
-                            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${
+                            className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-wider flex flex-col items-center gap-1.5 transition-all ${
                                 activeMobileTab === tab.id 
-                                    ? 'text-neutral-900 border-b-2 border-neutral-900' 
+                                    ? 'text-neutral-900 bg-white border-b-2 border-neutral-900' 
                                     : 'text-neutral-400'
                             }`}
                         >
-                            <tab.icon size={14} />
+                            <tab.icon size={16} />
                             {tab.label}
                         </button>
                     ))}
                 </div>
                 
                 {/* Tab Content */}
-                <div className="overflow-y-auto p-4 space-y-4" style={{ maxHeight: 'calc(80vh - 140px)' }}>
-                    {activeMobileTab === 'text' && (
+                <div className="overflow-y-auto p-5 space-y-5" style={{ maxHeight: 'calc(85vh - 200px)' }}>
+                    
+                    {/* WRITE TAB */}
+                    {activeMobileTab === 'write' && (
                         <>
                             {/* Source Text */}
                             <div>
                                 <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-2 block">Your Text</label>
-                                <textarea 
-                                    value={text} 
-                                    onChange={(e) => setText(e.target.value)} 
-                                    className="w-full h-32 p-3 bg-neutral-50 border border-black/5 rounded-xl text-sm resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500/20"
-                                    placeholder="Start writing..."
-                                />
+                                <div className="relative">
+                                    <textarea 
+                                        value={text} 
+                                        onChange={(e) => setText(normalizeInput(e.target.value))} 
+                                        className="w-full h-36 p-4 bg-neutral-50 border border-black/5 rounded-2xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30 transition-all shadow-sm"
+                                        placeholder="Start writing your masterpiece..."
+                                    />
+                                </div>
                             </div>
                             
                             {/* AI Humanizer Button */}
                             <button 
                                 onClick={handleHumanize}
                                 disabled={isHumanizing || !text.trim()}
-                                className="w-full py-3 bg-neutral-900 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                                className="w-full py-4 bg-neutral-900 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-3 disabled:opacity-50 shadow-lg shadow-neutral-900/20 active:scale-[0.98] transition-all"
                             >
-                                <Wand2 size={16} className={isHumanizing ? 'animate-spin' : ''} />
-                                {isHumanizing ? 'Humanizing...' : 'AI Humanize'}
+                                <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
+                                    <Wand2 size={16} className={isHumanizing ? 'animate-spin' : ''} />
+                                </div>
+                                <div className="text-left">
+                                    <div className="flex items-center gap-1.5">
+                                        {isHumanizing ? 'Humanizing...' : 'AI Humanize'}
+                                        <Sparkles size={10} className="text-amber-400" />
+                                    </div>
+                                    <div className="text-[10px] text-white/60 font-normal">One-click organic rewriting</div>
+                                </div>
                             </button>
                             
-                            {/* Header Toggle */}
-                            <label className="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
-                                <input 
-                                    type="checkbox" 
-                                    checked={showHeader} 
-                                    onChange={e => setPageOptions({ showHeader: e.target.checked })} 
-                                    className="w-4 h-4 rounded"
-                                />
-                                <span className="text-sm font-medium">Enable Heading</span>
-                            </label>
+                            {/* Header Section */}
+                            <div className="space-y-3">
+                                <label className="flex items-center gap-3 p-4 bg-white border border-black/5 rounded-2xl shadow-sm">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={showHeader} 
+                                        onChange={e => setPageOptions({ showHeader: e.target.checked })} 
+                                        className="w-5 h-5 rounded-lg border-black/10 text-neutral-900 focus:ring-0"
+                                    />
+                                    <div>
+                                        <span className="text-sm font-bold text-neutral-900">Enable Heading</span>
+                                        <p className="text-[10px] text-neutral-400">Add a title to your document</p>
+                                    </div>
+                                </label>
+                                
+                                {showHeader && (
+                                    <textarea 
+                                        value={headerText} 
+                                        onChange={(e) => setPageOptions({ headerText: e.target.value })}
+                                        className="w-full h-20 p-4 bg-white border border-black/5 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none shadow-sm transition-all"
+                                        placeholder="Type your heading..."
+                                    />
+                                )}
+                            </div>
                         </>
                     )}
                     
-                    {activeMobileTab === 'style' && (
+                    {/* DESIGN TAB */}
+                    {activeMobileTab === 'design' && (
                         <>
                             {/* Font Selection */}
                             <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-2 block">Font</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3 block">Handwriting Style</label>
                                 <select 
                                     value={font} 
                                     onChange={e => setFont(e.target.value)}
-                                    className="w-full p-3 bg-neutral-50 border border-black/5 rounded-xl text-sm"
+                                    className="w-full p-4 bg-white border border-black/5 rounded-2xl text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                                 >
                                     {FONTS.map(f => <option key={f.name} value={f.name}>{f.label}</option>)}
                                 </select>
                             </div>
                             
                             {/* Font Size */}
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-2 flex justify-between">
-                                    Font Size <span>{fontSize}px</span>
+                            <div className="bg-white border border-black/5 rounded-2xl p-4 shadow-sm">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3 flex justify-between">
+                                    Font Size <span className="text-neutral-900">{fontSize}px</span>
                                 </label>
                                 <input 
                                     type="range" 
@@ -1061,19 +1097,34 @@ export default function EditorPage() {
                                     max="64" 
                                     value={fontSize} 
                                     onChange={e => setFontSize(Number(e.target.value))}
-                                    className="w-full"
+                                    className="w-full h-2 bg-neutral-100 rounded-full appearance-none accent-neutral-900 cursor-pointer"
+                                />
+                            </div>
+                            
+                            {/* Line Nudge (Baseline) */}
+                            <div className="bg-white border border-black/5 rounded-2xl p-4 shadow-sm">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3 flex justify-between">
+                                    Line Nudge <span className="text-neutral-900">{baseline}</span>
+                                </label>
+                                <input 
+                                    type="range" 
+                                    min="-10" 
+                                    max="30" 
+                                    value={baseline} 
+                                    onChange={e => setBaseline(Number(e.target.value))}
+                                    className="w-full h-2 bg-neutral-100 rounded-full appearance-none accent-neutral-900 cursor-pointer"
                                 />
                             </div>
                             
                             {/* Ink Color */}
                             <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-2 block">Ink Color</label>
-                                <div className="flex gap-3">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3 block">Ink Color</label>
+                                <div className="flex gap-3 bg-white border border-black/5 rounded-2xl p-4 shadow-sm">
                                     {COLORS.map(c => (
                                         <button 
                                             key={c.name} 
                                             onClick={() => setColor(c.value)}
-                                            className={`w-8 h-8 rounded-full border-2 ${color === c.value ? 'border-neutral-900 scale-110' : 'border-transparent'}`}
+                                            className={`w-10 h-10 rounded-xl border-2 transition-all shadow-sm ${color === c.value ? 'border-neutral-900 scale-110 shadow-md' : 'border-transparent'}`}
                                             style={{ backgroundColor: c.value }}
                                         />
                                     ))}
@@ -1082,8 +1133,8 @@ export default function EditorPage() {
                             
                             {/* Text Alignment */}
                             <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-2 block">Alignment</label>
-                                <div className="flex bg-neutral-100 rounded-xl p-1">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3 block">Alignment</label>
+                                <div className="flex bg-white border border-black/5 rounded-2xl p-1.5 shadow-sm">
                                     {[
                                         { id: 'left' as const, icon: AlignLeft },
                                         { id: 'center' as const, icon: AlignCenter },
@@ -1093,9 +1144,9 @@ export default function EditorPage() {
                                         <button 
                                             key={opt.id} 
                                             onClick={() => setTextAlign(opt.id)}
-                                            className={`flex-1 p-2 flex justify-center rounded-lg transition-all ${textAlign === opt.id ? 'bg-white shadow' : ''}`}
+                                            className={`flex-1 p-3 flex justify-center rounded-xl transition-all ${textAlign === opt.id ? 'bg-neutral-900 text-white shadow-lg' : 'text-neutral-400'}`}
                                         >
-                                            <opt.icon size={16} />
+                                            <opt.icon size={18} />
                                         </button>
                                     ))}
                                 </div>
@@ -1103,12 +1154,74 @@ export default function EditorPage() {
                         </>
                     )}
                     
+                    {/* PAPER TAB */}
+                    {activeMobileTab === 'paper' && (
+                        <>
+                            {/* Paper Type */}
+                            <div>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3 block">Paper Style</label>
+                                <div className="flex bg-white border border-black/5 rounded-2xl p-1.5 shadow-sm">
+                                    {PAPERS.map(p => (
+                                        <button 
+                                            key={p.id} 
+                                            onClick={() => setPaper(p)}
+                                            className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${paper.id === p.id ? 'bg-neutral-900 text-white shadow-lg' : 'text-neutral-400'}`}
+                                        >
+                                            {p.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* Page Numbers */}
+                            <label className="flex items-center gap-4 p-4 bg-white border border-black/5 rounded-2xl shadow-sm">
+                                <input 
+                                    type="checkbox" 
+                                    checked={showPageNumbers} 
+                                    onChange={e => setPageOptions({ showPageNumbers: e.target.checked })} 
+                                    className="w-5 h-5 rounded-lg border-black/10 text-neutral-900 focus:ring-0"
+                                />
+                                <div>
+                                    <span className="text-sm font-bold text-neutral-900">Show Page Numbers</span>
+                                    <p className="text-[10px] text-neutral-400">Display page count at bottom</p>
+                                </div>
+                            </label>
+                            
+                            {/* Paper Preview Visual */}
+                            <div className="bg-neutral-50 rounded-2xl p-6 border border-black/5">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4 text-center">Preview</div>
+                                <div 
+                                    className={`w-full aspect-[1/1.414] bg-white rounded-lg shadow-lg border border-black/5 relative overflow-hidden ${paper.css}`}
+                                    style={paper.style}
+                                >
+                                    {paper.id !== 'plain' && <div className="absolute top-0 bottom-0 left-[12%] w-px bg-red-300 opacity-30"/>}
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <span className="text-neutral-300 text-xs font-medium">{paper.name}</span>
+                                    </div>
+                                    {showPageNumbers && (
+                                        <div className="absolute bottom-2 left-0 right-0 text-center text-[8px] text-neutral-300">Page 1 of 1</div>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                    
+                    {/* EFFECTS TAB */}
                     {activeMobileTab === 'effects' && (
                         <>
+                            {/* Re-Randomize */}
+                            <button 
+                                onClick={() => setRandomSeed(prev => prev + 1)}
+                                className="w-full py-4 bg-white border border-black/5 text-neutral-700 rounded-2xl font-bold text-sm flex items-center justify-center gap-3 shadow-sm active:scale-[0.98] transition-all"
+                            >
+                                <RefreshCw size={18} className="text-neutral-400" />
+                                Re-Randomize Handwriting
+                            </button>
+                            
                             {/* Jitter */}
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-2 flex justify-between">
-                                    Jitter <span>{jitter}</span>
+                            <div className="bg-white border border-black/5 rounded-2xl p-4 shadow-sm">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3 flex justify-between">
+                                    Jitter <span className="text-neutral-900">{jitter}</span>
                                 </label>
                                 <input 
                                     type="range" 
@@ -1117,14 +1230,14 @@ export default function EditorPage() {
                                     step="0.5"
                                     value={jitter} 
                                     onChange={e => setJitter(Number(e.target.value))}
-                                    className="w-full"
+                                    className="w-full h-2 bg-neutral-100 rounded-full appearance-none accent-neutral-900 cursor-pointer"
                                 />
                             </div>
                             
                             {/* Pressure */}
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-2 flex justify-between">
-                                    Pressure <span>{Math.round(pressure * 100)}%</span>
+                            <div className="bg-white border border-black/5 rounded-2xl p-4 shadow-sm">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3 flex justify-between">
+                                    Pressure <span className="text-neutral-900">{Math.round(pressure * 100)}%</span>
                                 </label>
                                 <input 
                                     type="range" 
@@ -1133,14 +1246,14 @@ export default function EditorPage() {
                                     step="0.1"
                                     value={pressure} 
                                     onChange={e => setPressure(Number(e.target.value))}
-                                    className="w-full"
+                                    className="w-full h-2 bg-neutral-100 rounded-full appearance-none accent-neutral-900 cursor-pointer"
                                 />
                             </div>
                             
                             {/* Smudge */}
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-2 flex justify-between">
-                                    Smudge <span>{smudge}</span>
+                            <div className="bg-white border border-black/5 rounded-2xl p-4 shadow-sm">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3 flex justify-between">
+                                    Smudge <span className="text-neutral-900">{smudge}</span>
                                 </label>
                                 <input 
                                     type="range" 
@@ -1149,49 +1262,83 @@ export default function EditorPage() {
                                     step="0.1"
                                     value={smudge} 
                                     onChange={e => setSmudge(Number(e.target.value))}
-                                    className="w-full"
+                                    className="w-full h-2 bg-neutral-100 rounded-full appearance-none accent-neutral-900 cursor-pointer"
                                 />
                             </div>
                             
-                            {/* Re-Randomize */}
-                            <button 
-                                onClick={() => setRandomSeed(prev => prev + 1)}
-                                className="w-full py-3 bg-neutral-100 text-neutral-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2"
-                            >
-                                <RefreshCw size={16} />
-                                Re-Randomize
-                            </button>
+                            <div className="h-px bg-black/5" />
                             
-                            {/* Paper Type */}
-                            <div className="flex bg-neutral-100 rounded-xl p-1">
-                                {PAPERS.map(p => (
-                                    <button 
-                                        key={p.id} 
-                                        onClick={() => setPaper(p)}
-                                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${paper.id === p.id ? 'bg-white shadow' : ''}`}
-                                    >
-                                        {p.name}
-                                    </button>
-                                ))}
+                            {/* Margin Note */}
+                            <div>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3 block">Margin Note</label>
+                                <input 
+                                    type="text" 
+                                    value={marginNote} 
+                                    onChange={(e) => setMarginNote(e.target.value)}
+                                    className="w-full p-4 bg-white border border-black/5 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm transition-all"
+                                    placeholder="Add a margin annotation..."
+                                />
+                            </div>
+                            
+                            {/* Coffee Stain */}
+                            <label className="flex items-center gap-4 p-4 bg-white border border-black/5 rounded-2xl shadow-sm">
+                                <input 
+                                    type="checkbox" 
+                                    checked={showCoffeeStain} 
+                                    onChange={(e) => setShowCoffeeStain(e.target.checked)} 
+                                    className="w-5 h-5 rounded-lg border-black/10 text-neutral-900 focus:ring-0"
+                                />
+                                <div>
+                                    <span className="text-sm font-bold text-neutral-900">Coffee Stain</span>
+                                    <p className="text-[10px] text-neutral-400">Add realistic coffee ring effect</p>
+                                </div>
+                            </label>
+                            
+                            {/* Sticky Note */}
+                            <div className="space-y-3">
+                                <label className="flex items-center gap-4 p-4 bg-white border border-black/5 rounded-2xl shadow-sm">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={showStickyNote} 
+                                        onChange={(e) => setShowStickyNote(e.target.checked)} 
+                                        className="w-5 h-5 rounded-lg border-black/10 text-neutral-900 focus:ring-0"
+                                    />
+                                    <div>
+                                        <span className="text-sm font-bold text-neutral-900">Sticky Note</span>
+                                        <p className="text-[10px] text-neutral-400">Add a post-it note overlay</p>
+                                    </div>
+                                </label>
+                                
+                                {showStickyNote && (
+                                    <textarea 
+                                        value={stickyNoteText} 
+                                        onChange={(e) => setStickyNoteText(e.target.value)}
+                                        className="w-full h-20 p-4 bg-yellow-50 border border-yellow-200 rounded-2xl text-sm focus:outline-none resize-none shadow-sm transition-all"
+                                        placeholder="Note text..."
+                                    />
+                                )}
                             </div>
                         </>
                     )}
                 </div>
                 
-                {/* Export Button in Panel */}
-                <div className="p-4 border-t border-black/5 flex gap-3">
+                {/* Export Buttons - Fixed at Bottom */}
+                <div className="p-4 border-t border-black/5 bg-white flex gap-3">
                     <button 
                         onClick={() => { setIsMobilePanelOpen(false); handleStartExport('pdf'); }}
-                        className="flex-1 py-3 bg-neutral-900 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2"
+                        disabled={exportStatus === 'processing'}
+                        className="flex-1 py-4 bg-neutral-900 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-neutral-900/20 disabled:opacity-50 active:scale-[0.98] transition-all"
                     >
-                        <Download size={16} />
+                        <Download size={18} />
                         Export PDF
                     </button>
                     <button 
                         onClick={() => { setIsMobilePanelOpen(false); handleStartExport('zip'); }}
-                        className="py-3 px-4 bg-neutral-100 text-neutral-700 rounded-xl font-bold"
+                        disabled={exportStatus === 'processing'}
+                        className="py-4 px-5 bg-neutral-100 text-neutral-700 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] transition-all"
                     >
-                        <ChevronUp size={16} />
+                        <Sparkles size={16} />
+                        ZIP
                     </button>
                 </div>
             </div>
