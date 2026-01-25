@@ -1,5 +1,5 @@
 import { useState, useMemo, useDeferredValue, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+
 import { 
     Settings2, FileText, RefreshCw, Type, 
     AlignLeft, AlignCenter, AlignRight, AlignJustify, 
@@ -724,23 +724,25 @@ export default function EditorPage() {
             <div className="lg:hidden flex flex-col h-screen bg-neutral-50">
                 
                 {/* Mobile Header */}
-                <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-black/5 shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-neutral-900 rounded-xl flex items-center justify-center">
-                            <FileText size={14} className="text-white" />
+                {/* Mobile Header - Premium Window Style */}
+                <div className="flex items-center justify-between px-5 py-4 bg-white/80 backdrop-blur-md border-b border-neutral-100 shrink-0 sticky top-0 z-30">
+                    <div className="flex items-center gap-4">
+                        {/* Decorative Window Dots */}
+                        <div className="flex gap-1.5">
+                            <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-[#28C840]" />
                         </div>
+                        <div className="h-4 w-px bg-neutral-200 ml-1 mr-1" />
                         <div>
-                            <h1 className="font-bold text-sm text-neutral-900 truncate max-w-[180px]">
-                                {headerText || 'Untitled Document'}
+                            <h1 className="font-display font-bold text-neutral-900 truncate max-w-[150px] leading-tight">
+                                {headerText || 'Untitled'}
                             </h1>
-                            <p className="text-[10px] text-neutral-400">
-                                {mobileView === 'write' ? 'Writing Mode' : 'Preview Mode'}
-                            </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[9px] font-bold uppercase text-emerald-600">Live</span>
+                    <div className="flex items-center gap-2 px-2 py-1 bg-emerald-50 rounded-full border border-emerald-100">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">Live</span>
                     </div>
                 </div>
 
@@ -778,13 +780,14 @@ export default function EditorPage() {
                                 </button>
                             </div>
                             
-                            {/* Main Text Input */}
-                            <div className="flex-1 p-4">
+                            {/* Main Text Input with Premium Feel */}
+                            <div className="flex-1 p-4 relative">
+                                <div className="absolute inset-0 bg-[radial-gradient(#00000005_1px,transparent_1px)] bg-size-[16px_16px] pointer-events-none" />
                                 <textarea 
                                     ref={sourceRef}
                                     value={text} 
                                     onChange={(e) => setText(normalizeInput(e.target.value))} 
-                                    className="w-full h-full p-4 bg-neutral-50 border border-black/5 rounded-2xl text-base resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30 transition-all leading-relaxed"
+                                    className="relative z-10 w-full h-full p-6 bg-white border border-neutral-100 rounded-[1.5rem] text-base resize-none focus:outline-none focus:ring-2 focus:ring-neutral-900/5 focus:border-neutral-200 shadow-sm leading-relaxed"
                                     placeholder="Start writing your text here...
 
 Your words will be transformed into beautiful handwriting."
@@ -823,9 +826,7 @@ Your words will be transformed into beautiful handwriting."
                                             }}
                                             className="relative shrink-0"
                                         >
-                                            <motion.div 
-                                                initial={{opacity:0, y: 20}} 
-                                                animate={{opacity:1, y: 0}} 
+                                            <div 
                                                 className={`handwritten-page-render absolute top-0 left-0 w-[800px] aspect-[1/1.414] ${pIdx === 0 ? 'paper-stack' : 'shadow-2xl'} overflow-hidden bg-white ring-1 ring-black/5 rounded-sm origin-top-left`} 
                                                 style={{ 
                                                     transform: `scale(${scale})`,
@@ -854,7 +855,7 @@ Your words will be transformed into beautiful handwriting."
                                                         </div>
                                                     )}
                                                     {showStickyNote && pIdx === 0 && (
-                                                        <motion.div 
+                                                        <div 
                                                             className="absolute bottom-20 right-10 w-40 h-40 bg-yellow-200 shadow-lg p-4 z-40 flex flex-col"
                                                             style={{ 
                                                                 fontFamily: 'Caveat', 
@@ -864,7 +865,7 @@ Your words will be transformed into beautiful handwriting."
                                                         >
                                                             <div className="text-xs uppercase font-black opacity-20 mb-2">Note:</div>
                                                             <div className="text-lg leading-tight">{stickyNoteText}</div>
-                                                        </motion.div>
+                                                        </div>
                                                     )}
                                                     {showHeader && pIdx === 0 && (
                                                         <div 
@@ -951,7 +952,7 @@ Your words will be transformed into beautiful handwriting."
                                                     <div className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-5 bg-[url('https://www.transparenttextures.com/patterns/cardboard.png')]"/>
                                                     {paper.id !== 'plain' && <div className="absolute top-0 bottom-0 left-[50px] w-px bg-red-300 opacity-20"/>}
                                                 </div>
-                                            </motion.div>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -992,29 +993,31 @@ Your words will be transformed into beautiful handwriting."
                 <div className="flex bg-white border-t border-black/5 shrink-0 safe-area-bottom">
                     <button
                         onClick={() => setMobileView('write')}
-                        className={`flex-1 py-4 flex flex-col items-center gap-1 transition-all ${
+                        className={`flex-1 py-4 flex flex-col items-center gap-1.5 relative group ${
                             mobileView === 'write' 
                                 ? 'text-neutral-900' 
-                                : 'text-neutral-400'
+                                : 'text-neutral-400 hover:text-neutral-600'
                         }`}
                     >
-                        <div className={`p-2 rounded-xl transition-all ${mobileView === 'write' ? 'bg-neutral-900 text-white' : ''}`}>
-                            <Type size={20} />
-                        </div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Write</span>
+                        {mobileView === 'write' && (
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-neutral-900 rounded-b-full" />
+                        )}
+                        <Type size={22} strokeWidth={mobileView === 'write' ? 2.5 : 2} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Write</span>
                     </button>
                     <button
                         onClick={() => setMobileView('preview')}
-                        className={`flex-1 py-4 flex flex-col items-center gap-1 transition-all ${
+                        className={`flex-1 py-4 flex flex-col items-center gap-1.5 relative group ${
                             mobileView === 'preview' 
                                 ? 'text-neutral-900' 
-                                : 'text-neutral-400'
+                                : 'text-neutral-400 hover:text-neutral-600'
                         }`}
                     >
-                        <div className={`p-2 rounded-xl transition-all ${mobileView === 'preview' ? 'bg-neutral-900 text-white' : ''}`}>
-                            <FileText size={20} />
-                        </div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Preview</span>
+                        {mobileView === 'preview' && (
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-neutral-900 rounded-b-full" />
+                        )}
+                        <FileText size={22} strokeWidth={mobileView === 'preview' ? 2.5 : 2} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Preview</span>
                     </button>
                 </div>
 
@@ -1022,23 +1025,34 @@ Your words will be transformed into beautiful handwriting."
                 {mobileSettingsOpen && (
                     <>
                         <div 
-                            className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm"
+                            className="fixed inset-0 bg-neutral-900/40 z-50 backdrop-blur-md"
                             onClick={() => setMobileSettingsOpen(false)}
                         />
-                        <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[80vh] overflow-y-auto">
-                            <div className="flex justify-center pt-3 pb-2">
-                                <div className="w-12 h-1.5 bg-neutral-200 rounded-full" />
-                            </div>
-                            <div className="flex items-center justify-between px-5 pb-4 border-b border-black/5">
-                                <h3 className="font-bold text-neutral-900">Settings</h3>
+                        <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2rem] z-50 max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
+                            {/* Premium Header with macOS dots */}
+                            <div className="p-5 border-b border-neutral-100 flex items-center justify-between bg-white shrink-0">
+                                <div className="flex items-center gap-4">
+                                    <div className="flex gap-2">
+                                        <div className="w-3 h-3 rounded-full bg-[#FF5F57] shadow-inner" />
+                                        <div className="w-3 h-3 rounded-full bg-[#FFBD2E] shadow-inner" />
+                                        <div className="w-3 h-3 rounded-full bg-[#28C840] shadow-inner" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-display font-bold text-neutral-900">Settings</h3>
+                                        <p className="text-[10px] text-neutral-400 font-medium">Customize your document</p>
+                                    </div>
+                                </div>
                                 <button 
                                     onClick={() => setMobileSettingsOpen(false)}
-                                    className="w-10 h-10 hover:bg-neutral-100 rounded-full flex items-center justify-center"
+                                    className="p-3 hover:bg-neutral-100 rounded-full transition-all"
                                 >
                                     <X size={20} className="text-neutral-400" />
                                 </button>
                             </div>
-                            <div className="p-5 space-y-5">
+                            {/* Content Area with grid pattern */}
+                            <div className="flex-1 overflow-y-auto p-5 bg-[#FAFAFA] relative">
+                                <div className="absolute inset-0 bg-[radial-gradient(#00000005_1px,transparent_1px)] bg-size-[16px_16px] pointer-events-none" />
+                                <div className="relative z-10 space-y-5">
                                 {/* Header */}
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Document Heading</label>
@@ -1190,6 +1204,7 @@ Your words will be transformed into beautiful handwriting."
                                         />
                                     )}
                                 </div>
+                                </div>
                             </div>
                         </div>
                     </>
@@ -1209,10 +1224,7 @@ Your words will be transformed into beautiful handwriting."
             <div className="hidden lg:flex w-full max-w-[1600px] min-h-[60vh] lg:h-[85vh] bg-white rounded-2xl lg:rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.12)] border border-black/5 flex-col lg:flex-row overflow-hidden relative z-10 transition-all">
                 
                 {/* DESKTOP SIDEBAR - Hidden on mobile */}
-                <motion.aside 
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.2, duration: 0.5, ease: "easeOut" }}
+                <aside 
                     className="hidden lg:flex w-80 bg-[#F9F9F9] border-r border-black/5 flex-col shrink-0 overflow-hidden"
                 >
                     {/* MACOS DOTS - Fixed Header */}
@@ -1226,15 +1238,10 @@ Your words will be transformed into beautiful handwriting."
 
                     {/* Scrollable Content */}
                     <div className="flex-1 overflow-y-auto px-8 pb-8 custom-scrollbar">
-                        <motion.div 
-                            initial="hidden"
-                            animate="visible"
-                            variants={{
-                                visible: { transition: { staggerChildren: 0.1 } }
-                            }}
+                        <div 
                             className="flex flex-col gap-6"
                         >
-                        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                        <div>
                              <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 mb-3"><Type size={12}/> Document Heading</label>
                              <div className="space-y-3 p-1">
                                 <label className="flex items-center gap-3 cursor-pointer group p-3 rounded-xl bg-white border border-black/5 hover:border-black/10 transition-colors">
@@ -1249,12 +1256,12 @@ Your words will be transformed into beautiful handwriting."
                                     />
                                 )}
                              </div>
-                        </motion.div>
+                        </div>
 
                         <div className="h-px bg-black/5 w-full my-2" />
 
                         {/* 2. THE SOURCE */}
-                        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                        <div>
                             <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 mb-3"><FileText size={12}/> The Source</label>
                             <div className="relative group">
                                  <div className="absolute -inset-2 bg-linear-to-r from-indigo-500/20 to-purple-500/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition duration-1000 group-focus-within:opacity-100" />
@@ -1266,14 +1273,11 @@ Your words will be transformed into beautiful handwriting."
                                     placeholder="Start writing your masterpiece..."
                                 />
                             </div>
-                        </motion.div>
+                        </div>
 
                         {/* 3. AI HUMANIZER */}
                          <div className="relative">
-                              <motion.button 
-                                 whileHover={{ scale: 1.02 }}
-                                 whileTap={{ scale: 0.98 }}
-                                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                              <button 
                                  onClick={handleHumanize}
                                  disabled={isHumanizing || !text.trim()}
                                  className="w-full py-4 px-5 rounded-2xl bg-white border border-black/5 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 disabled:opacity-50 disabled:shadow-none transition-all group overflow-hidden relative"
@@ -1293,14 +1297,14 @@ Your words will be transformed into beautiful handwriting."
                                          </div>
                                      </div>
                                      {isHumanizing && <RefreshCw size={14} className="animate-spin text-neutral-300" />}
-                                 </div>
-                              </motion.button>
+                                  </div>
+                              </button>
                          </div>
 
                         <div className="h-px bg-black/5 w-full my-2" />
 
                         {/* 4. PAPER & SETUP (Cleaned up) */}
-                        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                        <div>
                             <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4"><Ruler size={12}/> Paper & Setup</label>
                             <div className="grid grid-cols-1 gap-2">
                                 <div className="flex p-1 bg-white border border-black/5 rounded-xl shadow-xs">
@@ -1320,12 +1324,12 @@ Your words will be transformed into beautiful handwriting."
                                     </label>
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
 
                         <div className="h-px bg-black/5 w-full my-2" />
 
                         {/* 5. TYPOGRAPHY */}
-                        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                        <div>
                             <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4"><Settings2 size={12}/> Typography</label>
                             <div className="space-y-4">
                                 <div className="flex bg-white border border-black/5 p-1 rounded-xl shadow-xs">
@@ -1338,37 +1342,34 @@ Your words will be transformed into beautiful handwriting."
                                     <div><span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter mb-2 flex justify-between">Font Size <span>{fontSize}px</span></span><input type="range" min="14" max="64" value={fontSize} onChange={e=>setFontSize(Number(e.target.value))} className="w-full h-1 bg-black/5 rounded-full appearance-none accent-neutral-900 cursor-pointer"/></div>
                                     <div><span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter mb-2 flex justify-between">Line Nudge <span>{baseline}</span></span><input type="range" min="-10" max="30" value={baseline} onChange={e=>setBaseline(Number(e.target.value))} className="w-full h-1 bg-black/5 rounded-full appearance-none accent-neutral-900 cursor-pointer"/></div>
                                 </div>
-                                <div className="flex gap-2 pt-2">{COLORS.map(c=>(<button key={c.name} onClick={()=>setColor(c.value)} className={`w-5 h-5 rounded-full border-2 ${color===c.value?'border-neutral-900 scale-110':'border-transparent'} shadow-xs transition-all`} style={{backgroundColor:c.value}}/>))}</div>
+                                <div className="flex gap-2 pt-2">{COLORS.map(c=>(<button key={c.name} onClick={()=>setColor(c.value)} className={`w-5 h-5 rounded-full border-2 ${color === c.value?'border-neutral-900 scale-110':'border-transparent'} shadow-xs transition-all`} style={{backgroundColor:c.value}}/>))}</div>
                             </div>
-                        </motion.div>
+                        </div>
 
                         <div className="h-px bg-black/5 w-full my-2" />
 
                         {/* 6. RENDERING */}
-                        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                        <div>
                             <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4"><Sparkles size={12}/> Rendering</label>
                             <div className="space-y-4">
-                                 <motion.button 
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                                 <button 
                                     onClick={() => setRandomSeed(prev => prev + 1)}
                                     className="w-full py-3 bg-white border border-black/5 text-[10px] font-bold uppercase tracking-widest text-neutral-600 rounded-xl hover:bg-neutral-900 hover:text-white transition-all flex items-center justify-center gap-2 shadow-xs group"
                                 >
                                     <RefreshCw size={12} className={`group-hover:rotate-180 transition-transform duration-500 ${exportStatus === 'processing' ? 'animate-spin' : ''}`}/> Re-Randomize
-                                </motion.button>
+                                </button>
                                 <div className="space-y-4">
                                     <div><span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter mb-2 flex justify-between">Jitter <span>{jitter}</span></span><input type="range" min="0" max="6" step="0.5" value={jitter} onChange={(e) => setJitter(Number(e.target.value))} className="w-full h-1 bg-black/5 rounded-full appearance-none accent-neutral-900 cursor-pointer" /></div>
                                     <div><span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter mb-2 flex justify-between">Pressure <span>{Math.round(pressure*100)}%</span></span><input type="range" min="0" max="1" step="0.1" value={pressure} onChange={(e) => setPressure(Number(e.target.value))} className="w-full h-1 bg-black/5 rounded-full appearance-none accent-neutral-900 cursor-pointer" /></div>
                                     <div><span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter mb-2 flex justify-between">Smudge <span>{smudge}</span></span><input type="range" min="0" max="2" step="0.1" value={smudge} onChange={(e) => setSmudge(Number(e.target.value))} className="w-full h-1 bg-black/5 rounded-full appearance-none accent-neutral-900 cursor-pointer" /></div>
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
 
                         <div className="h-px bg-black/5 w-full my-2" />
 
                         {/* 7. EFFECTS */}
-                        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                        <div>
                             <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4"><Zap size={12}/> Effects</label>
                             <div className="space-y-4">
                                 <input 
@@ -1395,35 +1396,29 @@ Your words will be transformed into beautiful handwriting."
                                     )}
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
 
                         <div className="mt-6 space-y-3">
-                            <motion.button 
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                            <button 
                                 onClick={() => handleStartExport('pdf')} 
                                 disabled={exportStatus === 'processing'} 
                                 className="w-full py-4 rounded-2xl bg-neutral-900 text-white font-bold text-sm shadow-[0_10px_20px_-5px_rgba(0,0,0,0.2)] hover:shadow-2xl active:translate-y-0 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                             >
                                 <Download size={16} />
                                 Export PDF
-                            </motion.button>
-                            <motion.button 
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                            </button>
+                            <button 
                                 onClick={() => handleStartExport('zip')} 
                                 disabled={exportStatus === 'processing'} 
                                 className="w-full py-3 rounded-2xl bg-white border border-black/5 text-neutral-600 font-bold text-[11px] uppercase tracking-widest hover:bg-neutral-50 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                             >
                                 <Sparkles size={14} />
                                 Export Images (ZIP)
-                            </motion.button>
+                            </button>
                         </div>
-                        </motion.div>
+                        </div>
                     </div>
-                </motion.aside>
+                </aside>
 
                 {/* MAIN VISUAL PREVIEW AREA */}
                 <main className="flex-1 bg-[#FAFAFA] flex flex-col relative overflow-hidden group/canvas">
@@ -1464,9 +1459,7 @@ Your words will be transformed into beautiful handwriting."
                                 }}
                                 className="relative shrink-0 transition-all duration-300 ease-out"
                              >
-                                 <motion.div 
-                                    initial={{opacity:0, y: 20, rotate: 0}} 
-                                    animate={{opacity:1, y: 0, rotate: 0}} 
+                                 <div 
                                     className={`handwritten-page-render absolute top-0 left-0 w-[800px] aspect-[1/1.414] ${pIdx === 0 ? 'paper-stack' : 'shadow-2xl'} overflow-hidden bg-white ring-1 ring-black/5 rounded-none origin-top-left`} 
                                     style={{ 
                                         transform: `scale(${scale})`,
@@ -1500,8 +1493,7 @@ Your words will be transformed into beautiful handwriting."
 
                                     {/* STICKY NOTE */}
                                     {showStickyNote && pIdx === 0 && (
-                                        <motion.div 
-                                            initial={{ x: 100, y: 100, rotate: 5 }}
+                                        <div 
                                             className="absolute bottom-20 right-10 w-40 h-40 bg-yellow-200 shadow-lg p-4 z-40 flex flex-col font-handwriting"
                                             style={{ 
                                                 fontFamily: 'Caveat', 
@@ -1513,7 +1505,7 @@ Your words will be transformed into beautiful handwriting."
                                             <div className="text-xs uppercase font-black opacity-20 mb-2">Note:</div>
                                             <div className="text-lg leading-tight">{stickyNoteText}</div>
                                             <div className="absolute top-0 left-0 right-0 h-4 bg-yellow-300/30" />
-                                        </motion.div>
+                                        </div>
                                     )}
 
                                     {showHeader && pIdx === 0 && (
@@ -1607,7 +1599,7 @@ Your words will be transformed into beautiful handwriting."
                                     <div className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-5 bg-[url('https://www.transparenttextures.com/patterns/cardboard.png')]"/>
                                     {paper.id !== 'plain' && <div className="absolute top-0 bottom-0 left-[50px] w-px bg-red-300 opacity-20"/>}
                                 </div>
-                             </motion.div>
+                                 </div>
                         </div>
                         ))}
                     </div>
