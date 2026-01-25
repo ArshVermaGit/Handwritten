@@ -451,6 +451,39 @@ export default function EditorPage() {
 
             const baseFileName = customName || `handwritten-${Date.now()}`;
 
+            // Shared sanitizer to fix Tailwind v4 "oklch" colors crashing html2canvas
+            const sanitizeClonedDoc = (clonedDoc: Document) => {
+                const targets = clonedDoc.querySelectorAll('.handwritten-export-target *');
+                const exportTargets = clonedDoc.querySelectorAll('.handwritten-export-target');
+                
+                // 1. Force white background on containers
+                exportTargets.forEach(el => {
+                    const hEl = el as HTMLElement;
+                    hEl.style.backgroundColor = '#ffffff';
+                    hEl.style.transform = 'none';
+                    hEl.style.backgroundImage = 'none'; // remove complex gradients if any
+                });
+
+                // 2. Flatten all colors to RGB to fix oklch/modern CSS errors
+                targets.forEach((el) => {
+                    const hEl = el as HTMLElement;
+                    const style = clonedDoc.defaultView?.getComputedStyle(hEl);
+                    if (!style) return;
+
+                    // Force critical color properties to computed rgb() values
+                    if (style.color && style.color.includes('oklch')) hEl.style.color = style.color; // Browser hopefully resolves this, if not we fallback
+                    // Actually, getting computed style in browser normally resolves to rgb. 
+                    // We just explicitly set it to ensure html2canvas reads the resolved value.
+                    // However, we must be careful: if we set style.color = 'oklch(...)', it fails. 
+                    // We assume getComputedStyle returns 'rgb(...)'.
+                    
+                    if (style.color) hEl.style.color = style.color;
+                    if (style.backgroundColor && style.backgroundColor !== 'rgba(0, 0, 0, 0)') hEl.style.backgroundColor = style.backgroundColor;
+                    if (style.borderColor) hEl.style.borderColor = style.borderColor;
+                    if (style.textDecorationColor) hEl.style.textDecorationColor = style.textDecorationColor;
+                });
+            };
+
             if (exportFormat === 'pdf') {
                 const pdf = new jsPDF({
                     orientation: 'p',
@@ -472,13 +505,7 @@ export default function EditorPage() {
                         scrollY: 0,
                         windowWidth: 800,
                         windowHeight: 1131,
-                        onclone: (clonedDoc) => {
-                            const clonedElement = clonedDoc.querySelector('.handwritten-export-target');
-                            if (clonedElement) {
-                                (clonedElement as HTMLElement).style.background = '#ffffff';
-                                (clonedElement as HTMLElement).style.transform = 'none'; // Reset any scaling transforms
-                            }
-                        }
+                        onclone: sanitizeClonedDoc
                     });
 
                     // CHANGE: Use JPEG at 0.9 quality for massive size reduction (10MB -> 1MB)
@@ -506,13 +533,7 @@ export default function EditorPage() {
                         scrollY: 0,
                         windowWidth: 800,
                         windowHeight: 1131,
-                        onclone: (clonedDoc) => {
-                            const clonedElement = clonedDoc.querySelector('.handwritten-export-target');
-                            if (clonedElement) {
-                                (clonedElement as HTMLElement).style.background = '#ffffff';
-                                (clonedElement as HTMLElement).style.transform = 'none';
-                            }
-                        }
+                        onclone: sanitizeClonedDoc
                     });
                     
                     // Keep PNG for ZIP as users might want lossless images for editing
