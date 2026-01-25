@@ -95,7 +95,7 @@ export default function HistoryModal({ isOpen, onClose }: HistoryModalProps) {
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-md">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-md">
                     {/* BACKDROP */}
                     <motion.div 
                         initial={{ opacity: 0 }}
@@ -112,7 +112,7 @@ export default function HistoryModal({ isOpen, onClose }: HistoryModalProps) {
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
                         ref={modalRef}
-                        className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl max-w-2xl w-full relative flex flex-col max-h-[85vh] border border-white/20"
+                        className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl max-w-2xl w-full relative flex flex-col h-auto max-h-[85vh] my-auto border border-white/20"
                     >
                         {/* HEADER with macOS dots */}
                         <div className="p-6 sm:p-8 border-b border-neutral-100 flex items-center justify-between bg-white relative z-10 shrink-0">
