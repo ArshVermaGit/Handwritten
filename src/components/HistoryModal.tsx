@@ -112,7 +112,7 @@ export default function HistoryModal({ isOpen, onClose }: HistoryModalProps) {
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
                         ref={modalRef}
-                        className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl max-w-2xl w-full relative flex flex-col h-[85vh] border border-white/20"
+                        className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl max-w-2xl w-full relative flex flex-col max-h-[85vh] border border-white/20"
                     >
                         {/* HEADER with macOS dots */}
                         <div className="p-6 sm:p-8 border-b border-neutral-100 flex items-center justify-between bg-white relative z-10 shrink-0">
@@ -126,6 +126,7 @@ export default function HistoryModal({ isOpen, onClose }: HistoryModalProps) {
                                 <button 
                                     onClick={onClose}
                                     className="p-2 -ml-2 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 rounded-xl transition-all flex items-center gap-2 group"
+                                    title="Go Back"
                                 >
                                     <ArrowLeft size={20} className="group-hover:-translate-x-0.5 transition-transform" />
                                 </button>
@@ -145,6 +146,7 @@ export default function HistoryModal({ isOpen, onClose }: HistoryModalProps) {
                                 <button 
                                     onClick={onClose}
                                     className="p-3 text-neutral-300 hover:text-neutral-900 hover:bg-neutral-100 rounded-full transition-all"
+                                    title="Close"
                                 >
                                     <X size={20} />
                                 </button>
