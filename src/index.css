@@ -1,15 +1,16 @@
 @import "tailwindcss";
 
 @theme {
-  --color-paper: #faf9f6;
-  --color-paper-dark: #f2f0e9;
+  /* Refined Paper & Ink */
+  --color-paper: #ffffff; /* Cleaner white for modern look */
+  --color-paper-dark: #fbfbfb;
 
-  --color-ink: #111827;
-  --color-ink-light: #4b5563;
+  /* Smoother Shadows (Layered) */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.08);
+  --shadow-paper: 0 1px 1px rgba(0,0,0,0.08), 0 2px 2px rgba(0,0,0,0.08), 0 4px 4px rgba(0,0,0,0.08), 0 8px 8px rgba(0,0,0,0.08);
 
-  --color-accent: #6366f1;
-  --color-accent-light: #818cf8;
-
+  /* ... fonts ... */
   --font-handwriting: "Caveat", cursive;
   --font-script: "Dancing Script", cursive;
   --font-print: "Patrick Hand", cursive;
@@ -17,10 +18,13 @@
   --font-sans: "Inter", system-ui, sans-serif;
   --font-serif: "Merriweather", serif;
 
+  /* ... animations ... */
   --animate-float: float 6s ease-in-out infinite;
   --animate-pulse-slow: pulse-slow 8s ease-in-out infinite;
   --animate-blob: blob 7s infinite;
 }
+
+/* ... animations keyframes ... */
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
@@ -44,25 +48,27 @@ html {
 }
 
 :root {
-  --color-paper: #faf9f6;
-  --color-paper-dark: #f2f0e9;
-  --color-ink: #111827;
-  --color-ink-light: #4b5563;
-  --color-accent: #6366f1;
-  --color-accent-light: #818cf8;
+  /* Fallback for non-theme usage */
+  --color-paper: #ffffff;
+  --color-paper-dark: #fbfbfb;
+}
+
+::selection {
+  background-color: rgba(99, 102, 241, 0.2); /* Indigo/Accent with low opacity */
+  color: #111827;
 }
 
 @layer utilities {
   .btn-primary {
-    @apply px-6 py-3 rounded-full bg-ink text-white font-bold transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-ink/20;
+    @apply px-6 py-3 rounded-full bg-ink text-white font-bold transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl shadow-ink/20;
   }
 
   .btn-secondary {
-    @apply px-6 py-3 rounded-full bg-white border border-black/5 text-ink font-bold transition-colors hover:bg-gray-50;
+    @apply px-6 py-3 rounded-full bg-white border border-black/5 text-ink font-bold transition-all duration-200 hover:bg-gray-50 hover:border-black/10;
   }
 
   .paper-card {
-    @apply bg-white rounded-2xl shadow-xl shadow-ink/5 border border-black/5 p-6;
+    @apply bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-black/3 p-8 transition-shadow duration-300 hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)];
   }
 
   /* Smooth Marquee Animation */
@@ -70,53 +76,40 @@ html {
     animation: marquee 30s linear infinite;
     will-change: transform;
   }
+  
+  /* Glass Morphism Utility */
+  .glass {
+    @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-sm;
+  }
 }
 
 body {
   @apply bg-paper text-ink antialiased;
-  font-feature-settings:
-    "rlig" 1,
-    "calt" 1;
+  font-feature-settings: "rlig" 1, "calt" 1;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+h1, h2, h3, h4, h5, h6 {
   @apply font-display tracking-tight text-ink;
 }
 
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 20px, 0);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
+  from { opacity: 0; transform: translate3d(0, 20px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes marquee {
-  0% {
-    transform: translate3d(0, 0, 0);
-  }
-  100% {
-    transform: translate3d(-50%, 0, 0);
-  }
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
 }
 
-/* Page Stack Depth Effect */
+/* Page Stack Depth Effect - Refined */
 .paper-stack {
   position: relative;
-  box-shadow:
-    0 1px 1px rgba(0, 0, 0, 0.11),
-    0 2px 2px rgba(0, 0, 0, 0.11),
-    0 4px 4px rgba(0, 0, 0, 0.11),
-    0 8px 8px rgba(0, 0, 0, 0.11),
-    0 16px 16px rgba(0, 0, 0, 0.11);
+  box-shadow: 
+    0 1px 1px rgba(0,0,0,0.05),
+    0 2px 4px rgba(0,0,0,0.05),
+    0 4px 8px rgba(0,0,0,0.05),
+    0 8px 16px rgba(0,0,0,0.05); /* Softer, more diffuse */
 }
 
 .paper-stack::after,
@@ -129,36 +122,42 @@ h6 {
   top: 0;
   z-index: -1;
   background: inherit;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.03); /* Lighter border */
   border-radius: inherit;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .paper-stack::before {
-  transform: translate(4px, 4px);
+  transform: translate(3px, 3px) rotate(0.5deg);
 }
 
 .paper-stack::after {
-  transform: translate(8px, 8px);
-  opacity: 0.5;
+  transform: translate(6px, 6px) rotate(1deg);
+  opacity: 0.6;
 }
 
-/* Custom Indigo Scrollbar */
+/* Custom Indigo Scrollbar - Refined */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
+  height: 6px; /* Also format horizontal scrollbar */
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
+  margin: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #e2e8f0;
-  border-radius: 10px;
+  border-radius: 999px;
+  border: 2px solid transparent; /* Creates padding effect */
+  background-clip: content-box;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #6366f1;
+  background: #a5b4fc; /* Lighter indigo on hover */
+  border: 1px solid transparent;
+  background-clip: content-box;
 }
 
 .animate-fade-in-up {
