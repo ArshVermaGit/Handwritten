@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Clock, Download, Trash2, FileText, Package, ShieldCheck, Search } from 'lucide-react';
+import { X, Clock, Download, Trash2, FileText, Package, ShieldCheck, Search, ArrowLeft } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 import { getAllExportedFiles, deleteExportedFile, type StoredFile } from '../lib/fileStorage';
 
@@ -122,6 +122,13 @@ export default function HistoryModal({ isOpen, onClose }: HistoryModalProps) {
                                     <div className="w-3 h-3 rounded-full bg-[#FFBD2E] shadow-inner" />
                                     <div className="w-3 h-3 rounded-full bg-[#28C840] shadow-inner" />
                                 </div>
+                                <div className="h-6 w-px bg-neutral-100 mx-2" />
+                                <button 
+                                    onClick={onClose}
+                                    className="p-2 -ml-2 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 rounded-xl transition-all flex items-center gap-2 group"
+                                >
+                                    <ArrowLeft size={20} className="group-hover:-translate-x-0.5 transition-transform" />
+                                </button>
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600">
                                         <Clock size={20} />
