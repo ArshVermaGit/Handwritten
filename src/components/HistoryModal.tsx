@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Clock, Download, Trash2, FileText, Package, ShieldCheck } from 'lucide-react';
+import { X, Clock, Download, Trash2, FileText, Package, ShieldCheck, Search } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 import { getAllExportedFiles, deleteExportedFile, type StoredFile } from '../lib/fileStorage';
 
@@ -12,6 +12,7 @@ interface HistoryModalProps {
 export default function HistoryModal({ isOpen, onClose }: HistoryModalProps) {
     const [files, setFiles] = useState<StoredFile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
     const { addToast } = useToast();
     const modalRef = useRef<HTMLDivElement>(null);
 
@@ -87,116 +88,141 @@ export default function HistoryModal({ isOpen, onClose }: HistoryModalProps) {
         });
     };
 
+    const filteredFiles = files.filter(file => 
+        file.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-100 flex items-center justify-center p-2 sm:p-4 bg-neutral-900/40 backdrop-blur-md">
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-md">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
                         ref={modalRef}
-                        className="bg-white rounded-2xl sm:rounded-[2.5rem] overflow-hidden shadow-2xl max-w-xl w-full relative flex flex-col max-h-[90vh] sm:max-h-[85vh] border border-white/20"
+                        className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl max-w-4xl w-full relative flex flex-col h-[85vh] border border-white/20"
                     >
                         {/* Header */}
-                        <div className="p-4 sm:p-6 md:p-8 border-b border-neutral-100 flex items-center justify-between bg-white relative z-10">
-                            <div className="flex items-center gap-3 sm:gap-4">
-                                <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600">
-                                    <Clock size={24} />
+                        <div className="p-8 border-b border-neutral-100 flex items-center justify-between bg-white relative z-10 shrink-0">
+                            <div className="flex items-center gap-5">
+                                <div className="p-4 bg-indigo-50 rounded-2xl text-indigo-600 shadow-sm border border-indigo-100">
+                                    <Clock size={28} />
                                 </div>
                                 <div>
-                                    <h2 className="text-lg sm:text-xl md:text-2xl font-display font-bold text-neutral-900 leading-tight">Export History</h2>
-                                    <div className="items-center gap-2 mt-1 hidden sm:flex">
-                                        <ShieldCheck size={12} className="text-emerald-500" />
-                                        <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest">
-                                            Saved locally on your device
-                                        </p>
-                                    </div>
+                                    <h2 className="text-3xl font-display font-bold text-neutral-900 leading-tight">History Vault</h2>
+                                    <p className="text-sm text-neutral-400 font-medium">Manage your exported masterpieces</p>
                                 </div>
                             </div>
-                            <button 
-                                onClick={onClose}
-                                className="p-2 text-neutral-300 hover:text-neutral-900 hover:bg-neutral-100 rounded-full transition-all"
-                            >
-                                <X size={24} />
-                            </button>
+                            
+                            <div className="flex items-center gap-4">
+                                {/* Search Bar */}
+                                <div className="hidden sm:flex items-center gap-3 px-4 py-3 bg-neutral-50 rounded-2xl border border-neutral-100 focus-within:border-indigo-200 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500/10 transition-all w-64">
+                                    <Search size={18} className="text-neutral-400" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="Search files..." 
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="bg-transparent border-none outline-none text-sm w-full font-medium placeholder:text-neutral-400 text-neutral-900" 
+                                    />
+                                </div>
+
+                                <button 
+                                    onClick={onClose}
+                                    className="p-3 text-neutral-300 hover:text-neutral-900 hover:bg-neutral-100 rounded-full transition-all"
+                                >
+                                    <X size={24} />
+                                </button>
+                            </div>
                         </div>
 
-                        {/* List Content */}
-                        <div className="overflow-y-auto p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 flex-1 scrollbar-hide">
+                        {/* Grid Content */}
+                        <div className="flex-1 overflow-y-auto p-8 bg-[#FAFAFA] scrollbar-hide relative">
+                            {/* Grid Background Pattern */}
+                            <div className="absolute inset-0 bg-[radial-gradient(#00000005_1px,transparent_1px)] bg-size-[20px_20px] pointer-events-none" />
+
                             {isLoading ? (
-                                <div className="flex flex-col items-center justify-center py-20 opacity-20">
+                                <div className="flex flex-col items-center justify-center h-full opacity-30">
                                     <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" />
                                     <p className="font-bold tracking-widest uppercase text-xs">Loading Vault...</p>
                                 </div>
-                            ) : files.length === 0 ? (
-                                <div className="text-center py-16 px-8">
-                                    <div className="w-20 h-20 bg-neutral-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                                        <FileText size={40} className="text-neutral-200" />
+                            ) : filteredFiles.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                                    <div className="w-24 h-24 bg-white rounded-[2rem] shadow-sm border border-neutral-100 flex items-center justify-center mb-6">
+                                        <Package size={48} className="text-neutral-200" />
                                     </div>
-                                    <h3 className="text-lg font-bold text-neutral-900 mb-2">No exports found</h3>
-                                    <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed max-w-xs mx-auto">
-                                        Your exported PDFs and ZIPs will appear here automatically. Everything is stored privately in your browser.
+                                    <h3 className="text-xl font-bold text-neutral-900 mb-2">
+                                        {searchQuery ? 'No matches found' : 'Your vault is empty'}
+                                    </h3>
+                                    <p className="text-neutral-400 leading-relaxed max-w-xs mx-auto text-sm">
+                                        {searchQuery ? `We couldn't find any files matching "${searchQuery}"` : "Exports will be safely stored here locally."}
                                     </p>
                                 </div>
                             ) : (
-                                files.map((file) => (
-                                    <motion.div 
-                                        layout
-                                        key={file.id}
-                                        initial={{ opacity: 0, x: -10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        className="group p-3 sm:p-4 md:p-5 rounded-2xl sm:rounded-3xl border border-neutral-100 hover:border-indigo-100 hover:bg-indigo-50/30 transition-all flex items-center justify-between gap-2 sm:gap-4"
-                                    >
-                                        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
-                                            <div className={`p-3 rounded-2xl shrink-0 ${
-                                                file.type === 'pdf' ? 'bg-rose-50 text-rose-500' : 'bg-blue-50 text-blue-500'
-                                            }`}>
-                                                {file.type === 'pdf' ? <FileText size={20} /> : <Package size={20} />}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 relative z-10 pb-0">
+                                    {filteredFiles.map((file, index) => (
+                                        <motion.div 
+                                            layout
+                                            key={file.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: index * 0.05 }}
+                                            className="group bg-white rounded-3xl p-4 shadow-sm hover:shadow-xl border border-neutral-100 hover:border-indigo-100 transition-all duration-300 relative overflow-hidden"
+                                        >
+                                            {/* Hover Overlay Actions */}
+                                            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 flex items-center justify-center gap-3">
+                                                <button 
+                                                    onClick={() => handleDownload(file)}
+                                                    className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg hover:scale-110 active:scale-95 transition-transform"
+                                                    title="Download"
+                                                >
+                                                    <Download size={24} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleDelete(file.id)}
+                                                    className="p-4 bg-white text-rose-500 border border-rose-100 rounded-2xl shadow-lg hover:scale-110 active:scale-95 transition-transform hover:bg-rose-50"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 size={24} />
+                                                </button>
                                             </div>
-                                            <div className="min-w-0">
-                                                <h4 className="text-sm font-bold text-neutral-900 truncate pr-2" title={file.name}>
+
+                                            {/* Card Content */}
+                                            <div className="aspect-[4/3] bg-neutral-50 rounded-2xl mb-4 flex items-center justify-center relative overflow-hidden group-hover:bg-indigo-50/30 transition-colors">
+                                                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm ${
+                                                     file.type === 'pdf' ? 'bg-rose-100 text-rose-500' : 'bg-blue-100 text-blue-500'
+                                                 }`}>
+                                                     {file.type === 'pdf' ? <FileText size={32} /> : <Package size={32} />}
+                                                 </div>
+                                                 <div className="absolute top-3 right-3 px-2 py-1 bg-white/80 backdrop-blur rounded-lg text-[10px] font-black uppercase tracking-wider text-neutral-400 border border-neutral-100">
+                                                     {file.type.toUpperCase()}
+                                                 </div>
+                                            </div>
+
+                                            <div>
+                                                <h4 className="font-bold text-neutral-900 truncate mb-1" title={file.name}>
                                                     {file.name}
                                                 </h4>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className="text-[10px] font-medium text-neutral-400">
-                                                        {formatDate(file.timestamp)}
-                                                    </span>
-                                                    <span className="w-1 h-1 rounded-full bg-neutral-200" />
-                                                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-tighter">
-                                                        {formatSize(file.size)}
-                                                    </span>
+                                                <div className="flex items-center gap-3 text-xs font-medium text-neutral-400">
+                                                    <span>{formatSize(file.size)}</span>
+                                                    <span className="w-1 h-1 rounded-full bg-neutral-300" />
+                                                    <span>{formatDate(file.timestamp)}</span>
                                                 </div>
                                             </div>
-                                        </div>
-                                        
-                                        <div className="flex items-center gap-2">
-                                            <button 
-                                                onClick={() => handleDownload(file)}
-                                                className="p-3 rounded-xl bg-white border border-neutral-200 text-neutral-400 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-sm transition-all"
-                                                title="Download File"
-                                            >
-                                                <Download size={18} />
-                                            </button>
-                                            <button 
-                                                onClick={() => handleDelete(file.id)}
-                                                className="p-2 sm:p-3 rounded-xl bg-white border border-neutral-200 text-neutral-400 hover:text-rose-600 hover:border-rose-200 hover:shadow-sm transition-all sm:opacity-0 sm:group-hover:opacity-100"
-                                                title="Delete from History"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </div>
-                                    </motion.div>
-                                ))
+                                        </motion.div>
+                                    ))}
+                                </div>
                             )}
                         </div>
 
                         {/* Footer Info */}
-                        <div className="p-3 sm:p-4 md:p-6 bg-neutral-50 border-t border-neutral-100">
-                            <p className="text-[9px] text-center text-neutral-400 uppercase tracking-[0.2em] font-black">
-                                Private Local Storage • No Data Leaves This Browser
-                            </p>
+                        <div className="p-5 bg-white border-t border-neutral-100 shrink-0">
+                            <div className="flex items-center justify-center gap-2 text-[10px] font-black text-neutral-400 uppercase tracking-widest">
+                                <ShieldCheck size={14} className="text-emerald-500" />
+                                <span>Encrypted Local Storage</span>
+                            </div>
                         </div>
                     </motion.div>
                 </div>
