@@ -442,47 +442,64 @@ export default function EditorPage() {
         setExportStatus('processing');
         setProgress(0);
         
-        try {
-            // Wait for fonts to be ready to avoid font-swapping glitches
-            await document.fonts.ready;
+        // --- EMERGENCY FIX HELPERS ---
+        const styleSnapshots: { tag: HTMLStyleElement, content: string }[] = [];
+        const elementSnapshots: { el: HTMLElement, style: string }[] = [];
 
+        // 1. Lock resolved RGB colors inline so they persist when we break the stylesheet
+        const lockComputedStyles = () => {
+            const targets = document.querySelectorAll('.handwritten-export-target, .handwritten-export-target *');
+            targets.forEach((el) => {
+                const hEl = el as HTMLElement;
+                const computed = window.getComputedStyle(hEl);
+                
+                // Save original inline style to restore later
+                elementSnapshots.push({ el: hEl, style: hEl.getAttribute('style') || '' });
+
+                // Force computed RGB values (browser resolves oklch -> rgb here)
+                // We purposefully use setProperty to override everything
+                if (computed.color) hEl.style.color = computed.color;
+                if (computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)') hEl.style.backgroundColor = computed.backgroundColor;
+                if (computed.borderColor) hEl.style.borderColor = computed.borderColor;
+                if (computed.textDecorationColor) hEl.style.textDecorationColor = computed.textDecorationColor;
+            });
+        };
+
+        // 2. Strip 'oklch' from stylesheets to prevent html2canvas parser crash
+        const patchStylesheets = () => {
+            const styleTags = Array.from(document.querySelectorAll('style'));
+            styleTags.forEach(tag => {
+                const content = tag.innerHTML;
+                if (content.includes('oklch')) {
+                    styleSnapshots.push({ tag, content });
+                    // Replace oklch(...) with a safe fallback (white). 
+                    // Visuals are valid because we locked them inline above.
+                    tag.innerHTML = content.replace(/oklch\([^)]+\)/g, '#ffffff');
+                }
+            });
+        };
+
+        const restoreAll = () => {
+            // Restore stylesheets
+            styleSnapshots.forEach(s => s.tag.innerHTML = s.content);
+            // Restore elements
+            elementSnapshots.forEach(s => s.el.setAttribute('style', s.style));
+        };
+        // -----------------------------
+
+        try {
+            await document.fonts.ready;
             const elements = document.querySelectorAll('.handwritten-export-target');
             if (elements.length === 0) throw new Error('No pages found');
 
+            // Apply FIX
+            lockComputedStyles();
+            patchStylesheets();
+            
+            // Give browser a moment to apply style changes before capture
+            await new Promise(resolve => setTimeout(resolve, 50));
+
             const baseFileName = customName || `handwritten-${Date.now()}`;
-
-            // Shared sanitizer to fix Tailwind v4 "oklch" colors crashing html2canvas
-            const sanitizeClonedDoc = (clonedDoc: Document) => {
-                const targets = clonedDoc.querySelectorAll('.handwritten-export-target *');
-                const exportTargets = clonedDoc.querySelectorAll('.handwritten-export-target');
-                
-                // 1. Force white background on containers
-                exportTargets.forEach(el => {
-                    const hEl = el as HTMLElement;
-                    hEl.style.backgroundColor = '#ffffff';
-                    hEl.style.transform = 'none';
-                    hEl.style.backgroundImage = 'none'; // remove complex gradients if any
-                });
-
-                // 2. Flatten all colors to RGB to fix oklch/modern CSS errors
-                targets.forEach((el) => {
-                    const hEl = el as HTMLElement;
-                    const style = clonedDoc.defaultView?.getComputedStyle(hEl);
-                    if (!style) return;
-
-                    // Force critical color properties to computed rgb() values
-                    if (style.color && style.color.includes('oklch')) hEl.style.color = style.color; // Browser hopefully resolves this, if not we fallback
-                    // Actually, getting computed style in browser normally resolves to rgb. 
-                    // We just explicitly set it to ensure html2canvas reads the resolved value.
-                    // However, we must be careful: if we set style.color = 'oklch(...)', it fails. 
-                    // We assume getComputedStyle returns 'rgb(...)'.
-                    
-                    if (style.color) hEl.style.color = style.color;
-                    if (style.backgroundColor && style.backgroundColor !== 'rgba(0, 0, 0, 0)') hEl.style.backgroundColor = style.backgroundColor;
-                    if (style.borderColor) hEl.style.borderColor = style.borderColor;
-                    if (style.textDecorationColor) hEl.style.textDecorationColor = style.textDecorationColor;
-                });
-            };
 
             if (exportFormat === 'pdf') {
                 const pdf = new jsPDF({
@@ -490,34 +507,35 @@ export default function EditorPage() {
                     unit: 'mm',
                     format: 'a4',
                     putOnlyUsedFonts: true,
-                    compress: true // Enable internal PDF object compression
+                    compress: true
                 });
 
                 for (let i = 0; i < elements.length; i++) {
                     if (i > 0) pdf.addPage();
-                    
                     const canvas = await html2canvas(elements[i] as HTMLElement, { 
-                        scale: 3, // High resolution (300dpi equivalent)
-                        useCORS: true,
+                        scale: 3, 
+                        useCORS: true, 
                         logging: false,
-                        backgroundColor: '#ffffff', // Force white background
-                        scrollX: 0,
+                        backgroundColor: '#ffffff',
+                        scrollX: 0, 
                         scrollY: 0,
-                        windowWidth: 800,
+                        windowWidth: 800, 
                         windowHeight: 1131,
-                        onclone: sanitizeClonedDoc
+                        onclone: (doc) => {
+                            // Secondary cleanup just in case
+                            const el = doc.querySelector('.handwritten-export-target') as HTMLElement;
+                            if (el) {
+                                el.style.transform = 'none';
+                                el.style.margin = '0';
+                            }
+                        }
                     });
 
-                    // CHANGE: Use JPEG at 0.9 quality for massive size reduction (10MB -> 1MB)
-                    // This is "perfect" because visual difference is negligible for ink/paper but performance is 10x better
                     const imgData = canvas.toDataURL('image/jpeg', 0.9);
-                    
                     pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'SLOW');
                     setProgress(Math.round(((i + 1) / elements.length) * 100));
                 }
                 pdf.save(`${baseFileName}.pdf`);
-                
-                // Save to local history
                 const pdfBlob = pdf.output('blob');
                 await saveExportedFile(pdfBlob, `${baseFileName}.pdf`, 'pdf');
 
@@ -529,14 +547,19 @@ export default function EditorPage() {
                         useCORS: true, 
                         logging: false,
                         backgroundColor: '#ffffff',
-                        scrollX: 0,
-                        scrollY: 0,
-                        windowWidth: 800,
+                        scrollX: 0, 
+                        scrollY: 0, 
+                        windowWidth: 800, 
                         windowHeight: 1131,
-                        onclone: sanitizeClonedDoc
+                        onclone: (doc) => {
+                            const el = doc.querySelector('.handwritten-export-target') as HTMLElement;
+                            if (el) {
+                                el.style.transform = 'none';
+                                el.style.margin = '0';
+                            }
+                        }
                     });
                     
-                    // Keep PNG for ZIP as users might want lossless images for editing
                     const imgData = canvas.toDataURL('image/png', 1.0).split(',')[1];
                     zip.file(`page-${i + 1}.png`, imgData, { base64: true });
                     setProgress(Math.round(((i + 1) / elements.length) * 100));
@@ -546,18 +569,20 @@ export default function EditorPage() {
                 link.href = URL.createObjectURL(content);
                 link.download = `${baseFileName}.zip`;
                 link.click();
-                
-                // Save to local history
                 await saveExportedFile(content, `${baseFileName}.zip`, 'zip');
             }
 
             setExportStatus('complete');
             addToast(`${exportFormat.toUpperCase()} Export Complete!`, 'success');
+
         } catch (e: unknown) { 
             const err = e as { message?: string };
             console.error('Export Error:', err);
             setExportStatus('error');
             addToast(`Export Failed: ${err.message || 'Unknown Error'}`, 'error'); 
+        } finally {
+            // ALWAYS RESTORE
+            restoreAll();
         }
     };
 
