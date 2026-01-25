@@ -441,19 +441,24 @@ export default function EditorPage() {
     const executeExport = async (customName: string) => {
         setExportStatus('processing');
         setProgress(0);
+        console.log("Starting export process...");
         
         // --- EMERGENCY FIX HELPERS ---
         const restoreActions: (() => void)[] = [];
 
         // 1. Lock resolved RGB colors/styles inline so visuals persist data-html2canvas-ignore 
         const lockComputedStyles = () => {
+            console.log("Locking computed styles...");
             const targets = document.querySelectorAll('.handwritten-export-target, .handwritten-export-target *');
+            console.log(`Locking styles for ${targets.length} elements`);
             targets.forEach((el) => {
                 const hEl = el as HTMLElement;
                 const computed = window.getComputedStyle(hEl);
                 const originalStyle = hEl.getAttribute('style') || '';
                 
-                restoreActions.push(() => hEl.setAttribute('style', originalStyle));
+                restoreActions.push(() => {
+                    try { hEl.setAttribute('style', originalStyle); } catch(e) { console.warn("Restore failed for el", e); }
+                });
 
                 // Force computed RGB values for critical properties
                 // This ensures we don't need the stylesheet for colors/layout
@@ -478,35 +483,48 @@ export default function EditorPage() {
 
         // 2. IGNORE the main stylesheet to prevent html2canvas parser crash on 'oklch'
         const ignoreTailwindStyles = () => {
+            console.log("Ignoring tailwind styles...");
             const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'));
+            let ignoredCount = 0;
             styles.forEach(tag => {
-                // If the style contains oklch, it's the dangerous one.
-                // We mark it to be ignored by html2canvas.
-                // The elements will rely on the inlined styles we set above.
-                if (tag.tagName === 'STYLE' && tag.innerHTML.includes('oklch')) {
+                // Ignore ALL style tags (likely Tailwind in dev) and stylesheets that aren't fonts
+                const isGoogleFont = tag.tagName === 'LINK' && (tag as HTMLLinkElement).href.includes('fonts.googleapis');
+                
+                if (!isGoogleFont) {
                     tag.setAttribute('data-html2canvas-ignore', 'true');
-                    restoreActions.push(() => tag.removeAttribute('data-html2canvas-ignore'));
+                    restoreActions.push(() => {
+                         try { tag.removeAttribute('data-html2canvas-ignore'); } catch(e) { console.warn("Restore attribute failed", e); }
+                    });
+                    ignoredCount++;
                 }
-                // For LINK tags in dev/prod (Tailwind v4 might be distinct)
-                // We can't read content easily, but if we inline everything, ignoring ALL non-font CSS is safer?
-                // Let's try to identify it or just ignore all STYLE tags (where Tailwind v4 injects in dev).
-                // Google fonts are usually LINK tags.
             });
+            console.log(`Ignored ${ignoredCount} style tags`);
         };
 
         try {
-            await document.fonts.ready;
+            // Font loading safety race
+            console.log("Waiting for fonts...");
+            await Promise.race([
+                document.fonts.ready,
+                new Promise(resolve => setTimeout(resolve, 5000))
+            ]).catch(e => console.warn("Font loading timeout", e));
+            console.log("Fonts ready (or timed out)");
+
             const elements = document.querySelectorAll('.handwritten-export-target');
             if (elements.length === 0) throw new Error('No pages found');
+            console.log(`Found ${elements.length} pages to export`);
 
             // Apply FIX: Lock visual state inline, then hide the broken CSS from the parser
+            console.log("Applying style fixes...");
             lockComputedStyles();
             ignoreTailwindStyles();
+            console.log("Style fixes applied. Waiting for rendering...");
             
             // Give browser a moment
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             const baseFileName = customName || `handwritten-${Date.now()}`;
+            console.log(`Starting ${exportFormat.toUpperCase()} export...`);
 
             if (exportFormat === 'pdf') {
                 const pdf = new jsPDF({
@@ -518,11 +536,13 @@ export default function EditorPage() {
                 });
 
                 for (let i = 0; i < elements.length; i++) {
+                    console.log(`Capturing page ${i + 1}/${elements.length}...`);
                     if (i > 0) pdf.addPage();
+                    
                     const canvas = await html2canvas(elements[i] as HTMLElement, { 
                         scale: 3, 
                         useCORS: true, 
-                        logging: false,
+                        logging: true, // Enable logging for debugging
                         backgroundColor: '#ffffff',
                         scrollX: 0, 
                         scrollY: 0,
@@ -541,17 +561,24 @@ export default function EditorPage() {
                     pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'SLOW');
                     setProgress(Math.round(((i + 1) / elements.length) * 100));
                 }
+                
+                console.log("Saving PDF...");
                 pdf.save(`${baseFileName}.pdf`);
-                const pdfBlob = pdf.output('blob');
-                await saveExportedFile(pdfBlob, `${baseFileName}.pdf`, 'pdf');
+                try {
+                    const pdfBlob = pdf.output('blob');
+                    await saveExportedFile(pdfBlob, `${baseFileName}.pdf`, 'pdf');
+                } catch(err) {
+                     console.warn("Using local save only - History save failed", err);
+                }
 
             } else {
                 const zip = new JSZip();
                 for (let i = 0; i < elements.length; i++) {
+                    console.log(`Capturing ZIP page ${i + 1}/${elements.length}...`);
                     const canvas = await html2canvas(elements[i] as HTMLElement, { 
                         scale: 3, 
                         useCORS: true, 
-                        logging: false,
+                        logging: true,
                         backgroundColor: '#ffffff',
                         scrollX: 0, 
                         scrollY: 0, 
@@ -570,24 +597,34 @@ export default function EditorPage() {
                     zip.file(`page-${i + 1}.png`, imgData, { base64: true });
                     setProgress(Math.round(((i + 1) / elements.length) * 100));
                 }
+                console.log("Generating ZIP...");
                 const content = await zip.generateAsync({ type: 'blob' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(content);
                 link.download = `${baseFileName}.zip`;
                 link.click();
-                await saveExportedFile(content, `${baseFileName}.zip`, 'zip');
+                
+                try {
+                    await saveExportedFile(content, `${baseFileName}.zip`, 'zip');
+                } catch(err) {
+                    console.warn("Using local save only - History save failed", err);
+                }
             }
 
+            console.log("Export complete!");
             setExportStatus('complete');
             addToast(`${exportFormat.toUpperCase()} Export Complete!`, 'success');
 
         } catch (e: unknown) { 
-            const err = e as { message?: string };
-            console.error('Export Error:', err);
+            const err = e as { message?: string, stack?: string };
+            console.error('Export Critical Failure:', err);
+            if (err.stack) console.error(err.stack);
+            
             setExportStatus('error');
             addToast(`Export Failed: ${err.message || 'Unknown Error'}`, 'error'); 
         } finally {
             // Restore everything
+            console.log("Restoring styles...");
             restoreActions.forEach(undo => undo());
         }
     };
