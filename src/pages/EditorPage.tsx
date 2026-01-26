@@ -416,6 +416,28 @@ export default function EditorPage() {
         setProgress(0);
         console.log("Starting Pixel-Perfect Export...");
         
+        // Helper to convert any color to rgb/rgba for html2canvas compatibility
+        const normalizeColor = (color: string): string => {
+            if (!color || color === 'none' || color === 'transparent') return color;
+            if (color.startsWith('#') || color.startsWith('rgb')) return color;
+            
+            // For modern color functions (oklch, oklab, lch, lab), convert via canvas
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1;
+                canvas.height = 1;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return color;
+                
+                ctx.fillStyle = color;
+                ctx.fillRect(0, 0, 1, 1);
+                const imageData = ctx.getImageData(0, 0, 1, 1).data;
+                return `rgba(${imageData[0]}, ${imageData[1]}, ${imageData[2]}, ${(imageData[3] / 255).toFixed(3)})`;
+            } catch {
+                return color;
+            }
+        };
+        
         try {
             // Wait for fonts to load
             await Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 3000))]);
@@ -424,8 +446,7 @@ export default function EditorPage() {
             if (rawElements.length === 0) throw new Error('No content found to export');
 
             // FILENAME LOGIC (Sanitized)
-            let cleanName = customName || `handwritten-${Date.now()}`;
-            cleanName = cleanName.replace(/\.[^/.]+$/, "").replace(/[<>:"/\\|?*]/g, '').trim() || `handwritten-${Date.now()}`;
+            const cleanName = customName || `handwritten-${Date.now()}`;
             const finalFileName = `${cleanName}.${currentFormat}`;
 
             if (currentFormat === 'pdf') {
@@ -484,6 +505,23 @@ export default function EditorPage() {
                                     (blendEl as HTMLElement).style.mixBlendMode = 'normal';
                                 });
 
+                                // Normalize all colors to rgb/rgba (fix oklch, oklab, etc.)
+                                const allElements = el.querySelectorAll('*');
+                                allElements.forEach((elem) => {
+                                    const htmlElem = elem as HTMLElement;
+                                    const computed = window.getComputedStyle(htmlElem);
+                                    
+                                    // Normalize color properties
+                                    const colorProps = ['color', 'backgroundColor', 'borderColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'];
+                                    colorProps.forEach(prop => {
+                                        const value = computed.getPropertyValue(prop.replace(/[A-Z]/g, m => '-' + m.toLowerCase()));
+                                        if (value && value !== 'none' && value !== 'transparent') {
+                                            const normalized = normalizeColor(value);
+                                            htmlElem.style.setProperty(prop.replace(/[A-Z]/g, m => '-' + m.toLowerCase()), normalized);
+                                        }
+                                    });
+                                });
+
                                 // Ensure background images are preserved
                                 const bgElements = el.querySelectorAll('[style*="background"]');
                                 bgElements.forEach((bgEl) => {
@@ -509,7 +547,7 @@ export default function EditorPage() {
                                     (textEl as HTMLElement).style.fontSize = computed.fontSize;
                                     (textEl as HTMLElement).style.fontWeight = computed.fontWeight;
                                     (textEl as HTMLElement).style.lineHeight = computed.lineHeight;
-                                    (textEl as HTMLElement).style.color = computed.color;
+                                    (textEl as HTMLElement).style.color = normalizeColor(computed.color);
                                 });
                             });
                         }
@@ -573,6 +611,22 @@ export default function EditorPage() {
                                     (blendEl as HTMLElement).style.mixBlendMode = 'normal';
                                 });
 
+                                // Normalize all colors to rgb/rgba
+                                const allElements = el.querySelectorAll('*');
+                                allElements.forEach((elem) => {
+                                    const htmlElem = elem as HTMLElement;
+                                    const computed = window.getComputedStyle(htmlElem);
+                                    
+                                    const colorProps = ['color', 'backgroundColor', 'borderColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'];
+                                    colorProps.forEach(prop => {
+                                        const value = computed.getPropertyValue(prop.replace(/[A-Z]/g, m => '-' + m.toLowerCase()));
+                                        if (value && value !== 'none' && value !== 'transparent') {
+                                            const normalized = normalizeColor(value);
+                                            htmlElem.style.setProperty(prop.replace(/[A-Z]/g, m => '-' + m.toLowerCase()), normalized);
+                                        }
+                                    });
+                                });
+
                                 const bgElements = el.querySelectorAll('[style*="background"]');
                                 bgElements.forEach((bgEl) => {
                                     const computed = window.getComputedStyle(bgEl as HTMLElement);
@@ -596,7 +650,7 @@ export default function EditorPage() {
                                     (textEl as HTMLElement).style.fontSize = computed.fontSize;
                                     (textEl as HTMLElement).style.fontWeight = computed.fontWeight;
                                     (textEl as HTMLElement).style.lineHeight = computed.lineHeight;
-                                    (textEl as HTMLElement).style.color = computed.color;
+                                    (textEl as HTMLElement).style.color = normalizeColor(computed.color);
                                 });
                             });
                         }
