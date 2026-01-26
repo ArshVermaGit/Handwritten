@@ -1,5 +1,5 @@
 import PageLayout from '../components/PageLayout';
-import { Mail, Twitter } from 'lucide-react';
+import { Mail, Linkedin } from 'lucide-react';
 import { ScrollReveal } from '../components/ui/ScrollReveal';
 
 export default function ContactPage() {
@@ -22,13 +22,13 @@ export default function ContactPage() {
                 </div>
 
                 <div className="bg-white p-8 rounded-2xl border border-neutral-100 shadow-sm text-center">
-                    <div className="w-12 h-12 bg-sky-50 text-sky-500 rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <Twitter size={24} />
+                    <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center mx-auto mb-4">
+                        <Linkedin size={24} />
                     </div>
-                    <h3 className="text-xl font-bold text-neutral-900 mb-2">Twitter / X</h3>
-                    <p className="text-neutral-500 mb-6">Follow us for updates and quick tips.</p>
-                    <a href="https://x.com/TheArshVerma" target="_blank" rel="noopener noreferrer" className="inline-block px-6 py-3 bg-sky-500 text-white rounded-xl font-bold hover:bg-sky-600 transition-colors">
-                        @TheArshVerma
+                    <h3 className="text-xl font-bold text-neutral-900 mb-2">LinkedIn</h3>
+                    <p className="text-neutral-500 mb-6">Connect with us on LinkedIn for professional updates.</p>
+                    <a href="https://www.linkedin.com/in/arshvermadev/" target="_blank" rel="noopener noreferrer" className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors">
+                        Connect on LinkedIn
                     </a>
                 </div>
                 </div>
