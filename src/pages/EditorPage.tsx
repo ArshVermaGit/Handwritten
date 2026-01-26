@@ -416,7 +416,7 @@ export default function EditorPage() {
         setProgress(0);
         
         try {
-            // Wait for fonts
+            // Wait for fonts to be fully loaded
             await document.fonts.ready;
             
             // Sanitize filename
@@ -424,9 +424,32 @@ export default function EditorPage() {
             cleanName = cleanName.replace(/\.[^/.]+$/, "").replace(/[<>:"/\\|?*]/g, '').trim() || `handwritten-${Date.now()}`;
             const finalFileName = `${cleanName}.${currentFormat}`;
             
-            // Get preview pages directly
-            const pageElements = document.querySelectorAll('.handwritten-export-target');
-            if (pageElements.length === 0) throw new Error('No pages to export');
+            // 1. Get ALL potential export targets
+            const allTargets = Array.from(document.querySelectorAll('.handwritten-export-target'));
+            
+            // 2. FILTER: Only keep VISIBLE targets
+            //    offsetParent is null if display:none or if parents are hidden. 
+            //    We also check computed style for good measure.
+            const pageElements = allTargets.filter(el => {
+                const element = el as HTMLElement;
+                // Basic visibility check
+                if (element.offsetParent === null) return false;
+                
+                const style = window.getComputedStyle(element);
+                if (style.display === 'none' || style.visibility === 'hidden') return false;
+                
+                // Ensure it has dimensions
+                const rect = element.getBoundingClientRect();
+                return rect.width > 0 && rect.height > 0;
+            });
+
+            if (pageElements.length === 0) {
+                // Identify if we are in mobile 'Write' mode which hides preview
+                if (window.innerWidth < 1024) {
+                    throw new Error('Please switch to the "Preview" tab to export.');
+                }
+                throw new Error('No visible pages found to export.');
+            }
             
             if (currentFormat === 'pdf') {
                 const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
@@ -435,16 +458,19 @@ export default function EditorPage() {
                     if (i > 0) pdf.addPage();
                     
                     // Capture directly with html2canvas
+                    // Improved settings for clearer text
                     const canvas = await html2canvas(pageElements[i] as HTMLElement, {
-                        scale: 2,
+                        scale: 2, // 2x for better resolution, but not too heavy
                         useCORS: true,
                         backgroundColor: '#ffffff',
                         logging: false,
+                        allowTaint: true,
                         onclone: (_doc, el) => {
-                            // Reset transforms on cloned element
+                            // Enforce exact A4 proportions during capture to avoid glitches
                             el.style.transform = 'none';
-                            el.style.width = '800px';
+                            el.style.width = '800px'; 
                             el.style.height = '1131px';
+                            el.style.boxShadow = 'none'; // removing shadows from capture
                         }
                     });
                     
@@ -458,24 +484,29 @@ export default function EditorPage() {
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
                 link.download = finalFileName;
+                document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
                 URL.revokeObjectURL(link.href);
-                try { await saveExportedFile(blob, finalFileName, 'pdf'); } catch { /* ignore save error */ }
+                
+                // Attempt to save to history/storage (non-blocking)
+                saveExportedFile(blob, finalFileName, 'pdf').catch(() => {});
                 
             } else {
                 const zip = new JSZip();
                 
                 for (let i = 0; i < pageElements.length; i++) {
-                    // Capture directly with html2canvas
                     const canvas = await html2canvas(pageElements[i] as HTMLElement, {
                         scale: 2,
                         useCORS: true,
                         backgroundColor: '#ffffff',
                         logging: false,
+                        allowTaint: true,
                         onclone: (_doc, el) => {
                             el.style.transform = 'none';
                             el.style.width = '800px';
                             el.style.height = '1131px';
+                            el.style.boxShadow = 'none';
                         }
                     });
                     
@@ -489,9 +520,12 @@ export default function EditorPage() {
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(content);
                 link.download = finalFileName;
+                document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
                 URL.revokeObjectURL(link.href);
-                try { await saveExportedFile(content, finalFileName, 'zip'); } catch { /* ignore save error */ }
+                
+                saveExportedFile(content, finalFileName, 'zip').catch(() => {});
             }
             
             setExportStatus('complete');

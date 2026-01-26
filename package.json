@@ -21,6 +21,7 @@
     "lucide-react": "^0.562.0",
     "lz-string": "^1.5.0",
     "mammoth": "^1.11.0",
+    "modern-screenshot": "^4.6.7",
     "pdfjs-dist": "^5.4.449",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
