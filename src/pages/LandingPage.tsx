@@ -85,28 +85,36 @@ export default function LandingPage() {
                         <ScrollReveal className="md:col-span-2 md:row-span-2" direction="right">
                             <motion.div 
                                 whileHover={{ y: -5 }}
-                                className="h-full paper-card relative overflow-hidden group p-0!"
+                                className="h-full bg-white rounded-[2.5rem] relative overflow-hidden group shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-neutral-100"
                             >
-                                <div className="relative z-10 p-8 sm:p-12">
-                                    <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-                                        <PenTool className="text-indigo-500" size={24} />
+                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-white opacity-50" />
+                                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-100/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                                
+                                <div className="relative z-10 p-8 sm:p-12 h-full flex flex-col justify-between">
+                                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-8 shadow-[0_10px_20px_-5px_rgba(79,70,229,0.15)] ring-1 ring-black/5">
+                                        <PenTool className="text-indigo-600" size={28} />
                                     </div>
-                                    <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-neutral-900 tracking-tight">Advanced Simulation Engine</h3>
-                                    <p className="text-neutral-500 text-base sm:text-lg max-w-md leading-relaxed">
-                                        Total control over your handwriting's soul. Fine-tune organic <b className="text-neutral-900">Jitter</b>, <b className="text-neutral-900">Pressure</b>, and <b className="text-neutral-900">Smudge</b> levels to create a document that looks indistinguishable from paper.
-                                    </p>
+                                    <div className="max-w-md relative z-20">
+                                        <h3 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold mb-4 text-neutral-900 tracking-tight">Advanced Simulation Engine</h3>
+                                        <p className="text-neutral-500 text-base sm:text-lg leading-relaxed font-medium">
+                                            Total control over your handwriting's soul. Fine-tune organic <b className="text-neutral-900">Jitter</b>, <b className="text-neutral-900">Pressure</b>, and <b className="text-neutral-900">Smudge</b> levels.
+                                        </p>
+                                    </div>
                                 </div>
                                 
                                 {/* Visual Decoration - Refined */}
-                                <div className="absolute right-0 bottom-0 w-2/3 h-2/3 translate-x-12 translate-y-12 hidden sm:block pointer-events-none">
+                                <div className="absolute right-0 bottom-0 w-2/3 h-2/3 translate-x-12 translate-y-12 hidden sm:block pointer-events-none z-10">
                                     <motion.div 
                                         initial={{ rotate: 0, y: 20 }}
                                         whileInView={{ rotate: -6, y: 0 }}
                                         transition={{ delay: 0.5, duration: 1 }}
-                                        className="w-full h-full bg-white rounded-tl-[3rem] shadow-2xl p-6 border border-black/5"
-                                    >
-                                        <div className="w-full h-full bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[16px_16px] p-8 font-handwriting text-3xl text-neutral-900 leading-loose flex items-center justify-center text-center">
-                                            "The details are not the details. <br/> They make the design."
+                                        className="w-full h-full bg-white rounded-tl-[3rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] p-6 border border-neutral-100 relative"
+                                    >   
+                                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cardboard.png')] opacity-[0.03]" />
+                                        <div className="w-full h-full bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[20px_20px] p-10 font-handwriting text-3xl text-neutral-800 leading-loose flex items-center justify-center text-center rotate-2">
+                                            <span className="mix-blend-multiply opacity-80">
+                                                "The details are not the details. <br/> They make the design."
+                                            </span>
                                         </div>
                                     </motion.div>
                                 </div>
@@ -117,15 +125,19 @@ export default function LandingPage() {
                         <ScrollReveal direction="left" delay={0.2}>
                             <motion.div 
                                 whileHover={{ y: -5 }}
-                                className="h-full bg-[#1A1F2C] text-white rounded-4xl p-8 relative overflow-hidden group shadow-2xl flex flex-col justify-between"
+                                className="h-full bg-[#1A1F2C] text-white rounded-[2.5rem] p-8 relative overflow-hidden group shadow-2xl flex flex-col ring-1 ring-white/10"
                             >
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
-                                <div className="relative z-10">
-                                    <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6">
-                                        <Download className="text-indigo-300" />
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/30 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
+                                <div className="absolute bottom-0 left-0 w-40 h-40 bg-purple-500/20 rounded-full blur-[60px] translate-y-1/4 -translate-x-1/4" />
+                                
+                                <div className="relative z-10 flex flex-col justify-between h-full">
+                                    <div className="w-14 h-14 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center mb-6 ring-1 ring-white/20 shadow-lg shadow-indigo-500/10">
+                                        <Download className="text-indigo-200" size={24} />
                                     </div>
-                                    <h3 className="text-xl font-bold mb-2">Export Anywhere</h3>
-                                    <p className="text-white/60 text-sm leading-relaxed">Convert your handwritten work into high-fidelity PDF documents or individual PNGs in a single ZIP archive.</p>
+                                    <div>
+                                        <h3 className="text-xl font-bold mb-3 font-display">Export Anywhere</h3>
+                                        <p className="text-white/70 text-sm leading-relaxed font-medium">Convert your handwritten work into high-fidelity PDF documents or individual PNGs.</p>
+                                    </div>
                                 </div>
                             </motion.div>
                         </ScrollReveal>
@@ -134,14 +146,17 @@ export default function LandingPage() {
                         <ScrollReveal direction="left" delay={0.4}>
                             <motion.div 
                                 whileHover={{ y: -5 }}
-                                className="h-full paper-card group flex flex-col justify-between"
+                                className="h-full bg-white rounded-[2.5rem] p-8 relative overflow-hidden group shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-neutral-100 flex flex-col"
                             >
-                                <div className="relative z-10">
-                                    <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center mb-6">
-                                        <Type className="text-indigo-500" />
+                                <div className="absolute inset-0 bg-gradient-to-tr from-rose-50/50 via-transparent to-transparent opacity-50" />
+                                <div className="relative z-10 flex flex-col justify-between h-full">
+                                    <div className="w-14 h-14 bg-rose-50 rounded-2xl flex items-center justify-center mb-6 ring-1 ring-rose-100">
+                                        <Type className="text-rose-500" size={24} />
                                     </div>
-                                    <h3 className="text-xl font-bold mb-2 text-neutral-900">AI Humanizer</h3>
-                                    <p className="text-neutral-500 text-sm leading-relaxed">Tap into the power of Gemini to rewrite your notes into organic, natural human prose with one click.</p>
+                                    <div>
+                                        <h3 className="text-xl font-bold mb-3 text-neutral-900 font-display">AI Humanizer</h3>
+                                        <p className="text-neutral-500 text-sm leading-relaxed font-medium">Tap into the power of Gemini to rewrite your notes into organic, natural human prose.</p>
+                                    </div>
                                 </div>
                             </motion.div>
                         </ScrollReveal>
