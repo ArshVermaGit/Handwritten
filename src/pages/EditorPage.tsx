@@ -428,269 +428,25 @@ export default function EditorPage() {
             cleanName = cleanName.replace(/\.[^/.]+$/, "").replace(/[<>:"/\\|?*]/g, '').trim() || `handwritten-${Date.now()}`;
             const finalFileName = `${cleanName}.${currentFormat}`;
             
-            // Create hidden export container - EXACT same dimensions as preview
+            // Get all visible export target elements
+            const rawElements = document.querySelectorAll('.handwritten-export-target');
+            if (rawElements.length === 0) throw new Error('No content found to export');
+            
+            // Create a hidden container to hold cloned pages at native size
             const exportContainer = document.createElement('div');
             exportContainer.style.cssText = `
                 position: fixed;
-                left: -9999px;
+                left: 0;
                 top: 0;
                 width: ${PAGE_WIDTH}px;
-                z-index: -1;
+                height: ${PAGE_HEIGHT}px;
+                z-index: 99999;
+                background: white;
+                overflow: hidden;
+                opacity: 0;
                 pointer-events: none;
             `;
             document.body.appendChild(exportContainer);
-            
-            // Helper to build a single page DOM for export - mirrors preview exactly
-            const buildPageForExport = (pageData: PageData, pageIndex: number): HTMLDivElement => {
-                const pageEl = document.createElement('div');
-                pageEl.style.cssText = `
-                    width: ${PAGE_WIDTH}px;
-                    height: ${PAGE_HEIGHT}px;
-                    position: relative;
-                    background: white;
-                    overflow: hidden;
-                `;
-                
-                // Paper background with lines if needed
-                if (paper.id === 'lined') {
-                    pageEl.style.backgroundImage = 'linear-gradient(#e5e7eb 1px, transparent 1px)';
-                    pageEl.style.backgroundSize = `100% ${paper.lineHeight}px`;
-                }
-                
-                // Cardboard texture overlay
-                const textureOverlay = document.createElement('div');
-                textureOverlay.style.cssText = `
-                    position: absolute;
-                    inset: 0;
-                    pointer-events: none;
-                    mix-blend-mode: multiply;
-                    opacity: 0.05;
-                    background-image: url('https://www.transparenttextures.com/patterns/cardboard.png');
-                `;
-                pageEl.appendChild(textureOverlay);
-                
-                // Red margin line for lined paper
-                if (paper.id === 'lined') {
-                    const marginLine = document.createElement('div');
-                    marginLine.style.cssText = `
-                        position: absolute;
-                        top: 0;
-                        bottom: 0;
-                        left: 50px;
-                        width: 1px;
-                        background-color: rgb(252, 165, 165);
-                        opacity: 0.2;
-                    `;
-                    pageEl.appendChild(marginLine);
-                }
-                
-                // Margin note (first page only)
-                if (marginNote && pageIndex === 0) {
-                    const noteEl = document.createElement('div');
-                    noteEl.style.cssText = `
-                        position: absolute;
-                        left: 16px;
-                        top: 33%;
-                        transform: rotate(-90deg);
-                        transform-origin: left center;
-                        font-family: ${font};
-                        color: ${color};
-                        opacity: 0.5;
-                        font-size: ${fontSize * 0.6}px;
-                        z-index: 20;
-                    `;
-                    noteEl.textContent = marginNote;
-                    pageEl.appendChild(noteEl);
-                }
-                
-                // Coffee stain (first page only)
-                if (showCoffeeStain && pageIndex === 0) {
-                    const stainEl = document.createElement('div');
-                    const stainRotate = getDeterminRandom('stain' + randomSeed) * 360;
-                    const stainScale = 0.8 + getDeterminRandom('scale' + randomSeed) * 0.5;
-                    stainEl.style.cssText = `
-                        position: absolute;
-                        top: -40px;
-                        right: -40px;
-                        pointer-events: none;
-                        opacity: 0.08;
-                        filter: blur(2px);
-                        z-index: 30;
-                        transform: rotate(${stainRotate}deg) scale(${stainScale});
-                    `;
-                    stainEl.innerHTML = `<svg width="300" height="300" viewBox="0 0 200 200"><path fill="#78350f" d="M100 20C55.8 20 20 55.8 20 100s35.8 80 80 80 80-35.8 80-80S144.2 20 100 20zm0 145c-35.9 0-65-29.1-65-65s29.1-65 65-65 65 29.1 65 65-29.1 65-65 65z"/><circle cx="100" cy="100" r="55" fill="#78350f" opacity="0.3"/></svg>`;
-                    pageEl.appendChild(stainEl);
-                }
-                
-                // Sticky note (first page only)
-                if (showStickyNote && pageIndex === 0) {
-                    const stickyRotate = getDeterminRandom('sticky' + randomSeed) * 10 - 5;
-                    const stickyEl = document.createElement('div');
-                    stickyEl.style.cssText = `
-                        position: absolute;
-                        bottom: 80px;
-                        right: 40px;
-                        width: 160px;
-                        height: 160px;
-                        background-color: #fef08a;
-                        box-shadow: 2px 5px 15px rgba(0,0,0,0.1);
-                        padding: 16px;
-                        z-index: 40;
-                        font-family: 'Caveat', cursive;
-                        color: #854d0e;
-                        transform: rotate(${stickyRotate}deg);
-                        display: flex;
-                        flex-direction: column;
-                    `;
-                    stickyEl.innerHTML = `
-                        <div style="font-size: 10px; text-transform: uppercase; font-weight: 900; opacity: 0.2; margin-bottom: 8px;">Note:</div>
-                        <div style="font-size: 18px; line-height: 1.2;">${stickyNoteText}</div>
-                        <div style="position: absolute; top: 0; left: 0; right: 0; height: 16px; background-color: rgba(253, 224, 71, 0.3);"></div>
-                    `;
-                    pageEl.appendChild(stickyEl);
-                }
-                
-                // Header (first page only)
-                if (showHeader && pageIndex === 0) {
-                    const headerContainer = document.createElement('div');
-                    headerContainer.style.cssText = `
-                        position: absolute;
-                        left: 0;
-                        right: 0;
-                        top: ${marginTop - paper.lineHeight}px;
-                        text-align: center;
-                        padding-left: ${marginLeft}px;
-                        padding-right: ${marginRight}px;
-                        z-index: 10;
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                    `;
-                    
-                    headerText.split('\n').forEach((hLine: string, hlIdx: number) => {
-                        const lineEl = document.createElement('div');
-                        lineEl.style.cssText = `
-                            font-family: ${font};
-                            font-size: ${fontSize}px;
-                            color: ${color};
-                            height: ${paper.lineHeight}px;
-                            line-height: ${paper.lineHeight}px;
-                            transform: translateY(${baseline}px);
-                            width: 100%;
-                            white-space: nowrap;
-                            overflow: hidden;
-                        `;
-                        
-                        hLine.split(' ').forEach((word: string, wIdx: number) => {
-                            const seed = `header-${hlIdx}-${wIdx}-${word}-${randomSeed}`;
-                            const y = (getDeterminRandom(seed + 'y') - 0.5) * jitter * 3;
-                            const r = (getDeterminRandom(seed + 'r') - 0.5) * jitter * 1.5;
-                            const op = 1 - (getDeterminRandom(seed + 'o') * pressure * 0.2);
-                            const bl = smudge > 0 ? getDeterminRandom(seed + 'b') * smudge * 0.4 : 0;
-                            
-                            const wordSpan = document.createElement('span');
-                            wordSpan.style.cssText = `
-                                display: inline-block;
-                                transform: translateY(${y}px) rotate(${r}deg);
-                                opacity: ${op};
-                                filter: ${bl ? `blur(${bl}px)` : 'none'};
-                                margin-right: 0.25em;
-                            `;
-                            wordSpan.textContent = word;
-                            lineEl.appendChild(wordSpan);
-                        });
-                        
-                        headerContainer.appendChild(lineEl);
-                    });
-                    
-                    pageEl.appendChild(headerContainer);
-                }
-                
-                // Content container
-                const contentContainer = document.createElement('div');
-                const headerLineCount = showHeader && pageIndex === 0 ? headerText.split('\n').length + 1 : 0;
-                const topPadding = (pageIndex === 0 ? marginTop - paper.lineHeight : marginTop) + (pageIndex === 0 && showHeader ? headerLineCount * paper.lineHeight : 0);
-                
-                contentContainer.style.cssText = `
-                    width: 100%;
-                    height: 100%;
-                    position: relative;
-                    padding-top: ${topPadding}px;
-                    padding-bottom: ${marginBottom}px;
-                    padding-left: ${marginLeft}px;
-                    padding-right: ${marginRight}px;
-                    box-sizing: border-box;
-                `;
-                
-                // Render each line
-                pageData.lines.forEach((line, lIdx) => {
-                    const lineEl = document.createElement('div');
-                    const lineTextAlign = line.dir === 'rtl' 
-                        ? (textAlign === 'left' ? 'right' : textAlign === 'right' ? 'left' : textAlign) 
-                        : textAlign;
-                    
-                    lineEl.style.cssText = `
-                        font-family: ${font};
-                        font-size: ${fontSize}px;
-                        color: ${color};
-                        height: ${paper.lineHeight}px;
-                        line-height: ${paper.lineHeight}px;
-                        transform: translateY(${baseline}px);
-                        text-align: ${lineTextAlign};
-                        padding-left: ${line.indent ? line.indent * (fontSize * 0.4) : 0}px;
-                        padding-right: ${line.dir === 'rtl' && line.indent ? line.indent * (fontSize * 0.4) : 0}px;
-                        width: 100%;
-                        white-space: nowrap;
-                        overflow: hidden;
-                    `;
-                    lineEl.setAttribute('dir', line.dir || 'ltr');
-                    
-                    // Render words with jitter/pressure/smudge effects
-                    line.text.split(' ').forEach((word, wIdx) => {
-                        const seed = `${pageIndex}-${lIdx}-${wIdx}-${word}-${randomSeed}`;
-                        const y = (getDeterminRandom(seed + 'y') - 0.5) * jitter * 3;
-                        const r = (getDeterminRandom(seed + 'r') - 0.5) * jitter * 1.5;
-                        const op = 1 - (getDeterminRandom(seed + 'o') * pressure * 0.2);
-                        const bl = smudge > 0 ? getDeterminRandom(seed + 'b') * smudge * 0.4 : 0;
-                        
-                        const wordSpan = document.createElement('span');
-                        wordSpan.style.cssText = `
-                            display: inline-block;
-                            transform: translateY(${y}px) rotate(${r}deg);
-                            opacity: ${op};
-                            filter: ${bl ? `blur(${bl}px)` : 'none'};
-                            margin-right: 0.25em;
-                        `;
-                        wordSpan.textContent = word;
-                        lineEl.appendChild(wordSpan);
-                    });
-                    
-                    contentContainer.appendChild(lineEl);
-                });
-                
-                pageEl.appendChild(contentContainer);
-                
-                // Page numbers
-                if (showPageNumbers) {
-                    const pageNumEl = document.createElement('div');
-                    pageNumEl.style.cssText = `
-                        position: absolute;
-                        bottom: 24px;
-                        left: 0;
-                        right: 0;
-                        text-align: center;
-                        font-size: 10px;
-                        font-weight: 900;
-                        color: rgb(209, 213, 219);
-                        letter-spacing: 0.1em;
-                        text-transform: uppercase;
-                    `;
-                    pageNumEl.textContent = `Page ${pageIndex + 1} of ${pages.length}`;
-                    pageEl.appendChild(pageNumEl);
-                }
-                
-                return pageEl;
-            };
             
             if (currentFormat === 'pdf') {
                 const pdf = new jsPDF({ 
@@ -701,30 +457,46 @@ export default function EditorPage() {
                     compress: true 
                 });
                 
-                for (let i = 0; i < pages.length; i++) {
+                for (let i = 0; i < rawElements.length; i++) {
                     if (i > 0) pdf.addPage();
                     
-                    // Build page DOM in hidden container
-                    const pageEl = buildPageForExport(pages[i], i);
-                    exportContainer.innerHTML = '';
-                    exportContainer.appendChild(pageEl);
+                    // Clone the element
+                    const originalEl = rawElements[i] as HTMLElement;
+                    const clonedEl = originalEl.cloneNode(true) as HTMLElement;
                     
-                    // Wait for rendering
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    // Reset all transforms and ensure native size
+                    clonedEl.style.cssText = `
+                        width: ${PAGE_WIDTH}px !important;
+                        height: ${PAGE_HEIGHT}px !important;
+                        transform: none !important;
+                        position: relative !important;
+                        left: 0 !important;
+                        top: 0 !important;
+                        margin: 0 !important;
+                    `;
+                    
+                    // Clear and append to export container
+                    exportContainer.innerHTML = '';
+                    exportContainer.appendChild(clonedEl);
+                    
+                    // Wait for layout
+                    await new Promise(resolve => setTimeout(resolve, 150));
                     
                     // Capture with html2canvas
-                    const canvas = await html2canvas(pageEl, { 
+                    const canvas = await html2canvas(clonedEl, { 
                         scale: 3,
                         useCORS: true, 
                         backgroundColor: '#ffffff',
                         logging: false,
                         width: PAGE_WIDTH,
-                        height: PAGE_HEIGHT
+                        height: PAGE_HEIGHT,
+                        windowWidth: PAGE_WIDTH,
+                        windowHeight: PAGE_HEIGHT
                     });
                     
                     const imgData = canvas.toDataURL('image/jpeg', 0.98);
                     pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'SLOW');
-                    setProgress(Math.round(((i + 1) / pages.length) * 100));
+                    setProgress(Math.round(((i + 1) / rawElements.length) * 100));
                 }
                 
                 const pdfBlob = pdf.output('blob');
@@ -741,28 +513,44 @@ export default function EditorPage() {
             } else {
                 const zip = new JSZip();
                 
-                for (let i = 0; i < pages.length; i++) {
-                    // Build page DOM in hidden container
-                    const pageEl = buildPageForExport(pages[i], i);
-                    exportContainer.innerHTML = '';
-                    exportContainer.appendChild(pageEl);
+                for (let i = 0; i < rawElements.length; i++) {
+                    // Clone the element
+                    const originalEl = rawElements[i] as HTMLElement;
+                    const clonedEl = originalEl.cloneNode(true) as HTMLElement;
                     
-                    // Wait for rendering
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    // Reset all transforms and ensure native size
+                    clonedEl.style.cssText = `
+                        width: ${PAGE_WIDTH}px !important;
+                        height: ${PAGE_HEIGHT}px !important;
+                        transform: none !important;
+                        position: relative !important;
+                        left: 0 !important;
+                        top: 0 !important;
+                        margin: 0 !important;
+                    `;
+                    
+                    // Clear and append to export container
+                    exportContainer.innerHTML = '';
+                    exportContainer.appendChild(clonedEl);
+                    
+                    // Wait for layout
+                    await new Promise(resolve => setTimeout(resolve, 150));
                     
                     // Capture with html2canvas
-                    const canvas = await html2canvas(pageEl, { 
+                    const canvas = await html2canvas(clonedEl, { 
                         scale: 3,
                         useCORS: true, 
                         backgroundColor: '#ffffff',
                         logging: false,
                         width: PAGE_WIDTH,
-                        height: PAGE_HEIGHT
+                        height: PAGE_HEIGHT,
+                        windowWidth: PAGE_WIDTH,
+                        windowHeight: PAGE_HEIGHT
                     });
                     
                     const imgData = canvas.toDataURL('image/png', 1.0).split(',')[1];
                     zip.file(`page-${i + 1}.png`, imgData, { base64: true });
-                    setProgress(Math.round(((i + 1) / pages.length) * 100));
+                    setProgress(Math.round(((i + 1) / rawElements.length) * 100));
                 }
                 
                 const content = await zip.generateAsync({ type: 'blob' });
