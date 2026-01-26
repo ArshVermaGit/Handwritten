@@ -414,25 +414,20 @@ export default function EditorPage() {
         const currentFormat = explicitFormat || exportFormat;
         setExportStatus('processing');
         setProgress(0);
-        console.log("Starting Export...");
+        console.log("Starting Pixel-Perfect Export...");
         
         const restoreActions: (() => void)[] = [];
         const ctx = document.createElement('canvas').getContext('2d');
         
-        // Safety helper to convert modern CSS colors (oklch, etc) to RGBA for html2canvas
         const getSafeColor = (color: string) => {
             if (!ctx || !color || color === 'none' || color === 'transparent') return color;
             if (color.startsWith('#') || color.startsWith('rgb')) return color;
             try {
                 ctx.clearRect(0, 0, 1, 1);
-                // Fallback to BLACK just in case the browser computed style is invalid for canvas
-                // (Previous fallback was White, which made text invisible on white paper if parsing failed)
-                ctx.fillStyle = '#000000';
+                ctx.fillStyle = '#FFFFFF';
                 ctx.fillStyle = color;
                 ctx.fillRect(0, 0, 1, 1);
                 const d = ctx.getImageData(0, 0, 1, 1).data;
-                // If completely transparent, return original (might be intentional, or failure)
-                if (d[3] === 0) return color;
                 return `rgba(${d[0]}, ${d[1]}, ${d[2]}, ${(d[3]/255).toFixed(3)})`;
             } catch { return color; }
         };
@@ -445,7 +440,7 @@ export default function EditorPage() {
                 const originalStyle = hEl.getAttribute('style') || '';
                 restoreActions.push(() => hEl.setAttribute('style', originalStyle));
 
-                // PIN ALL VISUAL PROPERTIES to inline styles (sanitizing colors)
+                // PIN ALL VISUAL PROPERTIES
                 const props = [
                     'color', 'background-color', 'border-color',
                     'display', 'position', 'top', 'left', 'right', 'bottom',
@@ -458,8 +453,7 @@ export default function EditorPage() {
 
                 props.forEach(p => {
                     const val = computed.getPropertyValue(p);
-                    // Added 'auto' to exclusion list to avoid unnecessary overrides
-                    if (val && val !== 'none' && val !== 'normal' && val !== 'auto' && val !== '0px auto') {
+                    if (val && val !== 'none' && val !== 'normal' && val !== '0px auto') {
                         if (p.includes('color')) {
                             const safeColor = getSafeColor(val);
                             if (safeColor) hEl.style.setProperty(p, safeColor);
@@ -479,63 +473,31 @@ export default function EditorPage() {
             });
         };
 
-        try {
-            await document.fonts.ready;
-            await new Promise(resolve => setTimeout(resolve, 500));
+        const ignoreNonFontStyles = () => {
+            const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
+            styles.forEach(tag => {
+                const isGoogleFont = tag.tagName === 'LINK' && (tag as HTMLLinkElement).href.includes('fonts.googleapis');
+                if (!isGoogleFont) {
+                    tag.setAttribute('data-html2canvas-ignore', 'true');
+                    restoreActions.push(() => tag.removeAttribute('data-html2canvas-ignore'));
+                }
+            });
+        };
 
+        try {
+            await Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 3000))]);
+            
             const rawElements = document.querySelectorAll('.handwritten-export-target');
             if (rawElements.length === 0) throw new Error('No content found to export');
 
-            // Sanitize styles (oklch -> rgba) before export
             lockComputedStyles();
-            // Note: We intentionally do NOT call ignoreNonFontStyles() here, preserving Tailwind layout.
+            ignoreNonFontStyles();
+            await new Promise(resolve => setTimeout(resolve, 300)); // Slightly longer for stability
 
-            await new Promise(resolve => setTimeout(resolve, 300)); 
-
-            // Clean Filename
+            // FILENAME LOGIC (Sanitized)
             let cleanName = customName || `handwritten-${Date.now()}`;
             cleanName = cleanName.replace(/\.[^/.]+$/, "").replace(/[<>:"/\\|?*]/g, '').trim() || `handwritten-${Date.now()}`;
             const finalFileName = `${cleanName}.${currentFormat}`;
-
-            // Common Configuration
-            const getCanvas = async (element: HTMLElement) => {
-                return await html2canvas(element, { 
-                    scale: 3, 
-                    useCORS: true, 
-                    backgroundColor: '#ffffff',
-                    logging: false,
-                    onclone: (doc) => {
-                        const clonedPages = doc.querySelectorAll('.handwritten-export-target');
-                        clonedPages.forEach((p) => {
-                            const pageEl = p as HTMLElement;
-                            
-                            // 1. Reset Scale/Position
-                            pageEl.style.transform = 'none';
-                            pageEl.style.margin = '0';
-                            pageEl.style.position = 'relative';
-                            pageEl.style.top = '0';
-                            pageEl.style.left = '0';
-                            
-                            // 2. Clear parent transforms
-                            let parent = pageEl.parentElement;
-                            while (parent && parent.tagName !== 'BODY') {
-                                parent.style.transform = 'none';
-                                parent.style.margin = '0';
-                                parent.style.padding = '0';
-                                parent = parent.parentElement;
-                            }
-
-                            // 3. Prevent Crashes but Keep Filters
-                            const problemNodes = pageEl.querySelectorAll('*');
-                            problemNodes.forEach(n => {
-                                const node = n as HTMLElement;
-                                node.style.mixBlendMode = 'normal'; // Fix crashes
-                                // node.style.filter = 'none'; // REMOVED to preserve Smudge
-                            });
-                        });
-                    }
-                });
-            };
 
             if (currentFormat === 'pdf') {
                 const pdf = new jsPDF({ 
@@ -548,8 +510,43 @@ export default function EditorPage() {
 
                 for (let i = 0; i < rawElements.length; i++) {
                     if (i > 0) pdf.addPage();
-                    const canvas = await getCanvas(rawElements[i] as HTMLElement);
-                    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+                    
+                    const canvas = await html2canvas(rawElements[i] as HTMLElement, { 
+                        scale: 3, 
+                        useCORS: true, 
+                        backgroundColor: '#ffffff',
+                        logging: false,
+                        onclone: (doc) => {
+                            const clonedPages = doc.querySelectorAll('.handwritten-export-target');
+                            clonedPages.forEach((p) => {
+                                const pageEl = p as HTMLElement;
+                                // Reset the scaling container but KEEP child transforms (nudge/jitter)
+                                pageEl.style.transform = 'none';
+                                pageEl.style.margin = '0';
+                                pageEl.style.position = 'relative';
+                                pageEl.style.top = '0';
+                                pageEl.style.left = '0';
+                                
+                                // Reset any parent containers that might have transforms (like the page render wrapper)
+                                let parent = pageEl.parentElement;
+                                while (parent && !parent.classList.contains('handwritten-export-target')) {
+                                    parent.style.transform = 'none';
+                                    parent.style.margin = '0';
+                                    parent = parent.parentElement;
+                                }
+
+                                // Handle html2canvas blend mode / filter quirks
+                                const problemNodes = pageEl.querySelectorAll('*');
+                                problemNodes.forEach(n => {
+                                    const node = n as HTMLElement;
+                                    node.style.mixBlendMode = 'normal';
+                                    node.style.filter = 'none';
+                                });
+                            });
+                        }
+                    });
+
+                    const imgData = canvas.toDataURL('image/jpeg', 0.98); // High quality
                     pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'SLOW');
                     setProgress(Math.round(((i + 1) / rawElements.length) * 100));
                 }
@@ -563,12 +560,24 @@ export default function EditorPage() {
                 link.click();
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
-                try { await saveExportedFile(pdfBlob, finalFileName, 'pdf'); } catch { /* Ignore save error */ }
+                try { await saveExportedFile(pdfBlob, finalFileName, 'pdf'); } catch { /* Ignore local save failure */ }
 
             } else {
                 const zip = new JSZip();
                 for (let i = 0; i < rawElements.length; i++) {
-                    const canvas = await getCanvas(rawElements[i] as HTMLElement);
+                    const canvas = await html2canvas(rawElements[i] as HTMLElement, { 
+                        scale: 3, 
+                        useCORS: true, 
+                        backgroundColor: '#ffffff',
+                        onclone: (doc) => {
+                            const clonedPages = doc.querySelectorAll('.handwritten-export-target');
+                            clonedPages.forEach((p) => {
+                                const pageEl = p as HTMLElement;
+                                pageEl.style.transform = 'none';
+                                pageEl.style.margin = '0';
+                            });
+                        }
+                    });
                     const imgData = canvas.toDataURL('image/png', 1.0).split(',')[1];
                     zip.file(`page-${i + 1}.png`, imgData, { base64: true });
                     setProgress(Math.round(((i + 1) / rawElements.length) * 100));
@@ -578,11 +587,9 @@ export default function EditorPage() {
                 const link = document.createElement('a');
                 link.href = url;
                 link.download = finalFileName;
-                document.body.appendChild(link);
                 link.click();
-                document.body.removeChild(link);
                 URL.revokeObjectURL(url);
-                try { await saveExportedFile(content, finalFileName, 'zip'); } catch { /* Ignore save error */ }
+                try { await saveExportedFile(content, finalFileName, 'zip'); } catch { /* Ignore local save failure */ }
             }
             
             setExportStatus('complete');
