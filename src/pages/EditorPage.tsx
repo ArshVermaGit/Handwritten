@@ -314,7 +314,7 @@ export default function EditorPage() {
 
     // --- PIPELINE EXECUTION ---
     const pages = useMemo(() => {
-        const bodyHeight = 1123 - marginTop - marginBottom;
+        const bodyHeight = 1131 - marginTop - marginBottom;
         const linesPerPage = Math.floor(bodyHeight / paper.lineHeight);
         const charsPerLine = Math.floor((800 - marginLeft - marginRight) / (fontSize * 0.38));
         
