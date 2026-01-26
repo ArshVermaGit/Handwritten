@@ -415,164 +415,91 @@ export default function EditorPage() {
         setExportStatus('processing');
         setProgress(0);
         
-        // Page dimensions - exact match to preview
-        const PAGE_WIDTH = 800;
-        const PAGE_HEIGHT = 1131; // 800 * 1.414 (A4 aspect ratio)
-        
         try {
-            // Wait for fonts to be ready
-            await Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 3000))]);
+            // Wait for fonts
+            await document.fonts.ready;
             
-            // FILENAME LOGIC (Sanitized)
+            // Sanitize filename
             let cleanName = customName || `handwritten-${Date.now()}`;
             cleanName = cleanName.replace(/\.[^/.]+$/, "").replace(/[<>:"/\\|?*]/g, '').trim() || `handwritten-${Date.now()}`;
             const finalFileName = `${cleanName}.${currentFormat}`;
             
-            // Get all visible export target elements
-            const rawElements = document.querySelectorAll('.handwritten-export-target');
-            if (rawElements.length === 0) throw new Error('No content found to export');
-            
-            // Create a hidden container to hold cloned pages at native size
-            const exportContainer = document.createElement('div');
-            exportContainer.style.cssText = `
-                position: fixed;
-                left: 0;
-                top: 0;
-                width: ${PAGE_WIDTH}px;
-                height: ${PAGE_HEIGHT}px;
-                z-index: 99999;
-                background: white;
-                overflow: hidden;
-                opacity: 0;
-                pointer-events: none;
-            `;
-            document.body.appendChild(exportContainer);
+            // Get preview pages directly
+            const pageElements = document.querySelectorAll('.handwritten-export-target');
+            if (pageElements.length === 0) throw new Error('No pages to export');
             
             if (currentFormat === 'pdf') {
-                const pdf = new jsPDF({ 
-                    orientation: 'p', 
-                    unit: 'mm', 
-                    format: 'a4', 
-                    putOnlyUsedFonts: true,
-                    compress: true 
-                });
+                const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
                 
-                for (let i = 0; i < rawElements.length; i++) {
+                for (let i = 0; i < pageElements.length; i++) {
                     if (i > 0) pdf.addPage();
                     
-                    // Clone the element
-                    const originalEl = rawElements[i] as HTMLElement;
-                    const clonedEl = originalEl.cloneNode(true) as HTMLElement;
-                    
-                    // Reset all transforms and ensure native size
-                    clonedEl.style.cssText = `
-                        width: ${PAGE_WIDTH}px !important;
-                        height: ${PAGE_HEIGHT}px !important;
-                        transform: none !important;
-                        position: relative !important;
-                        left: 0 !important;
-                        top: 0 !important;
-                        margin: 0 !important;
-                    `;
-                    
-                    // Clear and append to export container
-                    exportContainer.innerHTML = '';
-                    exportContainer.appendChild(clonedEl);
-                    
-                    // Wait for layout
-                    await new Promise(resolve => setTimeout(resolve, 150));
-                    
-                    // Capture with html2canvas
-                    const canvas = await html2canvas(clonedEl, { 
-                        scale: 3,
-                        useCORS: true, 
+                    // Capture directly with html2canvas
+                    const canvas = await html2canvas(pageElements[i] as HTMLElement, {
+                        scale: 2,
+                        useCORS: true,
                         backgroundColor: '#ffffff',
                         logging: false,
-                        width: PAGE_WIDTH,
-                        height: PAGE_HEIGHT,
-                        windowWidth: PAGE_WIDTH,
-                        windowHeight: PAGE_HEIGHT
+                        onclone: (_doc, el) => {
+                            // Reset transforms on cloned element
+                            el.style.transform = 'none';
+                            el.style.width = '800px';
+                            el.style.height = '1131px';
+                        }
                     });
                     
-                    const imgData = canvas.toDataURL('image/jpeg', 0.98);
-                    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'SLOW');
-                    setProgress(Math.round(((i + 1) / rawElements.length) * 100));
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+                    setProgress(Math.round(((i + 1) / pageElements.length) * 100));
                 }
                 
-                const pdfBlob = pdf.output('blob');
-                const url = URL.createObjectURL(pdfBlob);
+                // Download PDF
+                const blob = pdf.output('blob');
                 const link = document.createElement('a');
-                link.href = url;
+                link.href = URL.createObjectURL(blob);
                 link.download = finalFileName;
-                document.body.appendChild(link);
                 link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-                try { await saveExportedFile(pdfBlob, finalFileName, 'pdf'); } catch { /* Ignore */ }
+                URL.revokeObjectURL(link.href);
+                try { await saveExportedFile(blob, finalFileName, 'pdf'); } catch { /* ignore save error */ }
                 
             } else {
                 const zip = new JSZip();
                 
-                for (let i = 0; i < rawElements.length; i++) {
-                    // Clone the element
-                    const originalEl = rawElements[i] as HTMLElement;
-                    const clonedEl = originalEl.cloneNode(true) as HTMLElement;
-                    
-                    // Reset all transforms and ensure native size
-                    clonedEl.style.cssText = `
-                        width: ${PAGE_WIDTH}px !important;
-                        height: ${PAGE_HEIGHT}px !important;
-                        transform: none !important;
-                        position: relative !important;
-                        left: 0 !important;
-                        top: 0 !important;
-                        margin: 0 !important;
-                    `;
-                    
-                    // Clear and append to export container
-                    exportContainer.innerHTML = '';
-                    exportContainer.appendChild(clonedEl);
-                    
-                    // Wait for layout
-                    await new Promise(resolve => setTimeout(resolve, 150));
-                    
-                    // Capture with html2canvas
-                    const canvas = await html2canvas(clonedEl, { 
-                        scale: 3,
-                        useCORS: true, 
+                for (let i = 0; i < pageElements.length; i++) {
+                    // Capture directly with html2canvas
+                    const canvas = await html2canvas(pageElements[i] as HTMLElement, {
+                        scale: 2,
+                        useCORS: true,
                         backgroundColor: '#ffffff',
                         logging: false,
-                        width: PAGE_WIDTH,
-                        height: PAGE_HEIGHT,
-                        windowWidth: PAGE_WIDTH,
-                        windowHeight: PAGE_HEIGHT
+                        onclone: (_doc, el) => {
+                            el.style.transform = 'none';
+                            el.style.width = '800px';
+                            el.style.height = '1131px';
+                        }
                     });
                     
-                    const imgData = canvas.toDataURL('image/png', 1.0).split(',')[1];
+                    const imgData = canvas.toDataURL('image/png').split(',')[1];
                     zip.file(`page-${i + 1}.png`, imgData, { base64: true });
-                    setProgress(Math.round(((i + 1) / rawElements.length) * 100));
+                    setProgress(Math.round(((i + 1) / pageElements.length) * 100));
                 }
                 
+                // Download ZIP
                 const content = await zip.generateAsync({ type: 'blob' });
-                const url = URL.createObjectURL(content);
                 const link = document.createElement('a');
-                link.href = url;
+                link.href = URL.createObjectURL(content);
                 link.download = finalFileName;
                 link.click();
-                URL.revokeObjectURL(url);
-                try { await saveExportedFile(content, finalFileName, 'zip'); } catch { /* Ignore */ }
+                URL.revokeObjectURL(link.href);
+                try { await saveExportedFile(content, finalFileName, 'zip'); } catch { /* ignore save error */ }
             }
             
-            // Cleanup
-            document.body.removeChild(exportContainer);
-            
             setExportStatus('complete');
-            addToast('Export Complete! ✨', 'success');
-        } catch (err: unknown) {
-            const error = err as Error;
-            console.error('Export Failure:', error);
+            addToast('Export Complete!', 'success');
+        } catch (err) {
+            console.error('Export error:', err);
             setExportStatus('error');
-            addToast(`Export Failed: ${error.message}`, 'error');
+            addToast(`Export Failed: ${(err as Error).message}`, 'error');
         }
     };
 
