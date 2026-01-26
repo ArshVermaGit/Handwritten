@@ -4,6 +4,7 @@ import RootLayout from './components/RootLayout';
 import { ToastProvider } from './components/ui/Toast';
 import { AuthProvider } from './context/AuthContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import ScrollToTop from './components/ScrollToTop';
 
 // Lazy Load Pages
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -16,6 +17,9 @@ const Disclaimer = lazy(() => import('./pages/legal/Disclaimer'));
 const CookiePolicy = lazy(() => import('./pages/legal/CookiePolicy'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const FAQPage = lazy(() => import('./pages/FAQPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const SupportPage = lazy(() => import('./pages/SupportPage'));
+const ChangelogPage = lazy(() => import('./pages/ChangelogPage'));
 
 // Loading Fallback
 const PageLoader = () => (
@@ -40,6 +44,9 @@ function InnerApp() {
           {/* Support Pages */}
           <Route path="contact" element={<ContactPage />} />
           <Route path="faq" element={<FAQPage />} />
+          <Route path="about" element={<AboutPage />} />
+          <Route path="support" element={<SupportPage />} />
+          <Route path="changelog" element={<ChangelogPage />} />
 
           {/* 404 Route */}
           <Route path="*" element={<NotFoundPage />} />
@@ -55,6 +62,7 @@ function App() {
       <BrowserRouter>
         <ToastProvider>
           <AuthProvider>
+            <ScrollToTop />
             <InnerApp />
           </AuthProvider>
         </ToastProvider>
