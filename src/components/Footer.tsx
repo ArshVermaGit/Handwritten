@@ -1,18 +1,25 @@
 import { Github, Linkedin, Twitter, Heart } from 'lucide-react';
 import logo from '../assets/logo.png';
-import { Link } from 'react-router-dom';
-
-// Helper for smooth scrolling
-const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
-    } else {
-        window.location.href = `/#${id}`;
-    }
-};
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 export default function Footer() {
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    // Helper for smooth scrolling
+    const scrollToSection = (id: string) => {
+        if (location.pathname !== '/') {
+            navigate('/#' + id);
+            // After navigation, the browser's default hash handling might take over,
+            // or we might need a small delay/effect on the LandingPage.
+            return;
+        }
+
+        const el = document.getElementById(id);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
     return (
         <footer className="bg-paper pt-16 pb-8 border-t border-black/5 relative overflow-hidden">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 relative z-10">
@@ -33,15 +40,17 @@ export default function Footer() {
                         <h4 className="font-black text-xs uppercase tracking-[0.2em] text-neutral-400 mb-6 focus:outline-none">Product</h4>
                         <ul className="space-y-3">
                             <li><button onClick={() => scrollToSection('editor')} className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold text-left">Editor</button></li>
-                            <li><button onClick={() => scrollToSection('about')} className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold text-left">About Us</button></li>
+                            <li><Link to="/about" className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold">About Us</Link></li>
                         </ul>
                     </div>
 
                     <div className="col-span-1 lg:col-span-2">
                         <h4 className="font-black text-xs uppercase tracking-[0.2em] text-neutral-400 mb-6">Support</h4>
                         <ul className="space-y-3">
-                            <li><Link to="/faq" className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold">Help & FAQ</Link></li>
-                            <li><Link to="/contact" className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold">Contact Support</Link></li>
+                            <li><Link to="/contact" className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold">Contact</Link></li>
+                            <li><Link to="/support" className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold">Support</Link></li>
+                            <li><Link to="/faq" className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold">FAQ</Link></li>
+                            <li><Link to="/changelog" className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold">Changelog</Link></li>
                         </ul>
                     </div>
 
