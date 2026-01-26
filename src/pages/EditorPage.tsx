@@ -448,7 +448,8 @@ export default function EditorPage() {
                     'font-size', 'font-family', 'font-weight', 'line-height', 'text-align',
                     'letter-spacing', 'word-spacing', 'white-space', 'text-decoration',
                     'opacity', 'z-index', 'transform', 'transform-origin',
-                    'border-width', 'border-style', 'border-radius', 'box-shadow'
+                    'border-width', 'border-style', 'border-radius', 'box-shadow',
+                    'filter', 'mix-blend-mode'
                 ];
 
                 props.forEach(p => {
@@ -520,14 +521,12 @@ export default function EditorPage() {
                             const clonedPages = doc.querySelectorAll('.handwritten-export-target');
                             clonedPages.forEach((p) => {
                                 const pageEl = p as HTMLElement;
-                                // Reset the scaling container but KEEP child transforms (nudge/jitter)
                                 pageEl.style.transform = 'none';
                                 pageEl.style.margin = '0';
                                 pageEl.style.position = 'relative';
                                 pageEl.style.top = '0';
                                 pageEl.style.left = '0';
                                 
-                                // Reset any parent containers that might have transforms (like the page render wrapper)
                                 let parent = pageEl.parentElement;
                                 while (parent && !parent.classList.contains('handwritten-export-target')) {
                                     parent.style.transform = 'none';
@@ -535,13 +534,10 @@ export default function EditorPage() {
                                     parent = parent.parentElement;
                                 }
 
-                                // Handle html2canvas blend mode / filter quirks
-                                const problemNodes = pageEl.querySelectorAll('*');
-                                problemNodes.forEach(n => {
-                                    const node = n as HTMLElement;
-                                    node.style.mixBlendMode = 'normal';
-                                    node.style.filter = 'none';
-                                });
+                                const pageContainer = pageEl.querySelector('.handwritten-export-target');
+                                if (pageContainer && pageContainer instanceof HTMLElement) {
+                                    pageContainer.style.mixBlendMode = 'normal';
+                                }
                             });
                         }
                     });
@@ -575,6 +571,21 @@ export default function EditorPage() {
                                 const pageEl = p as HTMLElement;
                                 pageEl.style.transform = 'none';
                                 pageEl.style.margin = '0';
+                                pageEl.style.position = 'relative';
+                                pageEl.style.top = '0';
+                                pageEl.style.left = '0';
+                                
+                                let parent = pageEl.parentElement;
+                                while (parent && !parent.classList.contains('handwritten-export-target')) {
+                                    parent.style.transform = 'none';
+                                    parent.style.margin = '0';
+                                    parent = parent.parentElement;
+                                }
+
+                                const pageContainer = pageEl.querySelector('.handwritten-export-target');
+                                if (pageContainer && pageContainer instanceof HTMLElement) {
+                                    pageContainer.style.mixBlendMode = 'normal';
+                                }
                             });
                         }
                     });
