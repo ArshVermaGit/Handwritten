@@ -7,6 +7,7 @@ interface ScrollRevealProps {
     delay?: number;
     direction?: "up" | "down" | "left" | "right";
     className?: string;
+    fillHeight?: boolean;
 }
 
 export const ScrollReveal = ({ 
@@ -14,7 +15,8 @@ export const ScrollReveal = ({
     width = "100%", 
     delay = 0.1, 
     direction = "up",
-    className = ""
+    className = "",
+    fillHeight = false
 }: ScrollRevealProps) => {
     
     const getInitialProps = () => {
@@ -28,7 +30,10 @@ export const ScrollReveal = ({
     };
 
     return (
-        <div style={{ position: "relative", width, overflow: "visible" }} className={className}>
+        <div 
+            style={{ position: "relative", width, overflow: "visible" }} 
+            className={`${className} ${fillHeight ? "h-full" : ""}`}
+        >
             <motion.div
                 variants={{
                     hidden: getInitialProps(),
@@ -42,6 +47,7 @@ export const ScrollReveal = ({
                     delay, 
                     ease: [0.21, 0.47, 0.32, 0.98] 
                 }}
+                className={fillHeight ? "h-full" : ""}
             >
                 {children}
             </motion.div>
