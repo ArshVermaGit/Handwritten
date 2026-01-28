@@ -244,7 +244,7 @@ export default function LandingPage() {
     );
 }
 
-function HeroSection() {
+const HeroSection = React.memo(() => {
     // Floating elements with animations - Enriched for Mobile
     const floatingElements = [
         { icon: '✒️', x: 'left-4 sm:left-[5%]', y: 'top-[15%] sm:top-[12%]', size: 'text-6xl sm:text-7xl', hideOnMobile: false, duration: 20, delay: 0 },
@@ -261,19 +261,20 @@ function HeroSection() {
 
     return (
         <section className="relative min-h-[95vh] flex flex-col items-center justify-center px-4 sm:px-6 overflow-hidden">
-            {/* Background Glow */}
+            {/* Background Glow - Optimized: removed mix-blend-multiply */}
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                 <div className="w-full max-w-7xl h-full relative">
                     <motion.div 
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 2, ease: "easeOut" }}
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-100/40 rounded-full blur-[60px] sm:blur-[140px] mix-blend-multiply" 
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-100/30 rounded-full blur-[60px] sm:blur-[140px]" 
+                        style={{ willChange: 'transform, opacity' }}
                     />
                 </div>
             </div>
 
-            {/* Floating Decorative Elements */}
+            {/* Floating Decorative Elements - Optimized: added will-change */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 {floatingElements.map((el, index) => (
                     <motion.div
@@ -289,9 +290,10 @@ function HeroSection() {
                             delay: el.delay,
                             ease: "easeInOut"
                         }}
-                        className={`absolute ${el.x} ${el.y} ${el.size} ${el.hideOnMobile ? 'hidden sm:block' : ''} opacity-70`}
+                        className={`absolute ${el.x} ${el.y} ${el.size} ${el.hideOnMobile ? 'hidden sm:block' : ''} opacity-60`}
                         style={{ 
-                            filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.05))'
+                            filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.03))',
+                            willChange: 'transform'
                         }}
                     >
                         {el.icon}
@@ -301,10 +303,8 @@ function HeroSection() {
 
             {/* Main Content */}
             <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-6xl py-24">
-                {/* Central Text Content */}
                 <div className="text-center pt-20 pb-12 relative">
-                    {/* Background Soft Glow for Text */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[120%] bg-indigo-500/5 blur-[100px] rounded-full pointer-events-none" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[120%] bg-indigo-500/[0.03] blur-[100px] rounded-full pointer-events-none" />
 
                     <div className="flex flex-col items-center">
                         <motion.h1 
@@ -312,6 +312,7 @@ function HeroSection() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
                             className="text-5xl sm:text-9xl lg:text-[11rem] font-display font-bold leading-none tracking-tighter text-neutral-900 mb-4"
+                            style={{ willChange: 'transform, opacity' }}
                         >
                             Handwritten.
                         </motion.h1>
@@ -328,9 +329,11 @@ function HeroSection() {
             </div>
         </section>
     );
-}
+});
 
-function AboutSection() {
+HeroSection.displayName = "HeroSection";
+
+const AboutSection = React.memo(() => {
     return (
         <section 
             id="about"
@@ -389,9 +392,11 @@ function AboutSection() {
              </div>
         </section>
     );
-}
+});
 
-function SocialLink({ href, icon: Icon }: { href: string, icon: React.ElementType }) {
+AboutSection.displayName = "AboutSection";
+
+const SocialLink = React.memo(({ href, icon: Icon }: { href: string, icon: React.ElementType }) => {
     return (
         <a 
             href={href} 
@@ -402,4 +407,6 @@ function SocialLink({ href, icon: Icon }: { href: string, icon: React.ElementTyp
             <Icon size={18} />
         </a>
     );
-}
+});
+
+SocialLink.displayName = "SocialLink";
