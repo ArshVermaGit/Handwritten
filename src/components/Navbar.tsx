@@ -8,7 +8,7 @@ import AuthModal from './AuthModal';
 
 export default function Navbar() {
     const { user, setAuthModalOpen } = useAuth();
-    const { isNavbarVisible } = useStore();
+    const isNavbarVisible = useStore(state => state.isNavbarVisible);
 
     return (
         <>
