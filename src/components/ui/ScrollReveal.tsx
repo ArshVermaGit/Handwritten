@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import type { ReactNode } from 'react';
+import { useRef, useEffect, memo, type ReactNode } from "react";
+import { motion, useInView, useAnimation } from "framer-motion";
 
 interface ScrollRevealProps {
     children: ReactNode;
@@ -10,7 +10,7 @@ interface ScrollRevealProps {
     fillHeight?: boolean;
 }
 
-export const ScrollReveal = ({ 
+export const ScrollReveal = memo(({ 
     children, 
     width = "100%", 
     delay = 0.1, 
@@ -18,21 +18,35 @@ export const ScrollReveal = ({
     className = "",
     fillHeight = false
 }: ScrollRevealProps) => {
-    
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true, margin: "-100px" });
+    const mainControls = useAnimation();
+
+    useEffect(() => {
+        if (isInView) {
+            mainControls.start("visible");
+        }
+    }, [isInView, mainControls]);
+
     const getInitialProps = () => {
         switch (direction) {
-            case "up": return { opacity: 0, y: 30 };
-            case "down": return { opacity: 0, y: -30 };
-            case "left": return { opacity: 0, x: 30 };
-            case "right": return { opacity: 0, x: -30 };
-            default: return { opacity: 0, y: 30 };
+            case "up": return { opacity: 0, y: 40 };
+            case "down": return { opacity: 0, y: -40 };
+            case "left": return { opacity: 0, x: 40 };
+            case "right": return { opacity: 0, x: -40 };
+            default: return { opacity: 0, y: 40 };
         }
     };
 
     return (
         <div 
-            style={{ position: "relative", width, overflow: "visible" }} 
-            className={`${className} ${fillHeight ? "h-full" : ""}`}
+            ref={ref}
+            style={{ 
+                position: "relative", 
+                width, 
+                overflow: "visible" 
+            }} 
+            className={`${className} ${fillHeight ? 'h-full flex flex-col' : ''}`}
         >
             <motion.div
                 variants={{
@@ -40,17 +54,19 @@ export const ScrollReveal = ({
                     visible: { opacity: 1, x: 0, y: 0 },
                 }}
                 initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "-100px" }}
+                animate={mainControls}
                 transition={{ 
                     duration: 0.8, 
                     delay, 
                     ease: [0.21, 0.47, 0.32, 0.98] 
                 }}
-                className={fillHeight ? "h-full" : ""}
+                className={fillHeight ? 'h-full flex flex-col' : ''}
+                style={{ willChange: 'transform, opacity' }}
             >
                 {children}
             </motion.div>
         </div>
     );
-};
+});
+
+ScrollReveal.displayName = "ScrollReveal";
