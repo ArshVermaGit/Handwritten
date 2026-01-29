@@ -22,6 +22,7 @@ const SupportPage = lazy(() => import('./pages/SupportPage'));
 const ChangelogPage = lazy(() => import('./pages/ChangelogPage'));
 const FeaturesPage = lazy(() => import('./pages/FeaturesPage'));
 const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'));
+const SitemapPage = lazy(() => import('./pages/SitemapPage'));
 
 // Loading Fallback
 const PageLoader = () => (
@@ -53,6 +54,7 @@ function InnerApp() {
           {/* Product Pages */}
           <Route path="features" element={<FeaturesPage />} />
           <Route path="how-it-works" element={<HowItWorksPage />} />
+          <Route path="sitemap" element={<SitemapPage />} />
 
           {/* 404 Route */}
           <Route path="*" element={<NotFoundPage />} />

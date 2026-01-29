@@ -271,7 +271,7 @@ export default function LandingPage() {
 
                             <div className="relative z-10 py-4">
                                 <h2 className="text-4xl sm:text-5xl md:text-6xl font-display font-black mb-4 sm:mb-6 tracking-tighter leading-[1.1] text-white">
-                                    Start your <br/>
+                                    <span className="text-white">Start your</span> <br/>
                                     <motion.span 
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}

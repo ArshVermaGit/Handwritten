@@ -93,6 +93,7 @@ export default function Footer() {
                             <li><Link to="/terms" className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold">Terms of Service</Link></li>
                             <li><Link to="/disclaimer" className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold">Disclaimer</Link></li>
                             <li><Link to="/cookies" className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold">Cookie Policy</Link></li>
+                            <li><Link to="/sitemap" className="text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-bold">Sitemap</Link></li>
                         </ul>
                     </motion.div>
 
