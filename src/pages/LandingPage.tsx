@@ -6,7 +6,6 @@ import React, { useRef, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { useStore } from '../lib/store';
 import EditorPage from './EditorPage';
-import { ScrollReveal } from '../components/ui/ScrollReveal';
 import photo from '../assets/arsh.jpg';
 
 export default function LandingPage() {
@@ -50,8 +49,6 @@ export default function LandingPage() {
                 <HeroSection />
             </section>
 
-            {/* --- REAL EDITOR SECTION --- */}
-            <ScrollReveal>
                 <section ref={editorRef} id="editor" className="relative z-20 py-12 sm:py-16 md:py-28">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6">
                         <div className="mb-8 sm:mb-12 md:mb-16 text-center">
@@ -63,27 +60,34 @@ export default function LandingPage() {
                         </div>
                     </div>
                 </section>
-            </ScrollReveal>
 
 
             {/* --- BENTO GRID FEATURES --- */}
             <section className="py-12 sm:py-16 md:py-28 relative">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                    <ScrollReveal direction="down">
-                        <div className="mb-10 sm:mb-16 md:mb-20 text-center max-w-2xl mx-auto">
-                            <span className="text-indigo-500 font-bold tracking-widest uppercase text-xs mb-4 block">
-                                Why Handwritten?
-                            </span>
-                            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold text-neutral-900 mb-6">
-                                More than just <br className="hidden sm:block"/>
-                                <span className="italic font-serif text-neutral-600">pixels on a screen.</span>
-                            </h2>
-                        </div>
-                    </ScrollReveal>
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8 }}
+                        className="mb-10 sm:mb-16 md:mb-20 text-center max-w-2xl mx-auto"
+                    >
+                        <span className="text-indigo-500 font-bold tracking-widest uppercase text-xs mb-4 block">
+                            Why Handwritten?
+                        </span>
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold text-neutral-900 mb-6">
+                            More than just <br className="hidden sm:block"/>
+                            <span className="italic font-serif text-neutral-600">pixels on a screen.</span>
+                        </h2>
+                    </motion.div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 md:grid-rows-2 h-[800px] md:h-[600px]">
                         {/* Large Card: Advanced Simulation Engine */}
-                        <ScrollReveal className="md:col-span-2 md:row-span-2" direction="right" fillHeight>
+                        <motion.div 
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.8 }}
+                            className="md:col-span-2 md:row-span-2"
+                        >
                             <motion.div 
                                 whileHover={{ y: -5 }}
                                 className="h-full bg-white rounded-[3rem] relative overflow-hidden group shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] border border-neutral-100 flex flex-col"
@@ -117,7 +121,7 @@ export default function LandingPage() {
                                         {/* Front Paper (Main) */}
                                         <motion.div 
                                             initial={{ rotate: 0, y: 40, opacity: 0 }}
-                                            whileInView={{ rotate: -4, y: 0, opacity: 1 }}
+                                            animate={{ rotate: -4, y: 0, opacity: 1 }}
                                             transition={{ delay: 0.6, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
                                             className="absolute inset-0 bg-white rounded-tl-[3.5rem] shadow-[0_30px_70px_-10px_rgba(0,0,0,0.12)] p-8 border border-neutral-100 overflow-hidden"
                                         >   
@@ -133,10 +137,15 @@ export default function LandingPage() {
                                     </div>
                                 </div>
                             </motion.div>
-                        </ScrollReveal>
+                        </motion.div>
 
                         {/* Top Right: Export Anywhere (Dark Glassmorphism) */}
-                        <ScrollReveal direction="left" delay={0.2} fillHeight>
+                        <motion.div 
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.8, delay: 0.2 }}
+                            className="h-full"
+                        >
                             <motion.div 
                                 whileHover={{ y: -5 }}
                                 className="h-full bg-gradient-to-br from-[#1A1F2C] via-[#111827] to-indigo-950/40 text-white rounded-[3rem] p-10 relative overflow-hidden group shadow-2xl flex flex-col ring-1 ring-white/10"
@@ -160,10 +169,15 @@ export default function LandingPage() {
                                     </div>
                                 </div>
                             </motion.div>
-                        </ScrollReveal>
+                        </motion.div>
 
                         {/* Bottom Right: AI Humanizer (Soft Elegant) */}
-                        <ScrollReveal direction="left" delay={0.4} fillHeight>
+                        <motion.div 
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.8, delay: 0.4 }}
+                            className="h-full"
+                        >
                             <motion.div 
                                 whileHover={{ y: -5 }}
                                 className="h-full bg-white rounded-[3rem] p-10 relative overflow-hidden group shadow-[0_20px_50px_-15px_rgba(0,0,0,0.06)] border border-neutral-100 flex flex-col"
@@ -183,18 +197,20 @@ export default function LandingPage() {
                                     </div>
                                 </div>
                             </motion.div>
-                        </ScrollReveal>
+                        </motion.div>
                     </div>
                 </div>
             </section>
 
             {/* --- ABOUT SECTION --- */}
-            <ScrollReveal>
-                <AboutSection />
-            </ScrollReveal>
+            <AboutSection />
 
             {/* --- CALL TO ACTION --- */}
-            <ScrollReveal direction="up" delay={0.2}>
+            <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+            >
                 <section className="py-12 pb-28 sm:py-16 md:py-24 px-4 sm:px-6 relative overflow-hidden">
                     <div className="max-w-4xl mx-auto text-center relative z-10">
                         <motion.div 
@@ -217,7 +233,7 @@ export default function LandingPage() {
                                     Start your <br className="hidden sm:block"/>
                                     <motion.span 
                                         initial={{ opacity: 0 }}
-                                        whileInView={{ opacity: 1 }}
+                                        animate={{ opacity: 1 }}
                                         transition={{ delay: 0.5, duration: 1 }}
                                         className="font-serif italic text-indigo-400"
                                     >masterpiece.</motion.span>
@@ -238,7 +254,7 @@ export default function LandingPage() {
                         </motion.div>
                     </div>
                 </section>
-            </ScrollReveal>
+            </motion.div>
 
         </div>
     );
@@ -260,7 +276,7 @@ const HeroSection = React.memo(() => {
     ];
 
     return (
-        <section className="relative min-h-[95vh] flex flex-col items-center justify-center px-4 sm:px-6 overflow-hidden">
+        <section className="relative min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 overflow-hidden">
             {/* Background Glow - Optimized: removed mix-blend-multiply */}
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                 <div className="w-full max-w-7xl h-full relative">
@@ -303,7 +319,7 @@ const HeroSection = React.memo(() => {
 
             {/* Main Content */}
             <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-6xl py-24">
-                <div className="text-center pt-20 pb-12 relative">
+                <div className="text-center pb-12 relative">
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[120%] bg-indigo-500/[0.03] blur-[100px] rounded-full pointer-events-none" />
 
                     <div className="flex flex-col items-center">
