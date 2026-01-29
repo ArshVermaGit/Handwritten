@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import logo from '../assets/logo.png';
-import UserMenu from './UserMenu';
-import { useAuth } from '../context/AuthContext';
-import { useStore } from '../lib/store';
-import AuthModal from './AuthModal';
+const logo = '/images/logo.png';
+import UserMenu from '../UserMenu';
+import { useAuth } from '../../context/AuthContext';
+import { useStore } from '../../lib/store';
+import AuthModal from '../modals/AuthModal';
 
 export default function Navbar() {
     const { user, setAuthModalOpen } = useAuth();
@@ -13,12 +13,20 @@ export default function Navbar() {
     return (
         <>
             <motion.nav
-                initial={{ y: -100 }}
-                animate={{ y: isNavbarVisible ? 0 : -150 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
+                initial={{ y: -100, opacity: 0 }}
+                animate={{ 
+                    y: isNavbarVisible ? 0 : -120,
+                    opacity: isNavbarVisible ? 1 : 0,
+                    scale: isNavbarVisible ? 1 : 0.95
+                }}
+                transition={{ 
+                    duration: 0.5, 
+                    ease: [0.16, 1, 0.3, 1],
+                    opacity: { duration: 0.3 }
+                }}
                 className="fixed top-4 sm:top-8 left-0 right-0 z-50 px-4 sm:px-6 flex justify-center pointer-events-none"
             >
-                <div className="w-full max-w-2xl bg-white/60 backdrop-blur-3xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.06)] rounded-4xl px-4 sm:px-8 py-2.5 sm:py-3 flex justify-between items-center pointer-events-auto ring-1 ring-black/5">
+                <div className="w-full max-w-2xl glass rounded-4xl px-4 sm:px-8 py-2.5 sm:py-3 flex justify-between items-center pointer-events-auto ring-1 ring-black/5">
                     {/* Logo */}
                     <Link to="/" className="flex items-center gap-2 group relative">
                         <img 

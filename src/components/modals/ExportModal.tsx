@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Download, FileText, ImageIcon, X, Loader2, Play } from 'lucide-react';
 import { useState } from 'react';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 interface ExportModalProps {
     isOpen: boolean;
@@ -17,6 +18,8 @@ export default function ExportModal({
 }: ExportModalProps) {
     const isPDF = format === 'pdf';
     const [fileName, setFileName] = useState(initialFileName);
+
+    useScrollLock(isOpen);
     
     // Status messages for flavor
     const getStatusMessage = () => {
@@ -39,7 +42,6 @@ export default function ExportModal({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={status === 'complete' || status === 'error' || status === 'idle' ? onClose : undefined}
                         className="absolute inset-0"
                     />
 
@@ -49,7 +51,7 @@ export default function ExportModal({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl max-w-md w-full relative flex flex-col max-h-[85vh] border border-white/20"
+                        className="bg-white rounded-4xl overflow-hidden isolate shadow-2xl max-w-md w-full relative flex flex-col max-h-[85vh] border border-white/20"
                     >
                         {/* HEADER with macOS dots */}
                         <div className="p-6 sm:p-8 border-b border-neutral-100 flex items-center justify-between bg-white relative z-10 shrink-0">

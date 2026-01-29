@@ -1,8 +1,9 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Clock, Download, Trash2, Package, ShieldCheck, Search, ArrowLeft } from 'lucide-react';
-import { useToast } from '../hooks/useToast';
-import { getAllExportedFiles, deleteExportedFile, type StoredFile } from '../lib/fileStorage';
+import { useToast } from '../../hooks/useToast';
+import { getAllExportedFiles, deleteExportedFile, type StoredFile } from '../../lib/fileStorage';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 interface HistoryModalProps {
     isOpen: boolean;
@@ -14,7 +15,8 @@ export default function HistoryModal({ isOpen, onClose }: HistoryModalProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const { addToast } = useToast();
-    const modalRef = useRef<HTMLDivElement>(null);
+
+    useScrollLock(isOpen);
 
     const loadFiles = useCallback(async () => {
         setIsLoading(true);
@@ -35,20 +37,8 @@ export default function HistoryModal({ isOpen, onClose }: HistoryModalProps) {
         }
     }, [isOpen, loadFiles]);
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-                onClose();
-            }
-        };
-
-        if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isOpen, onClose]);
+    // Intentional Dismissal: Only the close button can dismiss this modal.
+    // Accidental clicks on the background no longer close the Vault.
 
     const handleDownload = (file: StoredFile) => {
         const url = URL.createObjectURL(file.blob);
@@ -83,13 +73,12 @@ export default function HistoryModal({ isOpen, onClose }: HistoryModalProps) {
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-neutral-900/40 backdrop-blur-md">
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 sm:p-6 bg-neutral-900/40 backdrop-blur-md">
                     {/* BACKDROP */}
                     <motion.div 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={onClose}
                         className="absolute inset-0"
                     />
 
@@ -99,8 +88,7 @@ export default function HistoryModal({ isOpen, onClose }: HistoryModalProps) {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        ref={modalRef}
-                        className="bg-white rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl w-[92%] sm:w-full max-w-3xl relative flex flex-col h-auto max-h-[85vh] my-auto border border-white/20"
+                        className="bg-white rounded-4xl overflow-hidden isolate shadow-premium w-[92%] sm:w-full max-w-3xl relative flex flex-col h-auto max-h-[85vh] my-auto border border-white/20"
                     >
                         {/* HEADER with macOS dots */}
                         <div className="p-5 sm:p-8 border-b border-neutral-100 flex items-center justify-between bg-white relative z-10 shrink-0">
@@ -142,8 +130,9 @@ export default function HistoryModal({ isOpen, onClose }: HistoryModalProps) {
                         </div>
 
                         {/* SEARCH BAR SECTION */}
-                        <div className="px-5 sm:px-8 py-3 sm:py-4 bg-white border-b border-neutral-100 shrink-0 relative z-10">
-                            <div className="flex items-center gap-3 px-4 py-2.5 sm:py-3 bg-neutral-50/50 backdrop-blur-sm rounded-2xl border border-neutral-100 focus-within:border-indigo-200 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500/10 transition-all">
+                        <div className="px-5 sm:px-8 py-3 sm:py-4 bg-[#FAFAFA] border-b border-neutral-100 shrink-0 relative z-10 overflow-hidden isolate">
+                            <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[24px_24px] opacity-20 pointer-events-none" />
+                            <div className="relative flex items-center gap-3 px-4 py-2.5 sm:py-3 glass rounded-2xl border border-neutral-100 focus-within:border-indigo-200 focus-within:ring-2 focus-within:ring-indigo-500/10 transition-all overflow-hidden isolate">
                                 <Search size={16} className="text-neutral-400" />
                                 <input 
                                     type="text" 

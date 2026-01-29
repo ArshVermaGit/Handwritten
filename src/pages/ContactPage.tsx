@@ -1,6 +1,5 @@
-import PageLayout from '../components/PageLayout';
+import PageLayout from '../components/layout/PageLayout';
 import { Mail, Linkedin } from 'lucide-react';
-import { ScrollReveal } from '../components/ui/ScrollReveal';
 
 export default function ContactPage() {
     return (
@@ -8,8 +7,7 @@ export default function ContactPage() {
             title="Contact Support" 
             subtitle="We're here to help you get the most out of Handwritten."
         >
-            <ScrollReveal>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 not-prose">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 not-prose">
                 <div className="bg-white p-8 rounded-2xl border border-neutral-100 shadow-sm text-center">
                     <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center mx-auto mb-4">
                         <Mail size={24} />
@@ -28,11 +26,10 @@ export default function ContactPage() {
                     <h3 className="text-xl font-bold text-neutral-900 mb-2">LinkedIn</h3>
                     <p className="text-neutral-500 mb-6">Connect with us on LinkedIn for professional updates.</p>
                     <a href="https://www.linkedin.com/in/arshvermadev/" target="_blank" rel="noopener noreferrer" className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors">
-                        Connect on LinkedIn
+                        Arsh Verma (LinkedIn) →
                     </a>
                 </div>
-                </div>
-            </ScrollReveal>
+            </div>
             <h3>Frequently Asked Questions</h3>
             <p>
                 Before reaching out, check our <a href="/faq">FAQ page</a> for answers to common questions about exports, fonts, and privacy.

@@ -1,4 +1,4 @@
-import PageLayout from '../../components/PageLayout';
+import PageLayout from '../../components/layout/PageLayout';
 
 export default function TermsOfService() {
     return (
@@ -37,7 +37,7 @@ export default function TermsOfService() {
             </p>
 
             <p className="text-sm text-neutral-400 mt-8">
-                Last updated: January 26, 2026
+                Last updated: January 29, 2026
             </p>
         </PageLayout>
     );

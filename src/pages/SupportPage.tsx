@@ -1,4 +1,4 @@
-import PageLayout from '../components/PageLayout';
+import PageLayout from '../components/layout/PageLayout';
 import { Mail, Linkedin, HelpCircle, FileText, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -39,7 +39,7 @@ export default function SupportPage() {
                         rel="noopener noreferrer"
                         className="inline-flex items-center font-bold text-neutral-900 hover:gap-2 transition-all"
                     >
-                        Connect on LinkedIn →
+                        Arsh Verma (LinkedIn) →
                     </a>
                 </div>
             </div>

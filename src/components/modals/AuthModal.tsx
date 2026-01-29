@@ -1,28 +1,16 @@
-import { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle2, Loader2 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import logo from '../assets/logo.png';
+import { useAuth } from '../../context/AuthContext';
+import { useScrollLock } from '../../hooks/useScrollLock';
+const logo = '/images/logo.png';
 
 export default function AuthModal() {
     const { isAuthModalOpen, setAuthModalOpen, login, isLoading } = useAuth();
-    const modalRef = useRef<HTMLDivElement>(null);
 
-    // Close on click outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-                setAuthModalOpen(false);
-            }
-        };
+    useScrollLock(isAuthModalOpen);
 
-        if (isAuthModalOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isAuthModalOpen, setAuthModalOpen]);
+    // Modals are now intentional: they can only be closed via the close button.
+    // Backdrop clicks and "click outside" are disabled to prevent accidental dismissal during sensitive flows.
 
     return (
         <AnimatePresence>
@@ -33,11 +21,10 @@ export default function AuthModal() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        ref={modalRef}
-                        className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl max-w-sm w-full relative flex flex-col border border-white/20"
+                        className="bg-white rounded-4xl overflow-hidden isolate shadow-premium max-w-sm w-full relative flex flex-col border border-white/20"
                     >
                         {/* HEADER with macOS dots */}
-                        <div className="p-6 sm:p-8 border-b border-neutral-100 flex items-center justify-between bg-white relative z-10 shrink-0">
+                        <div className="p-6 sm:p-8 border-b border-neutral-100 flex items-center justify-between bg-white relative z-10 shrink-0 overflow-hidden isolate">
                             <div className="flex items-center gap-4">
                                 <div className="flex gap-2">
                                     <div className="w-3 h-3 rounded-full bg-[#FF5F57] shadow-inner" />
@@ -58,9 +45,9 @@ export default function AuthModal() {
                         </div>
 
                         {/* CONTENT AREA with grid pattern */}
-                        <div className="flex-1 p-6 sm:p-8 bg-[#FAFAFA] relative flex flex-col items-center text-center">
+                        <div className="flex-1 p-6 sm:p-8 bg-paper relative flex flex-col items-center text-center">
                             {/* Grid Background Pattern */}
-                            <div className="absolute inset-0 bg-[radial-gradient(#00000005_1px,transparent_1px)] bg-size-[20px_20px] pointer-events-none" />
+                            <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[24px_24px] opacity-40 pointer-events-none" />
                             
                             <div className="relative z-10 flex flex-col items-center w-full">
                                 {/* Logo */}

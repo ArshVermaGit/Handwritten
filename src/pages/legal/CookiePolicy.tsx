@@ -1,4 +1,4 @@
-import PageLayout from '../../components/PageLayout';
+import PageLayout from '../../components/layout/PageLayout';
 
 export default function CookiePolicy() {
     return (
@@ -23,6 +23,9 @@ export default function CookiePolicy() {
             <h3>Managing Cookies</h3>
             <p>
                 You can delete all cookies that are already on your computer and you can set most browsers to prevent them from being placed. If you do this, however, you may have to manually adjust some preferences every time you visit a site and some services and functionalities may not work.
+            </p>
+            <p className="text-sm text-neutral-400 mt-8">
+                Last updated: January 29, 2026
             </p>
         </PageLayout>
     );

@@ -1,4 +1,4 @@
-import PageLayout from '../components/PageLayout';
+import PageLayout from '../components/layout/PageLayout';
 import { Heart, Sparkles, Shield, Zap } from 'lucide-react';
 
 export default function AboutPage() {
@@ -6,6 +6,7 @@ export default function AboutPage() {
         <PageLayout 
             title="About Handwritten" 
             subtitle="We're on a mission to preserve the beauty of human touch in a digital-first world."
+            description="Discover the story behind Handwritten. Born from a student project at VIT Bhopal, we blend analog nostalgia with modern AI technology to bridge the gap in digital communication."
         >
             <div className="space-y-12">
                 <section>
@@ -14,7 +15,7 @@ export default function AboutPage() {
                         Our Vision
                     </h3>
                     <p>
-                        In an era dominated by sterile digital fonts and instant messaging, we believe there's something irreplaceable about the unique character of a person's handwriting. Handwritten was born from the desire to bridge the gap between the warmth of analog expression and the efficiency of modern technology.
+                        In an era dominated by sterile digital fonts and instant messaging, we believe there's something irreplaceable about the unique character of a person's handwriting. Handwritten was born from the desire to bridge the gap between the warmth of analog expression and the efficiency of modern technology. Our goal is to make every digital communication feel as personal as a letter delivered by hand.
                     </p>
                 </section>
 

@@ -1,7 +1,16 @@
-import PageLayout from '../components/PageLayout';
+import PageLayout from '../components/layout/PageLayout';
 import { Rocket, Bug, Star, Clock } from 'lucide-react';
 
 const updates = [
+    {
+        version: "v2.0.0",
+        date: "January 29, 2026",
+        type: "Major Release",
+        title: "The Atmospheric Update",
+        description: "A complete visual overhaul introducing a premium atmospheric background with dot grid and mesh gradients, a new high-end 3D depth system, and global animation orchestration.",
+        icon: Star,
+        color: "bg-indigo-100 text-indigo-600"
+    },
     {
         version: "v1.2.0",
         date: "January 25, 2026",
@@ -78,7 +87,7 @@ export default function ChangelogPage() {
 
             <div className="mt-16 text-center">
                 <p className="text-neutral-400 text-sm font-medium">
-                    Want to stay updated? Follow us on <a href="https://x.com/TheArshVerma" className="text-neutral-900 font-bold hover:underline">Twitter</a>.
+                    Want to stay updated? Follow us on <a href="https://x.com/TheArshVerma" className="text-neutral-900 font-bold hover:underline">X (Twitter)</a>.
                 </p>
             </div>
         </PageLayout>

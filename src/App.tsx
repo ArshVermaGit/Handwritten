@@ -1,10 +1,10 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import RootLayout from './components/RootLayout';
+import RootLayout from './components/layout/RootLayout';
 import { ToastProvider } from './components/ui/Toast';
 import { AuthProvider } from './context/AuthContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import ScrollToTop from './components/ScrollToTop';
+import ScrollToTop from './components/layout/ScrollToTop';
 
 // Lazy Load Pages
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -20,6 +20,8 @@ const FAQPage = lazy(() => import('./pages/FAQPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const SupportPage = lazy(() => import('./pages/SupportPage'));
 const ChangelogPage = lazy(() => import('./pages/ChangelogPage'));
+const FeaturesPage = lazy(() => import('./pages/FeaturesPage'));
+const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'));
 
 // Loading Fallback
 const PageLoader = () => (
@@ -47,6 +49,10 @@ function InnerApp() {
           <Route path="about" element={<AboutPage />} />
           <Route path="support" element={<SupportPage />} />
           <Route path="changelog" element={<ChangelogPage />} />
+          
+          {/* Product Pages */}
+          <Route path="features" element={<FeaturesPage />} />
+          <Route path="how-it-works" element={<HowItWorksPage />} />
 
           {/* 404 Route */}
           <Route path="*" element={<NotFoundPage />} />

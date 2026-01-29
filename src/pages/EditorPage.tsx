@@ -1,4 +1,5 @@
 import { useState, useMemo, useDeferredValue, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 
 import { 
@@ -10,8 +11,8 @@ import {
 import { useStore } from '../lib/store';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
-import HistoryModal from '../components/HistoryModal';
-import ExportModal from '../components/ExportModal';
+import HistoryModal from '../components/modals/HistoryModal';
+import ExportModal from '../components/modals/ExportModal';
 
 // --- PIPELINE TYPES ---
 interface LineData {
@@ -212,6 +213,18 @@ export default function EditorPage() {
         textAlign, setTextAlign,
         history: storeHistory, addToHistory
     } = useStore();
+    const setNavbarVisible = useStore(state => state.setNavbarVisible);
+
+    // Ensure navbar is hidden when specifically on the separate /editor route
+    // But allow the parent (LandingPage) to control it when used as a component
+    useEffect(() => {
+        const isStandalone = window.location.pathname === '/editor' || window.location.hash === '#editor';
+        if (isStandalone) {
+            setNavbarVisible(false);
+            return () => setNavbarVisible(true);
+        }
+    }, [setNavbarVisible]);
+
 
     // Local UI State
     const [progress, setProgress] = useState(0);
@@ -433,15 +446,15 @@ export default function EditorPage() {
         <div className="relative selection:bg-indigo-500/30 font-sans">
             
             {/* ==================== MOBILE LAYOUT (lg:hidden) ==================== */}
-            <div className="lg:hidden flex flex-col h-screen mesh-gradient relative">
+            <div className="lg:hidden flex flex-col h-screen relative">
                 
                 {/* Header removed to avoid duplication with LandingPage */}
 
                 {/* Main Curve-Edged Card */}
-                <div className="flex-1 bg-white rounded-[2.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col isolate ring-1 ring-black/5 mb-4">
+                <div className="flex-1 bg-white rounded-[2.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col isolate ring-1 ring-black/5 mb-4 relative z-10">
                     
                     {/* Mobile Header - Clean & Minimal */}
-                    <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-neutral-100 shrink-0">
+                    <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-neutral-100 shrink-0 relative z-10 overflow-hidden isolate">
                         <div className="flex items-center gap-4">
                             <div className="flex gap-1.5">
                                 <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />
@@ -505,20 +518,22 @@ export default function EditorPage() {
                             
                             {/* Quick Style Bar */}
                             <div className="flex items-center gap-2 px-4 py-3 bg-white border-b border-neutral-50 overflow-x-auto shrink-0 scrollbar-hide">
-                                <select 
-                                    value={font} 
-                                    onChange={e => setFont(e.target.value)}
-                                    className="px-3 py-2 bg-neutral-100 rounded-xl text-xs font-medium min-w-[100px] border-0 focus:ring-2 focus:ring-neutral-900/10"
-                                >
-                                    {FONTS.map(f => <option key={f.name} value={f.name}>{f.label}</option>)}
-                                </select>
+                                <div className="relative overflow-hidden isolate rounded-xl bg-neutral-100 min-w-[120px]">
+                                    <select 
+                                        value={font} 
+                                        onChange={e => setFont(e.target.value)}
+                                        className="w-full px-3 py-2 bg-transparent text-xs font-medium border-0 focus:ring-2 focus:ring-neutral-900/10 cursor-pointer"
+                                    >
+                                        {FONTS.map(f => <option key={f.name} value={f.name}>{f.label}</option>)}
+                                    </select>
+                                </div>
                                 <div className="h-6 w-px bg-neutral-200" />
                                 <div className="flex gap-1.5">
                                     {COLORS.map(c => (
                                         <button 
                                             key={c.name} 
                                             onClick={() => setColor(c.value)}
-                                            className={`w-7 h-7 rounded-lg transition-all ${color === c.value ? 'ring-2 ring-neutral-900 ring-offset-2 scale-110' : 'hover:scale-105'}`}
+                                            className={`w-7 h-7 rounded-lg transition-all overflow-hidden isolate ${color === c.value ? 'ring-2 ring-neutral-900 ring-offset-2 scale-110' : 'hover:scale-105'}`}
                                             style={{ backgroundColor: c.value }}
                                             title={c.name}
                                         />
@@ -540,14 +555,16 @@ export default function EditorPage() {
                                             </button>
                                         </div>
                                         {showHeader && (
-                                            <textarea 
-                                                value={headerText} 
-                                                onChange={(e) => setPageOptions({ headerText: e.target.value })} 
-                                                className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-300 shadow-sm resize-none min-h-[60px]"
-                                                placeholder="Document heading..."
-                                                style={{ fontFamily: font }}
-                                                rows={2}
-                                            />
+                                            <div className="relative overflow-hidden isolate rounded-xl border border-neutral-200 bg-white shadow-sm">
+                                                <textarea 
+                                                    value={headerText} 
+                                                    onChange={(e) => setPageOptions({ headerText: e.target.value })} 
+                                                    className="w-full px-4 py-3 bg-transparent text-base font-medium focus:outline-none focus:ring-2 focus:ring-neutral-900/10 resize-none min-h-[60px]"
+                                                    placeholder="Document heading..."
+                                                    style={{ fontFamily: font }}
+                                                    rows={2}
+                                                />
+                                            </div>
                                         )}
                                     </div>
                                     
@@ -559,14 +576,16 @@ export default function EditorPage() {
                                     {/* Body Input */}
                                     <div className="flex-1 min-h-0">
                                         <label className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2 block">Body</label>
-                                        <textarea 
-                                            ref={sourceRef}
-                                            value={text} 
-                                            onChange={(e) => setText(normalizeInput(e.target.value))} 
-                                            className="w-full h-[calc(100%-24px)] p-4 bg-white border border-neutral-200 rounded-xl text-base resize-none focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-300 shadow-sm leading-relaxed"
-                                            placeholder="Start writing your text here...&#10;&#10;Your words will be transformed into beautiful handwriting."
-                                            style={{ fontFamily: font }}
-                                        />
+                                        <div className="relative overflow-hidden isolate rounded-xl border border-neutral-200 bg-white shadow-sm">
+                                            <textarea 
+                                                ref={sourceRef}
+                                                value={text} 
+                                                onChange={(e) => setText(normalizeInput(e.target.value))} 
+                                                className="w-full h-64 p-4 bg-transparent text-base resize-none focus:outline-none focus:ring-2 focus:ring-neutral-900/10 leading-relaxed"
+                                                placeholder="Start writing your text here...&#10;&#10;Your words will be transformed into beautiful handwriting."
+                                                style={{ fontFamily: font }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -769,11 +788,11 @@ export default function EditorPage() {
                         />
                         <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-slide-up">
                             {/* Handle Bar */}
-                            <div className="flex justify-center pt-3 pb-1 shrink-0">
+                            <div className="flex justify-center pt-3 pb-1 shrink-0 bg-white">
                                 <div className="w-10 h-1 bg-neutral-300 rounded-full" />
                             </div>
                             {/* Header */}
-                            <div className="px-5 pb-4 pt-2 border-b border-neutral-100 flex items-center justify-between shrink-0">
+                            <div className="px-5 pb-4 pt-2 border-b border-neutral-100 flex items-center justify-between shrink-0 bg-white overflow-hidden isolate">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center">
                                         <Settings2 size={18} className="text-white" />
@@ -967,20 +986,23 @@ export default function EditorPage() {
             <div className="hidden lg:flex w-full max-w-[1600px] min-h-[60vh] lg:h-[85vh] bg-white rounded-2xl lg:rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.12)] border border-black/5 flex-col lg:flex-row overflow-hidden relative z-10 transition-all">
                 
                 {/* DESKTOP SIDEBAR - Hidden on mobile */}
-                <aside 
-                    className="hidden lg:flex w-80 bg-[#F9F9F9] border-r border-black/5 flex-col shrink-0 overflow-hidden"
+                {/* 1. LEFT SIDEBAR (Standard Layout) */}
+                <motion.div 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                    className="hidden lg:flex w-80 bg-white border-r border-black/5 flex-col shrink-0 overflow-hidden relative z-30"
                 >
                     {/* MACOS DOTS - Fixed Header */}
                     <div className="px-8 pt-8 shrink-0">
-                         <div className="flex gap-2 mb-10">
+                        <div className="flex gap-2">
                             <div className="w-3 h-3 rounded-full bg-[#FF5F57] shadow-inner" />
                             <div className="w-3 h-3 rounded-full bg-[#FFBD2E] shadow-inner" />
                             <div className="w-3 h-3 rounded-full bg-[#28C840] shadow-inner" />
                         </div>
                     </div>
 
-                    {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto px-8 pb-8 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6 space-y-10">
                         <div 
                             className="flex flex-col gap-6"
                         >
@@ -991,12 +1013,14 @@ export default function EditorPage() {
                                     <input type="checkbox" checked={showHeader} onChange={e=>setPageOptions({ showHeader:e.target.checked })} className="w-4 h-4 rounded border-black/20 text-neutral-900 focus:ring-0 transition-all cursor-pointer"/><span className="text-xs font-bold text-neutral-700 group-hover:text-neutral-900 transition-colors">Enable Heading</span>
                                 </label>
                                 {showHeader && (
-                                    <textarea 
-                                        value={headerText} 
-                                        onChange={(e) => setPageOptions({ headerText: e.target.value })}
-                                        className="w-full h-24 p-4 bg-white border border-black/5 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500/20 resize-none font-sans transition-all placeholder:text-neutral-300 shadow-sm"
-                                        placeholder="Type your heading..."
-                                    />
+                                    <div className="relative overflow-hidden isolate rounded-xl border border-black/5 bg-white shadow-sm">
+                                        <textarea 
+                                            value={headerText} 
+                                            onChange={(e) => setPageOptions({ headerText: e.target.value })}
+                                            className="w-full h-24 p-4 bg-transparent text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/10 resize-none font-sans transition-all placeholder:text-neutral-300"
+                                            placeholder="Type your heading..."
+                                        />
+                                    </div>
                                 )}
                              </div>
                         </div>
@@ -1008,13 +1032,15 @@ export default function EditorPage() {
                             <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 mb-3"><FileText size={12}/> The Source</label>
                             <div className="relative group">
                                  <div className="absolute -inset-2 bg-linear-to-r from-indigo-500/20 to-purple-500/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition duration-1000 group-focus-within:opacity-100" />
-                                <textarea 
-                                    ref={sourceRef}
-                                    value={text} 
-                                    onChange={(e) => setText(normalizeInput(e.target.value))} 
-                                    className="relative w-full h-64 p-5 bg-white border border-black/5 rounded-2xl text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500/10 resize-none font-sans shadow-sm transition-all focus:shadow-md" 
-                                    placeholder="Start writing your masterpiece..."
-                                />
+                                 <div className="relative overflow-hidden isolate rounded-2xl border border-black/5 bg-white shadow-sm focus-within:shadow-md transition-all">
+                                    <textarea 
+                                        ref={sourceRef}
+                                        value={text} 
+                                        onChange={(e) => setText(normalizeInput(e.target.value))} 
+                                        className="relative w-full h-64 p-5 bg-transparent text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500/10 resize-none font-sans transition-all" 
+                                        placeholder="Start writing your masterpiece..."
+                                    />
+                                 </div>
                             </div>
                         </div>
 
@@ -1080,12 +1106,20 @@ export default function EditorPage() {
                                         <button key={opt.id} onClick={()=>setTextAlign(opt.id as 'left' | 'center' | 'right' | 'justify')} className={`flex-1 p-2 flex justify-center rounded-lg transition-all ${textAlign===opt.id?'bg-neutral-900 text-white shadow-lg':'text-neutral-400 hover:text-neutral-900'}`}><opt.icon size={14}/></button>
                                     ))}
                                 </div>
-                                <select value={font} onChange={e=>setFont(e.target.value)} className="w-full p-3 bg-white border border-black/5 rounded-xl text-[11px] font-bold text-neutral-700 shadow-xs focus:outline-none">{FONTS.map(f=><option key={f.name} value={f.name}>{f.label}</option>)}</select>
+                                <div className="relative overflow-hidden isolate rounded-xl bg-white border border-black/5 shadow-xs">
+                                    <select 
+                                        value={font} 
+                                        onChange={e=>setFont(e.target.value)} 
+                                        className="w-full p-3 bg-transparent text-[11px] font-bold text-neutral-700 focus:outline-none cursor-pointer"
+                                    >
+                                        {FONTS.map(f=><option key={f.name} value={f.name}>{f.label}</option>)}
+                                    </select>
+                                </div>
                                 <div className="space-y-4">
                                     <div><span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter mb-2 flex justify-between">Font Size <span>{fontSize}px</span></span><input type="range" min="14" max="64" value={fontSize} onChange={e=>setFontSize(Number(e.target.value))} className="w-full h-1 bg-black/5 rounded-full appearance-none accent-neutral-900 cursor-pointer"/></div>
                                     <div><span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter mb-2 flex justify-between">Line Nudge <span>{baseline}</span></span><input type="range" min="-10" max="30" value={baseline} onChange={e=>setBaseline(Number(e.target.value))} className="w-full h-1 bg-black/5 rounded-full appearance-none accent-neutral-900 cursor-pointer"/></div>
                                 </div>
-                                <div className="flex gap-2 pt-2">{COLORS.map(c=>(<button key={c.name} onClick={()=>setColor(c.value)} className={`w-5 h-5 rounded-full border-2 ${color === c.value?'border-neutral-900 scale-110':'border-transparent'} shadow-xs transition-all`} style={{backgroundColor:c.value}}/>))}</div>
+                                <div className="flex gap-2 pt-2">{COLORS.map(c=>(<button key={c.name} onClick={()=>setColor(c.value)} className={`w-5 h-5 rounded-full border-2 ${color === c.value?'border-neutral-900 scale-110':'border-transparent'} shadow-xs transition-all overflow-hidden isolate`} style={{backgroundColor:c.value}}/>))}</div>
                             </div>
                         </div>
 
@@ -1161,7 +1195,7 @@ export default function EditorPage() {
                         </div>
                         </div>
                     </div>
-                </aside>
+                </motion.div>
 
                 {/* MAIN VISUAL PREVIEW AREA */}
                 <main className="flex-1 bg-[#FAFAFA] flex flex-col relative overflow-hidden group/canvas">
@@ -1402,7 +1436,16 @@ export default function EditorPage() {
                 </div>
                 
                 {/* Tab Content */}
-                <div className="overflow-y-auto p-5 space-y-5" style={{ maxHeight: 'calc(85vh - 200px)' }}>
+                <div className="overflow-y-auto p-5 space-y-5 relative" style={{ maxHeight: 'calc(85vh - 200px)' }}>
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeMobileTab}
+                            initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                            className="space-y-5"
+                        >
                     
                     {/* WRITE TAB */}
                     {activeMobileTab === 'write' && (
@@ -1471,17 +1514,19 @@ export default function EditorPage() {
                             {/* Font Selection */}
                             <div>
                                 <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3 block">Handwriting Style</label>
-                                <select 
-                                    value={font} 
-                                    onChange={e => setFont(e.target.value)}
-                                    className="w-full p-4 bg-white border border-black/5 rounded-2xl text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                                >
-                                    {FONTS.map(f => <option key={f.name} value={f.name}>{f.label}</option>)}
-                                </select>
+                                <div className="relative overflow-hidden isolate rounded-2xl bg-white border border-black/5 shadow-sm">
+                                    <select 
+                                        value={font} 
+                                        onChange={e => setFont(e.target.value)}
+                                        className="w-full p-4 bg-transparent text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
+                                    >
+                                        {FONTS.map(f => <option key={f.name} value={f.name}>{f.label}</option>)}
+                                    </select>
+                                </div>
                             </div>
                             
                             {/* Font Size */}
-                            <div className="bg-white border border-black/5 rounded-2xl p-4 shadow-sm">
+                            <div className="bg-white border border-black/5 rounded-2xl p-4 shadow-premium">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3 flex justify-between">
                                     Font Size <span className="text-neutral-900">{fontSize}px</span>
                                 </label>
@@ -1496,7 +1541,7 @@ export default function EditorPage() {
                             </div>
                             
                             {/* Line Nudge (Baseline) */}
-                            <div className="bg-white border border-black/5 rounded-2xl p-4 shadow-sm">
+                            <div className="bg-white border border-black/5 rounded-2xl p-4 shadow-premium">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3 flex justify-between">
                                     Line Nudge <span className="text-neutral-900">{baseline}</span>
                                 </label>
@@ -1513,12 +1558,12 @@ export default function EditorPage() {
                             {/* Ink Color */}
                             <div>
                                 <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3 block">Ink Color</label>
-                                <div className="flex gap-3 bg-white border border-black/5 rounded-2xl p-4 shadow-sm">
+                                <div className="flex gap-3 bg-white border border-black/5 rounded-2xl p-4 shadow-premium">
                                     {COLORS.map(c => (
                                         <button 
                                             key={c.name} 
                                             onClick={() => setColor(c.value)}
-                                            className={`w-10 h-10 rounded-xl border-2 transition-all shadow-sm ${color === c.value ? 'border-neutral-900 scale-110 shadow-md' : 'border-transparent'}`}
+                                            className={`w-10 h-10 rounded-xl border-2 transition-all shadow-sm overflow-hidden isolate ${color === c.value ? 'border-neutral-900 scale-110 shadow-md' : 'border-transparent'}`}
                                             style={{ backgroundColor: c.value }}
                                         />
                                     ))}
@@ -1714,6 +1759,8 @@ export default function EditorPage() {
                             </div>
                         </>
                     )}
+                    </motion.div>
+                    </AnimatePresence>
                 </div>
                 
             {/* Export Buttons - Fixed at Bottom */}

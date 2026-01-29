@@ -1,4 +1,4 @@
-import PageLayout from '../../components/PageLayout';
+import PageLayout from '../../components/layout/PageLayout';
 
 export default function Disclaimer() {
     return (
@@ -19,6 +19,9 @@ export default function Disclaimer() {
             <h3>Educational Use</h3>
             <p>
                 This tool is intended for creative, educational, and productivity purposes. We do not condone the use of this tool for forging documents, academic dishonesty, or fraud. Users are solely responsible for the content they generate and how they use it.
+            </p>
+            <p className="text-sm text-neutral-400 mt-8">
+                Last updated: January 29, 2026
             </p>
         </PageLayout>
     );

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { LogOut, Clock, ChevronDown } from 'lucide-react';
-import HistoryModal from './HistoryModal';
+import HistoryModal from './modals/HistoryModal';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -30,7 +30,7 @@ export default function UserMenu() {
         return (
             <button
                 onClick={() => setAuthModalOpen(true)}
-                className="btn-premium-outline py-2 px-6 text-[10px] hover:bg-ink hover:text-white transition-all"
+                className="px-6 py-2.5 bg-neutral-900 text-white rounded-full text-xs font-bold shadow-premium hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
             >
                 Sign In
             </button>
@@ -61,7 +61,7 @@ export default function UserMenu() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-neutral-100 overflow-hidden z-50"
+                        className="absolute right-0 top-full mt-3 w-64 glass rounded-2xl shadow-premium border border-neutral-100 overflow-hidden z-50"
                     >
                         {/* User Info Header */}
                         <div className="px-5 py-4 bg-[#FAFAFA] border-b border-neutral-100 relative">

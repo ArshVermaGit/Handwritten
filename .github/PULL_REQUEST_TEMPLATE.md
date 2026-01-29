@@ -10,13 +10,20 @@ Fixes # (issue)
 - [ ] New feature (non-breaking change which adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Documentation update
+- [ ] Visual Refinement (CSS, layout, animations)
 
 ## How Has This Been Tested?
 
 Please describe the tests that you ran to verify your changes. Provide instructions so we can reproduce.
 
-- [ ] Test A
-- [ ] Test B
+- [ ] Chrome (Windows/Mac)
+- [ ] Safari (Mac/iOS)
+- [ ] Firefox (Desktop)
+- [ ] Mobile Chrome/Safari
+
+## Screenshots (if applicable)
+
+Please add screenshots or screen recordings to help us understand the change.
 
 ## Checklist:
 
@@ -27,3 +34,4 @@ Please describe the tests that you ran to verify your changes. Provide instructi
 - [ ] My changes generate no new warnings
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] New and existing unit tests pass locally with my changes
+- [ ] My changes follow the **Conventional Commits** format: `feat(scope): descriptions`
