@@ -1,3 +1,5 @@
+
+
 <div align="center">
 
 # 🖋️ Handwritten
@@ -7,7 +9,7 @@
 ### Transform digital text into organic, human-like handwriting instantly.
 
 [![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-black?logo=vercel&logoColor=white)](https://handwritten-git.vercel.app)
-[![Version](https://img.shields.io/badge/Version-2.0.0-indigo.svg?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-2.0.1-indigo.svg?style=flat-square)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg?style=flat-square)](CONTRIBUTING.md)
 [![Security Policy](https://img.shields.io/badge/Security-Policy-blue.svg?style=flat-square)](SECURITY.md)
